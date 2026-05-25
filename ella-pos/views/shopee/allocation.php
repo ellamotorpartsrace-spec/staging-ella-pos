@@ -1308,8 +1308,37 @@ function adjStock(d){
 }
 
 function presetStock(pct){
-    const computedVal = Math.floor(currentEdit.total * (pct / 100));
-    document.getElementById('mOnlineStock').value = computedVal;
+    const totalPos = currentEdit.total;
+    const targetTotalAllocated = Math.floor(totalPos * (pct / 100));
+
+    if (currentEdit.isDuplicate) {
+        // Distribute evenly among all listings (1 active + N shared)
+        const totalListings = 1 + (currentEdit.dupDetails ? currentEdit.dupDetails.length : 0);
+        const perListing = Math.floor(targetTotalAllocated / totalListings);
+        let remainder = targetTotalAllocated % totalListings;
+
+        // Set active listing
+        let activeVal = perListing;
+        if (remainder > 0) {
+            activeVal++;
+            remainder--;
+        }
+        document.getElementById('mOnlineStock').value = activeVal;
+
+        // Set shared inputs if they are rendered
+        const sharedInputs = document.querySelectorAll('.shared-alloc-input');
+        sharedInputs.forEach(inp => {
+            let val = perListing;
+            if (remainder > 0) {
+                val++;
+                remainder--;
+            }
+            inp.value = val;
+        });
+    } else {
+        document.getElementById('mOnlineStock').value = targetTotalAllocated;
+    }
+    
     calcModal();
 }
 
