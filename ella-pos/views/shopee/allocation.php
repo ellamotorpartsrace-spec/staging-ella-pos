@@ -1501,35 +1501,47 @@ async function executeFixOverallocated() {
     const btn = document.getElementById('btnFixOverallocated');
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Processing...';
 
     let successCount = 0;
     let failCount = 0;
+    const totalItems = overallocatedItems.length;
+    const batchSize = 5; // process 5 at a time for speed
 
     try {
-        for (const item of overallocatedItems) {
-            // calculate new stock
-            const newVal = Math.floor(item.total * (selectedFixPct / 100));
+        for (let i = 0; i < totalItems; i += batchSize) {
+            const batch = overallocatedItems.slice(i, i + batchSize);
             
-            const res = await fetch(`${window.BASE_URL}api/shopee/update_allocation.php`,{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({id:item.id, online_stock: newVal})
-            });
+            // Update progress text
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i>Fixing ${Math.min(i + batchSize, totalItems)} / ${totalItems}...`;
             
-            const text = await res.text();
-            let data;
-            try { data = JSON.parse(text); } catch (e) { data = { success: false }; }
-            
-            if(data.success) {
-                successCount++;
-                item.online = newVal;
-                const newRatio = item.total > 0 ? Math.round((newVal / item.total) * 100) : 100;
-                item.ratio = newRatio;
-                item.status = newVal === 0 ? 'unallocated' : (item.total - newVal <= 5 ? 'low' : 'synced');
-            } else {
-                failCount++;
-            }
+            await Promise.all(batch.map(async (item) => {
+                // calculate new stock
+                const newVal = Math.floor(item.total * (selectedFixPct / 100));
+                
+                try {
+                    const res = await fetch(`${window.BASE_URL}api/shopee/update_allocation.php`,{
+                        method:'POST',
+                        headers:{'Content-Type':'application/json'},
+                        body:JSON.stringify({id:item.id, online_stock: newVal})
+                    });
+                    
+                    const text = await res.text();
+                    let data;
+                    try { data = JSON.parse(text); } catch (e) { data = { success: false }; }
+                    
+                    if(data.success) {
+                        successCount++;
+                        item.online = newVal;
+                        const newRatio = item.total > 0 ? Math.round((newVal / item.total) * 100) : 100;
+                        item.ratio = newRatio;
+                        item.status = newVal === 0 ? 'unallocated' : (item.total - newVal <= 5 ? 'low' : 'synced');
+                    } else {
+                        failCount++;
+                    }
+                } catch(e) {
+                    failCount++;
+                }
+            }));
         }
 
         if (successCount > 0) {
