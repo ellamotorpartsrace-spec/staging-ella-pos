@@ -272,6 +272,7 @@ $totalUnmapped = count($unmappedRows);
         <p class="sp-subtitle mb-0">Allocate POS inventory to Shopee per variation. Only mapped products sync stock to Shopee.</p>
     </div>
     <div class="d-flex gap-2">
+        <button class="btn btn-outline-warning fw-bold border-2" onclick="showFixOverallocatedModal()" style="color:#d97706;border-color:#f59e0b;"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Fix Overallocated</button>
         <button id="btnManualSync" class="btn btn-shopee" onclick="triggerManualSync()"><i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span></button>
     </div>
 </div>
@@ -533,6 +534,39 @@ $totalUnmapped = count($unmappedRows);
 
 
 
+<!-- Fix Overallocated Modal -->
+<div class="modal fade sp-modal" id="fixOverallocatedModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-wand-magic-sparkles text-warning me-2"></i>Auto-Fix Overallocated</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:var(--btn-close-filter)"></button>
+            </div>
+            <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+                <p class="text-secondary" id="fixOverallocatedText">This will automatically adjust the Shopee stock for all <strong>overallocated</strong> products (where Shopee stock is higher than physical stock).</p>
+                
+                <div class="mb-3 mt-4">
+                    <label class="form-label fw-bold text-dark mb-2" style="font-size: 0.85rem;">Allocate how many percent of physical stock?</label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn active fw-bold" data-pct="100">100%</button>
+                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="50">50%</button>
+                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="0">0%</button>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning py-2 small mb-0 d-flex align-items-center gap-2 border-0 shadow-xs mt-3" style="border-radius: 8px;">
+                    <i class="fa-solid fa-circle-info fs-6"></i>
+                    <span>Only products currently marked as <strong>overallocated</strong> will be affected.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-warning fw-bold text-white shadow-sm" style="background:#f59e0b;border:none;" id="btnFixOverallocated" onclick="executeFixOverallocated()"><i class="fa-solid fa-check me-2"></i>Apply Fix</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 const MAPPED_GROUPS   = <?= json_encode(array_values($mappedGroups)) ?>;
 const UNMAPPED_GROUPS = <?= json_encode(array_values($unmappedGroups)) ?>;
@@ -544,7 +578,8 @@ MAPPED_GROUPS.forEach(g => g.vars.forEach(v => {
     MAPPED_FLAT.push(v);
 }));
 
-let currentEdit=null, editModal, allocFilter='all';
+let currentEdit=null, editModal, fixOverallocatedModal, allocFilter='all';
+let selectedFixPct = 100;
 let currentPage = 1;
 let itemsPerPage = 25;
 let unmappedCurrentPage = 1;
@@ -580,6 +615,15 @@ function debouncedRender() {
 
 document.addEventListener('DOMContentLoaded',()=>{
     editModal=new bootstrap.Modal(document.getElementById('editModal'));
+    fixOverallocatedModal = new bootstrap.Modal(document.getElementById('fixOverallocatedModal'));
+    
+    document.querySelectorAll('.fix-pct-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.fix-pct-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedFixPct = parseInt(this.dataset.pct);
+        });
+    });
     
     // --- Restore State on Reload ---
     const navEntries = performance.getEntriesByType('navigation');
@@ -1421,6 +1465,84 @@ async function saveAllocation(btnEl) {
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
+    }
+}
+
+function showFixOverallocatedModal() {
+    const overallocatedCount = MAPPED_FLAT.filter(v => v.online > v.total).length;
+    if (overallocatedCount === 0) {
+        if (typeof EllaToast !== 'undefined') EllaToast.info('No overallocated products found. Your stock is healthy!');
+        else alert('No overallocated products found. Your stock is healthy!');
+        return;
+    }
+    
+    // reset selection to 100%
+    document.querySelectorAll('.fix-pct-btn').forEach(b => b.classList.remove('active'));
+    const pct100 = document.querySelector('.fix-pct-btn[data-pct="100"]');
+    if (pct100) pct100.classList.add('active');
+    selectedFixPct = 100;
+    
+    document.getElementById('fixOverallocatedText').innerHTML = 
+        `This will automatically adjust the Shopee stock for <strong>${overallocatedCount} overallocated</strong> products.`;
+        
+    fixOverallocatedModal.show();
+}
+
+async function executeFixOverallocated() {
+    const overallocatedItems = MAPPED_FLAT.filter(v => v.online > v.total);
+    if (overallocatedItems.length === 0) {
+        fixOverallocatedModal.hide();
+        return;
+    }
+
+    const btn = document.getElementById('btnFixOverallocated');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Processing...';
+
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+        for (const item of overallocatedItems) {
+            // calculate new stock
+            const newVal = Math.floor(item.total * (selectedFixPct / 100));
+            
+            const res = await fetch(`${window.BASE_URL}api/shopee/update_allocation.php`,{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({id:item.id, online_stock: newVal})
+            });
+            
+            const text = await res.text();
+            let data;
+            try { data = JSON.parse(text); } catch (e) { data = { success: false }; }
+            
+            if(data.success) {
+                successCount++;
+                item.online = newVal;
+                const newRatio = item.total > 0 ? Math.round((newVal / item.total) * 100) : 100;
+                item.ratio = newRatio;
+                item.status = newVal === 0 ? 'unallocated' : (item.total - newVal <= 5 ? 'low' : 'synced');
+            } else {
+                failCount++;
+            }
+        }
+
+        if (successCount > 0) {
+            renderMapped();
+            updateSummary();
+            if (typeof EllaToast !== 'undefined') EllaToast.success(`Successfully fixed ${successCount} overallocated products!`);
+        }
+        if (failCount > 0) {
+            if (typeof EllaToast !== 'undefined') EllaToast.warning(`Failed to update ${failCount} products.`);
+        }
+        fixOverallocatedModal.hide();
+    } catch (e) {
+        if (typeof EllaToast !== 'undefined') EllaToast.error('Network error while applying fix.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
 }
 
