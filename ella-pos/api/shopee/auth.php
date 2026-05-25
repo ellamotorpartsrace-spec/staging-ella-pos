@@ -41,10 +41,10 @@ try {
     
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     
-    // Shopee is extremely strict and may require EXACT string match with the console.
-    // So we just send the base domain (e.g., https://...ngrok.dev).
-    // The root index.php will catch the callback and forward it to /ella-pos/...
-    $callbackUrl = $protocol . $host;
+    // We construct the absolute URL to the callback handler
+    // We construct the absolute URL to the callback handler
+    // BASE_URL already contains the full absolute path (e.g. https://domain.com/)
+    $callbackUrl = rtrim(BASE_URL, '/') . '/api/shopee/callback.php';
 
     $authUrl = $shopee->getAuthUrl($callbackUrl);
 

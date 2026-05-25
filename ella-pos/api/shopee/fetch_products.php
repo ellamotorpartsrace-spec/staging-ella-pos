@@ -62,7 +62,7 @@ try {
     $mode = $_GET['mode'] ?? 'full';
     $queueId = $_GET['queue_id'] ?? null;
     $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-    $pageSize = 100;
+    $pageSize = 50;
     
     $allProducts = [];
     $hasNextPage = false;
@@ -151,10 +151,14 @@ try {
 
         $allModelResults = [];
         if (!empty($modelQueryParams)) {
-            $multiResults = $shopee->getMulti('/api/v2/product/get_model_list', $modelQueryParams, $accessToken, $shopId);
-            foreach ($multiResults as $idx => $res) {
-                $mItemId = $modelQueryParams[$idx]['item_id'];
-                $allModelResults[$mItemId] = $res;
+            // Chunk concurrent requests to avoid memory/timeout limits on Windows
+            $modelQueryChunks = array_chunk($modelQueryParams, 25);
+            foreach ($modelQueryChunks as $mChunk) {
+                $multiResults = $shopee->getMulti('/api/v2/product/get_model_list', $mChunk, $accessToken, $shopId);
+                foreach ($multiResults as $idx => $res) {
+                    $mItemId = $mChunk[$idx]['item_id'];
+                    $allModelResults[$mItemId] = $res;
+                }
             }
         }
 
