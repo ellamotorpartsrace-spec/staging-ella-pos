@@ -553,6 +553,7 @@ $totalUnmapped = count($unmappedRows);
                         <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="40">40%</button>
                         <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="25">25%</button>
                         <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="10">10%</button>
+                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="0">0%</button>
                     </div>
                 </div>
                 
