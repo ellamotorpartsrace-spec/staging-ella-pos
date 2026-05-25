@@ -24,7 +24,7 @@ register_shutdown_function(function() {
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
-require_once '../../classes/ShopeeApi.php';
+require_once '../../classes/ShopeeAPI.php';
 require_once __DIR__ . '/sync_helpers.php';
 
 requireLogin();

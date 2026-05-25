@@ -6,7 +6,7 @@
  */
 require_once '../../config/config.php';
 require_once '../../config/database.php';
-require_once '../../classes/ShopeeApi.php';
+require_once '../../classes/ShopeeAPI.php';
 
 try {
     $code   = $_GET['code'] ?? '';

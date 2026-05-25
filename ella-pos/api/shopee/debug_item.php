@@ -2,7 +2,7 @@
 header("Content-Type: application/json");
 require_once '../../config/config.php';
 require_once '../../config/database.php';
-require_once '../../classes/ShopeeApi.php';
+require_once '../../classes/ShopeeAPI.php';
 require_once '../../includes/auth.php';
 
 requireLogin();

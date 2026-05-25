@@ -1,6 +1,6 @@
 <?php
 require 'config/database.php';
-require 'classes/ShopeeApi.php';
+require 'classes/ShopeeAPI.php';
 
 
 $db = new Database();

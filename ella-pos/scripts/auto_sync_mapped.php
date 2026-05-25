@@ -22,7 +22,7 @@ try {
 
         if ($timeRemaining <= 15 * 60) {
             echo "[Auto Sync] Token expires in less than 15 minutes. Auto-refreshing...\n";
-            require_once __DIR__ . '/../classes/ShopeeApi.php';
+            require_once __DIR__ . '/../classes/ShopeeAPI.php';
             $isTest = $config['environment'] === 'test';
             $shopee = new ShopeeAPI($config['partner_id'], $config['partner_key'], $isTest);
             $result = $shopee->refreshToken($config['refresh_token'], $config['shop_id']);

@@ -21,7 +21,7 @@ try {
         exit;
     }
 
-    require_once __DIR__ . '/../classes/ShopeeApi.php';
+    require_once __DIR__ . '/../classes/ShopeeAPI.php';
     $isTest = $config['environment'] === 'test';
     $shopee = new ShopeeAPI($config['partner_id'], $config['partner_key'], $isTest);
     $accessToken = $config['access_token'];

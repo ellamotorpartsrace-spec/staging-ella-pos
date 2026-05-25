@@ -124,7 +124,7 @@ if (!function_exists('fetchLiveShopeeStockAndPrice')) {
      * Fetch the live stock and price for a specific Shopee item (and model variation if applicable)
      */
     function fetchLiveShopeeStockAndPrice($conn, $itemId, $modelId = null) {
-        require_once __DIR__ . '/../../classes/ShopeeApi.php';
+        require_once __DIR__ . '/../../classes/ShopeeAPI.php';
         global $shopeeApiCache;
         if (!is_array($shopeeApiCache)) $shopeeApiCache = [];
 
@@ -223,7 +223,7 @@ if (!function_exists('fetchLiveShopeeStockAndPrice')) {
 
 if (!function_exists('prewarmShopeeApiCache')) {
     function prewarmShopeeApiCache($conn, $itemIds) {
-        require_once __DIR__ . '/../../classes/ShopeeApi.php';
+        require_once __DIR__ . '/../../classes/ShopeeAPI.php';
         global $shopeeApiCache;
         if (!is_array($shopeeApiCache)) $shopeeApiCache = [];
 
