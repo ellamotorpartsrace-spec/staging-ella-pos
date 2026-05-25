@@ -547,10 +547,12 @@ $totalUnmapped = count($unmappedRows);
                 
                 <div class="mb-3 mt-4">
                     <label class="form-label fw-bold text-dark mb-2" style="font-size: 0.85rem;">Allocate how many percent of physical stock?</label>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn active fw-bold" data-pct="100">100%</button>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn active fw-bold" data-pct="80">80%</button>
                         <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="50">50%</button>
-                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="0">0%</button>
+                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="40">40%</button>
+                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="25">25%</button>
+                        <button class="btn btn-outline-shopee flex-fill fix-pct-btn fw-bold" data-pct="10">10%</button>
                     </div>
                 </div>
                 
@@ -1476,11 +1478,11 @@ function showFixOverallocatedModal() {
         return;
     }
     
-    // reset selection to 100%
+    // reset selection to 80%
     document.querySelectorAll('.fix-pct-btn').forEach(b => b.classList.remove('active'));
-    const pct100 = document.querySelector('.fix-pct-btn[data-pct="100"]');
-    if (pct100) pct100.classList.add('active');
-    selectedFixPct = 100;
+    const pctDefault = document.querySelector('.fix-pct-btn[data-pct="80"]');
+    if (pctDefault) pctDefault.classList.add('active');
+    selectedFixPct = 80;
     
     document.getElementById('fixOverallocatedText').innerHTML = 
         `This will automatically adjust the Shopee stock for <strong>${overallocatedCount} overallocated</strong> products.`;
