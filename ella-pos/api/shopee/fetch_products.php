@@ -62,7 +62,11 @@ try {
     $mode = $_GET['mode'] ?? 'full';
     $queueId = $_GET['queue_id'] ?? null;
     $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-    $pageSize = 50;
+    
+    // Set max execution time to handle Hostinger timeouts.
+    // Also reduce page size to 20 to ensure each batch finishes well within the 30-60s limit.
+    set_time_limit(0);
+    $pageSize = 20;
     
     $allProducts = [];
     $hasNextPage = false;
