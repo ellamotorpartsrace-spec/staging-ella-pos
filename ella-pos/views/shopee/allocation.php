@@ -12,7 +12,7 @@ $conn = $db->getConnection();
 $mappedRows = $conn->query("
     SELECT m.id, m.shopee_item_id, m.shopee_product_name, m.shopee_variation_name,
         m.shopee_model_id, m.shopee_stock, m.mapping_status, m.shopee_image_url,
-        m.stock_allocation_ratio,
+        m.stock_allocation_ratio, m.pos_product_id,
         (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0)) as pos_qty,
         COALESCE(v.sku, m.matched_pos_sku, m.shopee_variation_sku, m.shopee_parent_sku) as sku
     FROM shopee_product_mappings m
@@ -31,21 +31,36 @@ $unmappedRows = $conn->query("
     ORDER BY shopee_product_name ASC, shopee_variation_name ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Count SKU frequencies
-$skuCounts = [];
+// Count POS ID / SKU frequencies
+$dupCounts = [];
 foreach ($mappedRows as $r) {
+    $posId = (int)($r['pos_product_id'] ?? 0);
     $sku = trim($r['sku'] ?? '');
-    if ($sku !== '') {
-        $skuCounts[$sku] = ($skuCounts[$sku] ?? 0) + 1;
+    
+    if ($posId > 0) {
+        $key = 'pos_' . $posId;
+        $dupCounts[$key] = ($dupCounts[$key] ?? 0) + 1;
+    } elseif ($sku !== '') {
+        $key = 'sku_' . $sku;
+        $dupCounts[$key] = ($dupCounts[$key] ?? 0) + 1;
     }
 }
 
-// Map SKUs to their lists
-$skuMap = [];
+// Map keys to their lists
+$dupMap = [];
 foreach ($mappedRows as $r) {
+    $posId = (int)($r['pos_product_id'] ?? 0);
     $sku = trim($r['sku'] ?? '');
-    if ($sku !== '') {
-        $skuMap[$sku][] = [
+    
+    $key = null;
+    if ($posId > 0) {
+        $key = 'pos_' . $posId;
+    } elseif ($sku !== '') {
+        $key = 'sku_' . $sku;
+    }
+    
+    if ($key !== null) {
+        $dupMap[$key][] = [
             'id' => (int)$r['id'],
             'name' => $r['shopee_product_name'],
             'varName' => $r['shopee_variation_name'] ?? '',
@@ -63,12 +78,21 @@ foreach ($mappedRows as $r) {
     $iid = $r['shopee_item_id'];
     if (!isset($mappedGroups[$iid])) $mappedGroups[$iid] = ['itemId'=>$iid,'name'=>$r['shopee_product_name'],'imageUrl'=>$r['shopee_image_url']??'','vars'=>[]];
     
+    $posId = (int)($r['pos_product_id'] ?? 0);
     $sku = trim($r['sku'] ?? '');
-    $isDup = ($sku !== '' && ($skuCounts[$sku] ?? 0) > 1);
+    
+    $key = null;
+    if ($posId > 0) {
+        $key = 'pos_' . $posId;
+    } elseif ($sku !== '') {
+        $key = 'sku_' . $sku;
+    }
+    
+    $isDup = ($key !== null && ($dupCounts[$key] ?? 0) > 1);
     
     $dupDetails = [];
-    if ($isDup && isset($skuMap[$sku])) {
-        foreach ($skuMap[$sku] as $other) {
+    if ($isDup && isset($dupMap[$key])) {
+        foreach ($dupMap[$key] as $other) {
             if ($other['id'] !== (int)$r['id']) {
                 $dupDetails[] = $other;
             }
