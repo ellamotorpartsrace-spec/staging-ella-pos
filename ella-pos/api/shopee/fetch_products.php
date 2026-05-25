@@ -10,6 +10,17 @@
  *   - Product WITHOUT variations → use parent_sku (item_sku) to match POS SKU
  */
 header("Content-Type: application/json");
+
+// Catch fatal errors and output as JSON so UI doesn't say "Unexpected end of JSON input"
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        while (ob_get_level()) ob_end_clean();
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'PHP Fatal Error: ' . $error['message'] . ' in ' . basename($error['file']) . ':' . $error['line']]);
+    }
+});
+
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
@@ -456,7 +467,7 @@ try {
         // Direct, unqueued sync - skip logging to avoid cluttering with Shopee-side imports
     }
 
-    echo json_encode([
+    $responseJson = json_encode([
         'success'      => true,
         'message'      => 'Successfully synced products from Shopee',
         'total_items'  => $totalFetched,
@@ -467,7 +478,13 @@ try {
         'auto_matched' => $autoMatched,
         'has_next_page'=> $hasNextPage,
         'next_offset'  => $offset + $pageSize
-    ]);
+    ], JSON_INVALID_UTF8_SUBSTITUTE);
+
+    if ($responseJson === false) {
+        echo json_encode(['success' => false, 'error' => 'JSON encode failed: ' . json_last_error_msg()]);
+    } else {
+        echo $responseJson;
+    }
 
 } catch (Exception $e) {
     // Log failure omitted for pure background imports

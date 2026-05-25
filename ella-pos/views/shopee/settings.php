@@ -174,8 +174,7 @@ $authShopId  = $_GET['shop_id'] ?? '';
                     <div class="d-flex align-items-center justify-content-between mt-4">
                         <div>
                             <div class="fw-bold">Out-of-Stock Alerts</div>
-                            <div class="small text-secondary">Show notifications when a Shopee item fully runs out of stock</div>
-                            <button class="btn btn-sm btn-outline-danger mt-2" onclick="testOosAlert()">Test Alert</button>
+                            <div class="small text-secondary mt-1">If enabled, a popup alert will appear across the POS whenever a Shopee item goes out of stock.</div>
                         </div>
                         <label class="sp-toggle"><input type="checkbox" id="oosAlerts" checked><span class="sp-toggle-slider"></span></label>
                     </div>
@@ -351,14 +350,6 @@ function toggleKeyVisibility() {
 }
 
 // ── Save Credentials ──
-// Add temporary test alert function
-function testOosAlert() {
-    if (typeof EllaToast !== 'undefined') {
-        EllaToast.error("🚨 SHOPEE OOS ALERT: 'KYT TT Course Helmet (Matte Black)' has run completely out of stock online! Please restock soon.");
-    } else {
-        alert("🚨 SHOPEE OOS ALERT: 'KYT TT Course Helmet (Matte Black)' has run completely out of stock online! Please restock soon.");
-    }
-}
 
 async function saveCredentials() {
     const partnerId  = document.getElementById('partnerId').value.trim();
