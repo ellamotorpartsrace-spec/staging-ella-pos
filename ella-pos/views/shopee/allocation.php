@@ -469,9 +469,11 @@ $totalUnmapped = count($unmappedRows);
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-uppercase text-secondary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;"><i class="fa-solid fa-bolt text-warning me-1"></i>Quick Splits:</span>
                                 <div class="d-flex gap-2" style="gap: 6px;">
+                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--shopee-light); color: var(--shopee-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(0)">0%</button>
+                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--shopee-light); color: var(--shopee-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(10)">10%</button>
                                     <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--shopee-light); color: var(--shopee-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(25)">25%</button>
                                     <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--shopee-light); color: var(--shopee-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(50)">50%</button>
-                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--shopee-light); color: var(--shopee-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(100)">100%</button>
+                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--shopee-light); color: var(--shopee-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(75)">75%</button>
                                 </div>
                             </div>
                             <div class="text-secondary d-flex align-items-center bg-light px-3 py-1 rounded-pill border" style="font-size: 0.75rem; font-weight: 500;">
