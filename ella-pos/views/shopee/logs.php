@@ -228,7 +228,7 @@ require_once '../../includes/sidebar.php';
             <p class="sp-subtitle mb-0">Track every stock update, product sync, mapping change, and system event</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-danger" onclick="clearLogHistory()"><i class="fa-solid fa-trash me-2"></i>Clear History</button>
+            <!-- Clear History button removed -->
         </div>
     </div>
 
@@ -564,32 +564,6 @@ function renderLogs() {
 
 document.addEventListener('DOMContentLoaded', renderLogs);
 
-async function clearLogHistory() {
-    if (!confirm("Are you sure you want to clear all sync logs history? This action cannot be undone.")) return;
-    
-    try {
-        const res = await fetch(window.BASE_URL + 'api/shopee/clear_logs.php', {
-            method: 'POST'
-        });
-        const data = await res.json();
-        if (data.success) {
-            if (typeof EllaToast !== 'undefined') {
-                EllaToast.success('Sync history cleared successfully');
-            } else {
-                alert('Sync history cleared successfully');
-            }
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            throw new Error(data.error || 'Failed to clear history');
-        }
-    } catch(err) {
-        if (typeof EllaToast !== 'undefined') {
-            EllaToast.error(err.message);
-        } else {
-            alert(err.message);
-        }
-    }
-}
 </script>
 
 <script src="../../views/shopee/shopee_alerts.js"></script>

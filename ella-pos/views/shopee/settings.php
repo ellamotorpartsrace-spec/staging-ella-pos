@@ -221,8 +221,11 @@ $authShopId  = $_GET['shop_id'] ?? '';
                         <span class="small text-secondary">Environment</span>
                         <span class="sp-badge" id="tokenEnvBadge">—</span>
                     </div>
-                    <button class="btn btn-outline-shopee w-100" onclick="refreshTokens(this)">
+                    <button class="btn btn-outline-shopee w-100 mb-2" onclick="refreshTokens(this)">
                         <i class="fa-solid fa-rotate me-2"></i>Refresh Tokens
+                    </button>
+                    <button class="btn btn-warning w-100" onclick="testExpiryPopup()">
+                        <i class="fa-solid fa-flask me-2"></i>Test Expiry Popup
                     </button>
                 </div>
             </div>
@@ -264,16 +267,17 @@ $authShopId  = $_GET['shop_id'] ?? '';
                 </div>
             </div>
 
-            <!-- Danger Zone: Reset Integration -->
+            <!-- Danger Zone: Reset Integration (PROHIBITED) -->
             <div class="sp-card border-danger mt-4" id="resetCard" style="display:none">
                 <div class="sp-card-header bg-danger-light" style="border-bottom:1px solid rgba(220,53,69,0.1)">
                     <h5 class="text-danger mb-0"><i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone</h5>
                 </div>
-                <div class="sp-card-body">
-                    <p class="small text-secondary mb-3">Wipe all cached Shopee products, variants, logs, allocations, and mapping records. This does <strong>NOT</strong> delete your API credentials. You can start completely fresh from scratch!</p>
-                    <button class="btn btn-outline-danger w-100" onclick="resetIntegrationData()" id="btnResetData">
-                        <i class="fa-solid fa-trash-can me-2"></i>Reset & Start Fresh
-                    </button>
+                <div class="sp-card-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fa-solid fa-lock text-danger" style="font-size: 2rem;"></i>
+                    </div>
+                    <h6 class="fw-bold text-danger">Action Prohibited</h6>
+                    <p class="small text-secondary mb-0">The ability to completely wipe and reset the integration data has been permanently disabled by the system administrator to prevent accidental data loss.</p>
                 </div>
             </div>
         </div>
@@ -727,6 +731,26 @@ async function resetIntegrationData() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Reset & Start Fresh';
+    }
+}
+
+function testExpiryPopup() {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Shopee Token Expired',
+            text: 'Your Shopee connection token has expired. You must refresh it to continue syncing.',
+            confirmButtonText: 'Go to Settings',
+            confirmButtonColor: '#ee4d2d',
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire('Redirect Simulated!', 'If you were on another page, you would have been redirected here to click "Refresh Tokens".', 'info');
+            }
+        });
+    } else {
+        alert('Your Shopee connection token has expired. Redirecting to Settings...');
     }
 }
 

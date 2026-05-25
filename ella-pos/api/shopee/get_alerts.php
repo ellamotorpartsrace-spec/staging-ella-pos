@@ -18,7 +18,15 @@ try {
     $stmt->execute();
     $alerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo json_encode(['success' => true, 'alerts' => $alerts]);
+    // Check if token is expired
+    $tokenExpired = false;
+    $cfgStmt = $conn->query("SELECT token_expires_at FROM shopee_config WHERE is_active=1 LIMIT 1");
+    $cfg = $cfgStmt->fetch(PDO::FETCH_ASSOC);
+    if ($cfg && !empty($cfg['token_expires_at']) && strtotime($cfg['token_expires_at']) < time()) {
+        $tokenExpired = true;
+    }
+
+    echo json_encode(['success' => true, 'alerts' => $alerts, 'token_expired' => $tokenExpired]);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
