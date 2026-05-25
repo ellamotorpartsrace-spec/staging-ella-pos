@@ -63,8 +63,8 @@ try {
     }
 
     // Deduct from online inventory
-    $deductStmt = $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 2");
-    $deductStmt->execute([$quantity, $variationId]);
+    $deductStmt = $conn->prepare("INSERT INTO inventory (variation_id, store_id, quantity) VALUES (?, 2, -?) ON DUPLICATE KEY UPDATE quantity = quantity - VALUES(quantity)");
+    $deductStmt->execute([$variationId, $quantity]);
 
     $newStock = $currentOnlineStock - $quantity;
 

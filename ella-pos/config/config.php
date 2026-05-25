@@ -5,17 +5,25 @@ declare(strict_types=1);
 /* ==============================================
    1. SESSION SETTINGS
    ============================================== */
+// Robust Environment Detection (Consolidated)
+if (php_sapi_name() === 'cli') {
+    $isLocal = (DIRECTORY_SEPARATOR === '\\');
+    $host = 'localhost';
+} else {
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $hOnly = explode(':', $host)[0];
+    $isLocal = in_array($hOnly, ['localhost', '127.0.0.1', '::1']) || str_ends_with($hOnly, '.test') || str_contains($hOnly, 'ngrok');
+}
+
 // Configure session cookie parameters BEFORE starting session
 if (session_status() === PHP_SESSION_NONE) {
-    $h = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $isLocal = in_array($h, ['localhost', '127.0.0.1', '::1']) || str_ends_with($h, '.test');
-
+    // Production Tip: If hosted at the root of a domain, use '/' for path. 
     // Set session cookie parameters to ensure cookies work across all pages and API endpoints
     session_set_cookie_params([
         'lifetime' => 0,           // Session cookie (expires when browser closes)
-        'path'     => '/ella-pos/',    // Make cookie available across entire application
-        'domain'   => '',            // Current domain
-        'secure'   => !$isLocal,      // HTTPS only on production (false for local XAMPP)
+        'path' => $isLocal ? '/ella-pos/' : '/', 
+        'domain' => '',            // Current domain
+        'secure' => !$isLocal,      // HTTPS only on production (false for local XAMPP)
         'httponly' => true,        // Prevent JavaScript access
         'samesite' => 'Lax'        // CSRF protection while allowing navigation
     ]);
@@ -29,9 +37,6 @@ if (session_status() === PHP_SESSION_NONE) {
 date_default_timezone_set('Asia/Manila');
 
 // Error Reporting: Show everything during development
-$h = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$isLocal = in_array($h, ['localhost', '127.0.0.1', '::1']) || str_ends_with($h, '.test');
-
 if ($isLocal) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
@@ -47,8 +52,8 @@ error_reporting(E_ALL);
 // Auto-detect the Root URL from the server's host
 // This allows the app to work from localhost, IP address, or any hostname
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-define('BASE_URL', $protocol . '://' . $host . '/ella-pos/');
+$basePath = $isLocal ? '/ella-pos/' : '/';
+define('BASE_URL', $protocol . '://' . $host . $basePath);
 
 // Define Root Directory (Useful for file includes)
 define('ROOT_PATH', dirname(__DIR__) . '/');

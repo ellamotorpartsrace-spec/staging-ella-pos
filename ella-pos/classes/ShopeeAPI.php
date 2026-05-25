@@ -98,6 +98,8 @@ class ShopeeAPI {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         
         $response = curl_exec($ch);
         $error = curl_error($ch);
@@ -108,6 +110,61 @@ class ShopeeAPI {
         }
 
         return json_decode($response, true) ?? [];
+    }
+
+    /**
+     * Generic GET request handler for multiple concurrent requests (cURL Multi).
+     */
+    public function getMulti(string $api_path, array $queryParamsList, string $access_token, string $shop_id): array {
+        $mh = curl_multi_init();
+        $ch_list = [];
+        $results = [];
+
+        foreach ($queryParamsList as $index => $queryParams) {
+            $timestamp = time();
+            $sign = $this->generateSignature($api_path, $timestamp, $access_token, $shop_id);
+            
+            $baseParams = [
+                'partner_id' => $this->partner_id,
+                'timestamp'  => $timestamp,
+                'access_token' => $access_token,
+                'shop_id'    => $shop_id,
+                'sign'       => $sign
+            ];
+
+            $url = $this->base_url . $api_path . '?' . http_build_query(array_merge($baseParams, $queryParams));
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_multi_add_handle($mh, $ch);
+            $ch_list[$index] = $ch;
+        }
+
+        $active = null;
+        do {
+            $mrc = curl_multi_exec($mh, $active);
+        } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+
+        while ($active && $mrc == CURLM_OK) {
+            if (curl_multi_select($mh) == -1) {
+                usleep(100);
+            }
+            do {
+                $mrc = curl_multi_exec($mh, $active);
+            } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+        }
+
+        foreach ($ch_list as $index => $ch) {
+            $response = curl_multi_getcontent($ch);
+            $results[$index] = json_decode($response, true) ?? [];
+            curl_multi_remove_handle($mh, $ch);
+        }
+
+        curl_multi_close($mh);
+        return $results;
     }
 
     /**
@@ -148,6 +205,8 @@ class ShopeeAPI {
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         
         $response = curl_exec($ch);
         $error = curl_error($ch);

@@ -15,13 +15,14 @@ class Database
     public function __construct()
     {
         // Detect Environment
-        $h = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        // Assume anything on localhost, 127.0.0.1, or private network IPs is local
-        $isLocal = in_array($h, ['localhost', '127.0.0.1', '::1'])
-            || str_ends_with($h, '.test')
-            || str_starts_with($h, '192.168.')
-            || str_starts_with($h, '10.')
-            || str_starts_with($h, '172.');
+        if (php_sapi_name() === 'cli') {
+            // Use DIRECTORY_SEPARATOR to detect local (Windows \) vs production (Linux /)
+            $isLocal = (DIRECTORY_SEPARATOR === '\\');
+        } else {
+            $h = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $hOnly = explode(':', $h)[0];
+            $isLocal = in_array($hOnly, ['localhost', '127.0.0.1', '::1']) || str_ends_with($hOnly, '.test') || str_contains($hOnly, 'ngrok');
+        }
 
         if ($isLocal) {
             // --- LOCAL SETTINGS (XAMPP) ---
@@ -58,15 +59,18 @@ class Database
             $this->_x();
 
         } catch (PDOException $e) {
-            // On production, we don't want to show the full error for security
-            $h = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $isLocal = in_array($h, ['localhost', '127.0.0.1', '::1']) || str_ends_with($h, '.test');
+            if (php_sapi_name() === 'cli') {
+                $isLocal = (DIRECTORY_SEPARATOR === '\\');
+            } else {
+                $h = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $isLocal = in_array($h, ['localhost', '127.0.0.1', '::1']) || str_ends_with($h, '.test') || str_contains($h, 'ngrok');
+            }
 
             if ($isLocal) {
                 throw new Exception("Connection failed: " . $e->getMessage());
             } else {
                 error_log("Database Error: " . $e->getMessage());
-                die("A database error occurred. Please contact the administrator.");
+                die("DB ERROR: " . $e->getMessage());
             }
         }
         return $this->conn;
