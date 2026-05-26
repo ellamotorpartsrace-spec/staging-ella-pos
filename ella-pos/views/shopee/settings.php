@@ -746,11 +746,13 @@ function testExpiryPopup() {
             allowEscapeKey: false
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire('Redirect Simulated!', 'If you were on another page, you would have been redirected here to click "Refresh Tokens".', 'info');
+                // Actually redirect so the user can test the experience
+                window.location.href = `${window.BASE_URL || '/'}views/shopee/settings.php`;
             }
         });
     } else {
         alert('Your Shopee connection token has expired. Redirecting to Settings...');
+        window.location.href = `${window.BASE_URL || '/'}views/shopee/settings.php`;
     }
 }
 
