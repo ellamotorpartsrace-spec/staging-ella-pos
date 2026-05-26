@@ -21,6 +21,41 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
 .map-item.selected { box-shadow:0 0 0 2px rgba(238,77,45,.2); }
 .filter-count { display:inline-flex;align-items:center;justify-content:center;min-width:1.3rem;height:1.3rem;padding:0 4px;margin-left:4px;font-size:0.65rem;font-weight:700;border-radius:20px;background:rgba(0,0,0,0.12);color:inherit;vertical-align:middle;line-height:1; }
 .sp-pill.active .filter-count { background:rgba(255,255,255,0.3); }
+    /* Popover Custom Styling */
+    .shopee-popover {
+        --bs-popover-max-width: 320px;
+        --bs-popover-border-color: rgba(238, 77, 45, 0.3);
+        --bs-popover-header-bg: #ee4d2d;
+        --bs-popover-header-color: #fff;
+        --bs-popover-body-padding-x: 1.25rem;
+        --bs-popover-body-padding-y: 1.25rem;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(238, 77, 45, 0.15);
+        border: 1px solid var(--bs-popover-border-color);
+    }
+    .shopee-popover .popover-header {
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-bottom: none;
+        border-top-left-radius: 9px;
+        border-top-right-radius: 9px;
+        text-align: center;
+        letter-spacing: 0.5px;
+    }
+    .shopee-popover .popover-body {
+        background-color: #fff;
+        color: #333;
+        font-size: 0.95rem;
+        border-bottom-left-radius: 9px;
+        border-bottom-right-radius: 9px;
+    }
+    .shopee-popover .popover-arrow::before {
+        border-top-color: rgba(238, 77, 45, 0.3);
+    }
+    .shopee-popover .popover-arrow::after {
+        border-top-color: #fff;
+    }
+
 </style>
 
 <div class="sp-page sp-animate">
@@ -479,7 +514,8 @@ function renderTable(){
         if (isSimple) {
             const v = vars[0];
             if (v) {
-                const posSku = v.matchedPosSku || (v.posId ? (POS_ITEMS.find(p=>p.id===v.posId)?.sku || '') : '');
+                const posItem = v.posId ? POS_ITEMS.find(p=>p.id===v.posId) : null;
+                const posSku = v.matchedPosSku || (posItem ? posItem.sku : '');
                 let statusBadge='';
                 switch(v.mapStatus){
                     case 'auto':        statusBadge=`<span class="sp-badge sp-badge-success"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto</span>`;break;
@@ -490,7 +526,15 @@ function renderTable(){
                     default:            statusBadge=`<span class="sp-badge sp-badge-neutral">${escHtml(v.mapStatus)}</span>`;
                 }
                 const posCell=posSku?`<span class="sp-badge sp-badge-success">${escHtml(posSku)}</span>`:`<span class="text-secondary">—</span>`;
-                const linkIcon=v.mapped?`<i class="fa-solid fa-link text-shopee"></i>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
+                let linkPopover = '';
+                if (v.mapped && posItem) {
+                    const safeName = escHtml(posItem.product_name);
+                    const safeVar = posItem.variation_name ? escHtml(posItem.variation_name) : '';
+                    let popContent = safeVar ? `${safeName} <br><span class='text-shopee small fw-bold'>(${safeVar})</span>` : safeName;
+                    popContent = popContent.replace(/"/g, '&quot;');
+                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="click" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
+                }
+                const linkIcon=v.mapped?`<a role="button" tabindex="0" class="text-shopee text-decoration-none" style="cursor:pointer;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-shopee" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
@@ -566,7 +610,15 @@ function renderTable(){
                     default:            statusBadge=`<span class="sp-badge sp-badge-neutral">${escHtml(v.mapStatus)}</span>`;
                 }
                 const posCell=pos?`<span class="sp-badge sp-badge-success">${escHtml(pos.sku)}</span>`:`<span class="text-secondary">—</span>`;
-                const linkIcon=v.mapped?`<i class="fa-solid fa-link text-shopee"></i>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
+                let linkPopover = '';
+                if (v.mapped && pos) {
+                    const safeName = escHtml(pos.product_name);
+                    const safeVar = pos.variation_name ? escHtml(pos.variation_name) : '';
+                    let popContent = safeVar ? `${safeName} <br><span class='text-shopee small fw-bold'>(${safeVar})</span>` : safeName;
+                    popContent = popContent.replace(/"/g, '&quot;');
+                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="click" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
+                }
+                const linkIcon=v.mapped?`<a role="button" tabindex="0" class="text-shopee text-decoration-none" style="cursor:pointer;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-shopee" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
@@ -598,6 +650,20 @@ function renderTable(){
         }
     });
 
+    // Destroy old popovers and tooltips
+    if (typeof bootstrap !== 'undefined') {
+        const oldPopovers = [].slice.call(document.querySelectorAll('#mapTableBody [data-bs-toggle="popover"]'));
+        oldPopovers.forEach(el => {
+            const instance = bootstrap.Popover.getInstance(el);
+            if (instance) instance.dispose();
+        });
+        const oldTooltips = [].slice.call(document.querySelectorAll('#mapTableBody [data-bs-toggle="tooltip"]'));
+        oldTooltips.forEach(el => {
+            const instance = bootstrap.Tooltip.getInstance(el);
+            if (instance) instance.dispose();
+        });
+    }
+
     if(!totalItems){
         body.innerHTML=`<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-filter d-block"></i><h5>No items match this filter</h5></div></td></tr>`;
         document.getElementById('paginationStatus').textContent = 'Page 1 of 1 (0 items)';
@@ -609,6 +675,14 @@ function renderTable(){
 
     document.getElementById('paginationStatus').textContent = `Page ${currentPage} of ${totalPages} (${totalItems} products)`;
     renderPaginationButtons(totalItems, totalPages);
+
+    // Initialize popovers
+    if (typeof bootstrap !== 'undefined') {
+        const popoverTriggerList = [].slice.call(document.querySelectorAll('#mapTableBody [data-bs-toggle="popover"]'));
+        popoverTriggerList.map(function (popoverTriggerEl) {
+            return new bootstrap.Popover(popoverTriggerEl, { html: true });
+        });
+    }
 }
 
 function renderPaginationButtons(totalItems, totalPages) {
@@ -955,6 +1029,8 @@ function toggleGroup(itemId, btn) {
         rows.forEach(r => r.classList.add('collapsed'));
     }
 }
+
+
 
 
 

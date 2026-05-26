@@ -72,7 +72,7 @@ if (!function_exists('propagateStockToPos')) {
                 $movementStmt = $conn->prepare("
                     INSERT INTO stock_movements 
                     (variation_id, store_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
-                    VALUES (?, 2, 'allocation_adjustment', ?, ?, ?, ?, 'Shopee Sync (Stock Change from Shopee)', ?, ?)
+                    VALUES (?, 2, 'shopee_sale', ?, ?, ?, ?, 'Shopee Sync (Stock Change from Shopee)', ?, ?)
                 ");
                 $ref = 'SHP-SYNC-' . date('YmdHis') . '-' . rand(100, 999);
                 $movementStmt->execute([

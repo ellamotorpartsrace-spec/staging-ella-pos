@@ -141,7 +141,9 @@ try {
         }
 
         // Log Online Shop changes
+        // Per user request, do not register 2 movements. We only log the Physical POS change.
         $onlineDiff = $newOnlineStock - $posOnlineQty;
+        /*
         if ($onlineDiff != 0) {
             $movementStmt->execute([
                 $item['pos_product_id'],
@@ -154,6 +156,7 @@ try {
                 $capital_cost
             ]);
         }
+        */
     }
     
     // 4. Prepare Shopee API call — send the individual listing's stock (not the total) minus buffer

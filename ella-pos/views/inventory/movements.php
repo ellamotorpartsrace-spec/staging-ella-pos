@@ -26,6 +26,7 @@ $date_to = $_GET['date_to'] ?? '';
 $sql = "
     SELECT 
         sm.movement_id,
+        sm.store_id,
         sm.type,
         sm.quantity,
         sm.previous_stock,
@@ -33,7 +34,6 @@ $sql = "
         sm.reference,
         sm.remarks,
         sm.created_at,
-        sm.status,
         pv.variation_name,
         pv.barcode,
         p.product_name,
@@ -105,7 +105,9 @@ $type_config = [
     'allocation_to_online' => ['label' => 'Alloc to Online', 'icon' => 'fa-globe', 'color' => 'info', 'bg' => 'bg-info'],
     'allocation_to_physical' => ['label' => 'Alloc to Physical', 'icon' => 'fa-shop', 'color' => 'dark', 'bg' => 'bg-dark'],
     'online_sale' => ['label' => 'Online Sale', 'icon' => 'fa-cloud-arrow-down', 'color' => 'primary', 'bg' => 'bg-primary'],
-    'online_adjustment' => ['label' => 'Online Adjust', 'icon' => 'fa-cloud', 'color' => 'warning', 'bg' => 'bg-warning']
+    'online_adjustment' => ['label' => 'Online Adjust', 'icon' => 'fa-cloud', 'color' => 'warning', 'bg' => 'bg-warning'],
+    'shopee_sale' => ['label' => 'Shopee Sale', 'icon' => 'fa-shopping-bag', 'color' => 'shopee', 'bg' => 'bg-shopee'],
+    'allocation_adjustment' => ['label' => 'Shopee Allocation', 'icon' => 'fa-shopping-bag', 'color' => 'shopee', 'bg' => 'bg-shopee']
 ];
 ?>
 
@@ -157,6 +159,10 @@ $type_config = [
         border-left-color: var(--bs-warning);
     }
 
+    .movement-card.type-allocation_adjustment {
+        border-left-color: #ee4d2d; /* Shopee orange */
+    }
+
     .qty-badge {
         font-size: 1.1rem;
         min-width: 60px;
@@ -196,6 +202,9 @@ $type_config = [
     .stat-card:hover {
         transform: scale(1.02);
     }
+    /* Shopee Badge colors */
+    .bg-shopee { background-color: rgba(238, 77, 45, 0.1) !important; }
+    .text-shopee { color: #ee4d2d !important; }
 </style>
 
 <div class="container-fluid p-3 p-lg-4">
@@ -319,13 +328,13 @@ $type_config = [
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th class="ps-4">Date & Time</th>
-                            <th>Product</th>
-                            <th>Type</th>
-                            <th class="text-center">Qty Change</th>
-                            <th class="text-center">Stock Level</th>
-                            <th>Reference</th>
-                            <th>By</th>
+                            <th class="ps-4" style="width: 10%;">Date & Time</th>
+                            <th style="width: 42%;">Product</th>
+                            <th style="width: 11%;">Type</th>
+                            <th class="text-center" style="width: 9%;">Qty Change</th>
+                            <th class="text-center" style="width: 8%;">Stock Level</th>
+                            <th style="width: 15%;">Reference</th>
+                            <th style="width: 5%;">By</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -354,7 +363,7 @@ $type_config = [
                                         <div class="fw-bold text-dark <?= $isVoided ? 'text-decoration-line-through' : '' ?>">
                                             <?= htmlspecialchars($row['product_name']) ?>
                                             <?php if ($isVoided): ?>
-                                                <span class="badge bg-danger small ms-2" style="font-size: 0.65rem;">VOIDED</span>
+                                                <span class="badge bg-danger small ms-1" style="font-size: 0.65rem;">VOIDED</span>
                                             <?php endif; ?>
                                         </div>
                                         <small class="text-muted">
@@ -364,7 +373,7 @@ $type_config = [
                                     </td>
                                     <td>
                                         <span class="badge <?= $cfg['bg'] ?> bg-opacity-10 text-<?= $cfg['color'] ?>">
-                                            <i class="fa-solid <?= $cfg['icon'] ?> me-1"></i><?= $cfg['label'] ?>
+                                            <i class="<?= strpos($cfg['icon'], 'fa-') === 0 && strpos($cfg['icon'], ' ') === false ? 'fa-solid ' . $cfg['icon'] : $cfg['icon'] ?> me-1"></i><?= $cfg['label'] ?>
                                         </span>
                                     </td>
                                     <td class="text-center">
@@ -377,15 +386,15 @@ $type_config = [
                                         <i class="fa-solid fa-arrow-right mx-1 text-muted"></i>
                                         <span class="fw-bold"><?= $row['new_stock'] ?></span>
                                     </td>
-                                    <td>
+                                    <td class="align-middle text-break">
                                         <?php if ($row['reference']): ?>
                                             <a href="reference.php?ref=<?= urlencode($row['reference']) ?>&from=movements"
                                                 class="text-decoration-none fw-bold">
-                                                <code class="small text-primary"><?= htmlspecialchars($row['reference']) ?></code>
+                                                <code class="small text-primary" style="white-space: normal; word-break: break-all;"><?= htmlspecialchars($row['reference']) ?></code>
                                             </a>
                                             <?php if ($row['attachment_count'] > 0): ?>
                                                 <a href="javascript:void(0)"
-                                                    onclick="viewAttachment('<?= $row['all_images_data'] ?>', '<?= htmlspecialchars($row['reference']) ?>')"
+                                                    onclick="viewAttachment('<?= $row['all_images_data'] ?>', '<?= htmlspecialchars($row['reference'], ENT_QUOTES) ?>')"
                                                     class="text-primary text-decoration-none small d-block mt-1">
                                                     <i class="fa-solid fa-paperclip me-1"></i>View Receipt
                                                     <?php if ($row['attachment_count'] > 1): ?>
@@ -395,7 +404,7 @@ $type_config = [
                                                 </a>
                                             <?php else: ?>
                                                 <button class="btn btn-sm btn-link p-0 text-decoration-none mt-1 d-block"
-                                                    onclick="openRetroUpload(<?= $row['movement_id'] ?>, '<?= htmlspecialchars($row['reference']) ?>')">
+                                                    onclick="openRetroUpload(<?= $row['movement_id'] ?>, '<?= htmlspecialchars($row['reference'], ENT_QUOTES) ?>')">
                                                     <i class="fa-solid fa-cloud-arrow-up"></i> Add Photo
                                                 </button>
                                             <?php endif; ?>
@@ -414,8 +423,15 @@ $type_config = [
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <small
-                                            class="text-muted"><?= htmlspecialchars($row['created_by_name'] ?? 'System') ?></small>
+                                        <small class="text-muted">
+                                            <?php 
+                                            if (strpos($row['reference'] ?? '', 'SHP-SYNC-') === 0) {
+                                                echo '<i class="fa-solid fa-shopping-bag text-shopee me-1"></i>Shopee';
+                                            } else {
+                                                echo htmlspecialchars($row['created_by_name'] ?? 'System');
+                                            }
+                                            ?>
+                                        </small>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -474,7 +490,7 @@ $type_config = [
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <span class="badge <?= $cfg['bg'] ?> bg-opacity-10 text-<?= $cfg['color'] ?> me-2">
-                                            <i class="fa-solid <?= $cfg['icon'] ?> me-1"></i><?= $cfg['label'] ?>
+                                            <i class="<?= strpos($cfg['icon'], 'fa-') === 0 && strpos($cfg['icon'], ' ') === false ? 'fa-solid ' . $cfg['icon'] : $cfg['icon'] ?> me-1"></i><?= $cfg['label'] ?>
                                         </span>
                                         <small class="text-muted">
                                             <?= $row['previous_stock'] ?> → <strong><?= $row['new_stock'] ?></strong>
@@ -498,7 +514,7 @@ $type_config = [
                                                     </a>
                                                     <?php if ($row['attachment_count'] == 0): ?>
                                                         <button class="btn btn-sm btn-link p-0 text-decoration-none ms-2"
-                                                            onclick="openRetroUpload(<?= $row['movement_id'] ?>, '<?= htmlspecialchars($row['reference']) ?>')">
+                                                            onclick="openRetroUpload(<?= $row['movement_id'] ?>, '<?= htmlspecialchars($row['reference'], ENT_QUOTES) ?>')">
                                                             <i class="fa-solid fa-cloud-arrow-up"></i> Add Photo
                                                         </button>
                                                     <?php endif; ?>
@@ -515,7 +531,7 @@ $type_config = [
                                             </div>
                                             <?php if ($row['attachment_count'] > 0): ?>
                                                 <a href="javascript:void(0)"
-                                                    onclick="viewAttachment('<?= $row['all_images_data'] ?>', '<?= htmlspecialchars($row['reference']) ?>')"
+                                                    onclick="viewAttachment('<?= $row['all_images_data'] ?>', '<?= htmlspecialchars($row['reference'], ENT_QUOTES) ?>')"
                                                     class="text-primary text-decoration-none small d-block mt-1">
                                                     <i class="fa-solid fa-paperclip me-1"></i>View Receipt
                                                     <?php if ($row['attachment_count'] > 1): ?>

@@ -188,8 +188,12 @@ $history = $stmtHist->fetchAll();
                                         </td>
 
                                         <td class="text-end pe-4 small">
-                                            <i class="fa-solid fa-user-circle text-secondary"></i>
-                                            <?= htmlspecialchars($row['username']) ?>
+                                            <?php if (strpos($row['reference'] ?? '', 'SHP-SYNC-') === 0): ?>
+                                                <i class="fa-solid fa-shopping-bag text-shopee me-1"></i>Shopee
+                                            <?php else: ?>
+                                                <i class="fa-solid fa-user-circle text-secondary"></i>
+                                                <?= htmlspecialchars($row['username'] ?? 'System') ?>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

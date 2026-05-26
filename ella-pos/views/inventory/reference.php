@@ -70,9 +70,15 @@ $sqlLogs = "
     WHERE sm.reference = ?
     ORDER BY log.adjusted_at DESC
 ";
-$stmtLogs = $conn->prepare($sqlLogs);
-$stmtLogs->execute([$ref]);
-$adjLogs = $stmtLogs->fetchAll(PDO::FETCH_ASSOC);
+$adjLogs = [];
+try {
+    $stmtLogs = $conn->prepare($sqlLogs);
+    $stmtLogs->execute([$ref]);
+    $adjLogs = $stmtLogs->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // If table doesn't exist or other error, just leave $adjLogs empty
+    // Error: $e->getMessage()
+}
 
 // 4. Fetch Capital Price History for all variations in this reference
 $variationIds = array_unique(array_column($items, 'variation_id'));
