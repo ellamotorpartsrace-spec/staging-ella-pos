@@ -114,6 +114,13 @@ try {
                 $updCache = $conn->prepare("UPDATE shopee_product_mappings SET shopee_stock = ?, shopee_price = ?, last_synced_at = NOW(), updated_at = NOW() WHERE id = ?");
                 $updCache->execute([$allocatedStock, $livePrice, $mapId]);
 
+                // Create OOS alert if stock hit 0 and it wasn't 0 before
+                if ($allocatedStock == 0 && (int)$map['shopee_stock'] > 0 && isset($config['out_of_stock_alerts']) && (int)$config['out_of_stock_alerts'] === 1) {
+                    $alertMsg = "'{$prodName}' has run completely out of stock online! Please restock soon.";
+                    $conn->prepare("INSERT INTO shopee_alerts (mapping_id, message) VALUES (?, ?)")
+                         ->execute([$mapId, $alertMsg]);
+                }
+
                 // Propagate to POS
                 if (!empty($posProductId)) {
                     propagateStockToPos($conn, (int)$posProductId, $allocatedStock, $prodName, $skuVal, 1, $mapId);

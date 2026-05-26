@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Check token expiration first
                 if (data.token_expired) {
                     if (window.shopeeAlertInterval) clearInterval(window.shopeeAlertInterval);
-                    if (!window.location.href.includes('settings.php')) {
+                    if (!window.location.href.includes('views/shopee/settings.php')) {
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 icon: 'warning',
