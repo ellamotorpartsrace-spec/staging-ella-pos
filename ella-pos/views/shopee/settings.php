@@ -224,9 +224,6 @@ $authShopId  = $_GET['shop_id'] ?? '';
                     <button class="btn btn-outline-shopee w-100 mb-2" onclick="refreshTokens(this)">
                         <i class="fa-solid fa-rotate me-2"></i>Refresh Tokens
                     </button>
-                    <button class="btn btn-warning w-100" onclick="testExpiryPopup()">
-                        <i class="fa-solid fa-flask me-2"></i>Test Expiry Popup
-                    </button>
                 </div>
             </div>
 
@@ -731,28 +728,6 @@ async function resetIntegrationData() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Reset & Start Fresh';
-    }
-}
-
-function testExpiryPopup() {
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Shopee Token Expired',
-            text: 'Your Shopee connection token has expired. You must refresh it to continue syncing.',
-            confirmButtonText: 'Go to Settings',
-            confirmButtonColor: '#ee4d2d',
-            allowOutsideClick: false,
-            allowEscapeKey: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Actually redirect so the user can test the experience
-                window.location.href = `${window.BASE_URL || '/'}views/shopee/settings.php`;
-            }
-        });
-    } else {
-        alert('Your Shopee connection token has expired. Redirecting to Settings...');
-        window.location.href = `${window.BASE_URL || '/'}views/shopee/settings.php`;
     }
 }
 
