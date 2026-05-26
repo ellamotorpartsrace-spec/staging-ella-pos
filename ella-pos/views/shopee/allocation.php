@@ -921,7 +921,11 @@ function renderMapped(){
             if(allocFilter==='duplicate'&&!v.isDuplicate)return false;
             if(allocFilter==='low'&&v.status!=='low')return false;
             if(allocFilter==='unallocated'&&v.online!==0)return false;
-            if(allocFilter==='overallocated' && v.online <= v.total) return false;
+            let totalAlloc = v.online;
+            if (v.isDuplicate && v.dupDetails) {
+                totalAlloc += v.dupDetails.reduce((sum, d) => sum + d.online, 0);
+            }
+            if(allocFilter==='overallocated' && totalAlloc <= v.total) return false;
             return true;
         });
         if(vars.length > 0) {
@@ -963,10 +967,12 @@ function renderMapped(){
                 const rem = v.total - totalAllocated;
                 const availCls = available <= 0 ? 'text-danger fw-bold' : (available <= 5 ? 'text-warning fw-bold' : 'text-success fw-bold');
                 let badge = '';
-                if (v.online === 0) badge = `<span class="sp-badge sp-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
+                if (totalAllocated > v.total) badge = `<span class="sp-badge sp-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
+                else if (v.online === 0) badge = `<span class="sp-badge sp-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
                 else if (available <= 0) badge = `<span class="sp-badge sp-badge-danger"><i class="fa-solid fa-ban"></i> Sold Out</span>`;
                 else if (available <= 5) badge = `<span class="sp-badge sp-badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Low</span>`;
                 else badge = `<span class="sp-badge sp-badge-success"><i class="fa-solid fa-check"></i> OK</span>`;
+
 
                 const actualPct = v.total > 0 ? Math.floor((v.online / v.total) * 100) : 0;
                 const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
@@ -999,7 +1005,7 @@ function renderMapped(){
                         <span class="fw-bold text-shopee d-block">${v.online.toLocaleString()}</span>
                         <span class="text-secondary small font-normal" style="font-size:0.72rem;">(${actualPct}%)</span>
                     </td>
-                    <td class="text-center fw-bold text-success">${rem.toLocaleString()}</td>
+                    <td class="text-center fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</td>
                     <td>${badge}</td>
                     <td class="text-end">
                         <div class="d-flex align-items-center justify-content-end gap-2">
@@ -1046,10 +1052,12 @@ function renderMapped(){
                 const rem = v.total - totalAllocated;
                 const availCls = available <= 0 ? 'text-danger fw-bold' : (available <= 5 ? 'text-warning fw-bold' : 'text-success fw-bold');
                 let badge = '';
-                if (v.online === 0) badge = `<span class="sp-badge sp-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
+                if (totalAllocated > v.total) badge = `<span class="sp-badge sp-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
+                else if (v.online === 0) badge = `<span class="sp-badge sp-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
                 else if (available <= 0) badge = `<span class="sp-badge sp-badge-danger"><i class="fa-solid fa-ban"></i> Sold Out</span>`;
                 else if (available <= 5) badge = `<span class="sp-badge sp-badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Low</span>`;
                 else badge = `<span class="sp-badge sp-badge-success"><i class="fa-solid fa-check"></i> OK</span>`;
+
 
                 const vNameHtml = v.varName
                     ? `<span class="sp-var-name-text">${escHtml(v.varName)}</span>`
@@ -1077,7 +1085,7 @@ function renderMapped(){
                         <span class="fw-bold text-shopee d-block">${v.online.toLocaleString()}</span>
                         <span class="text-secondary small font-normal" style="font-size:0.72rem;">(${actualPct}%)</span>
                     </td>
-                    <td class="text-center fw-bold text-success">${rem.toLocaleString()}</td>
+                    <td class="text-center fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</td>
                     <td>${badge}</td>
                     <td class="text-end">
                         <div class="d-flex align-items-center justify-content-end gap-2">
@@ -1274,7 +1282,11 @@ function updateSummary(){
             unallocated++;
         } else {
             allocated++;
-            if (v.online > v.total) {
+            let totalAlloc = v.online;
+            if (v.isDuplicate && v.dupDetails) {
+                totalAlloc += v.dupDetails.reduce((sum, d) => sum + d.online, 0);
+            }
+            if (totalAlloc > v.total) {
                 overallocated++;
             }
             if (v.status === 'low') {
