@@ -106,7 +106,6 @@ $type_config = [
     'allocation_to_physical' => ['label' => 'Alloc to Physical', 'icon' => 'fa-shop', 'color' => 'dark', 'bg' => 'bg-dark'],
     'online_sale' => ['label' => 'Online Sale', 'icon' => 'fa-cloud-arrow-down', 'color' => 'primary', 'bg' => 'bg-primary'],
     'online_adjustment' => ['label' => 'Online Adjust', 'icon' => 'fa-cloud', 'color' => 'warning', 'bg' => 'bg-warning'],
-    'shopee_sale' => ['label' => 'Shopee Sale', 'icon' => 'fa-shopping-bag', 'color' => 'shopee', 'bg' => 'bg-shopee'],
     'allocation_adjustment' => ['label' => 'Shopee Allocation', 'icon' => 'fa-shopping-bag', 'color' => 'shopee', 'bg' => 'bg-shopee']
 ];
 ?>

@@ -54,6 +54,10 @@ if (!function_exists('propagateStockToPos')) {
             $prevStock = $prevStockRow !== false ? (int)$prevStockRow['quantity'] : 0;
 
             if ($prevStockRow === false || $prevStock !== $totalShopeeStock) {
+                // USER REQUEST: Do NOT override POS stock with Shopee stock.
+                // POS is the master source of truth. Shopee should not inject stock 
+                // or create random stock movements in the POS.
+                /*
                 // 2. Insert or update the online inventory
                 $updStore = $conn->prepare("
                     INSERT INTO inventory (variation_id, store_id, quantity) 
@@ -119,6 +123,7 @@ if (!function_exists('propagateStockToPos')) {
                     VALUES (?, 1, ?)
                     ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
                 ")->execute([$posProductId, $newPhysQty]);
+                */
             }
         } catch (Exception $e) {
             // Suppress error to avoid interrupting batch sync
