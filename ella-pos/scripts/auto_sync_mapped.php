@@ -67,7 +67,8 @@ try {
 
     foreach ($chunks as $idx => $chunk) {
         $chunkNum = $idx + 1;
-        echo "[Batch {$chunkNum}] Processing " . count($chunk) . " items...\n";
+        // Silenced to prevent massive cron logs on Hostinger:
+        // echo "[Batch {$chunkNum}] Processing " . count($chunk) . " items...\n";
         
         $placeholders = implode(',', array_fill(0, count($chunk), '?'));
         $mapStmt = $conn->prepare("SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, mapping_status, stock_allocation_ratio, shopee_stock, shopee_price FROM shopee_product_mappings WHERE id IN ($placeholders)");
@@ -127,7 +128,8 @@ try {
                 }
                 
                 $totalSuccess++;
-                echo " - [Success] ID {$mapId}: Allocated -> {$allocatedStock} (Live: {$liveStock}, Reserved: {$reservedQty})\n";
+                // Silenced to prevent massive cron logs on Hostinger:
+                // echo " - [Success] ID {$mapId}: Allocated -> {$allocatedStock} (Live: {$liveStock}, Reserved: {$reservedQty})\n";
             } catch (Exception $e) {
                 $totalFailed++;
                 echo " - [Error] ID {$mapId}: " . $e->getMessage() . "\n";

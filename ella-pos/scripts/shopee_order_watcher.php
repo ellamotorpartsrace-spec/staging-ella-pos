@@ -69,6 +69,14 @@ try {
 
         $res = $shopee->get('/api/v2/order/get_order_list', $params, $accessToken, $shopId);
         
+        // Ping database and reconnect if MySQL dropped the connection due to wait_timeout
+        try { 
+            $conn->query("SELECT 1"); 
+        } catch (Exception $e) { 
+            $db = new Database(); 
+            $conn = $db->getConnection(); 
+        }
+        
         if (isset($res['error']) && !empty($res['error'])) {
             throw new Exception("Get order list failed: " . ($res['message'] ?? json_encode($res['error'])));
         }
@@ -104,6 +112,14 @@ try {
             'order_sn_list' => implode(',', $chunk),
             'response_optional_fields' => 'item_list,buyer_username'
         ], $accessToken, $shopId);
+
+        // Ping database and reconnect if MySQL dropped the connection due to wait_timeout
+        try { 
+            $conn->query("SELECT 1"); 
+        } catch (Exception $e) { 
+            $db = new Database(); 
+            $conn = $db->getConnection(); 
+        }
 
         if (isset($detailRes['error']) && !empty($detailRes['error'])) {
             echo "[Order Watcher Warning] Failed to fetch order details for batch {$batchNum}: " . ($detailRes['message'] ?? json_encode($detailRes['error'])) . "\n";

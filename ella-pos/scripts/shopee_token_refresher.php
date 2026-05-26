@@ -35,7 +35,11 @@ function logMsg(string $msg): void {
 }
 
 // ── Lock File (prevent overlapping runs) ──────────────────────────────────────
-$lockFile = __DIR__ . '/../tmp/shopee_token_refresher.lock';
+$tmpDir = __DIR__ . '/../tmp';
+if (!is_dir($tmpDir)) {
+    @mkdir($tmpDir, 0755, true);
+}
+$lockFile = $tmpDir . '/shopee_token_refresher.lock';
 $lock = @fopen($lockFile, 'c');
 if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
     logMsg('Another instance is already running. Exiting.');
