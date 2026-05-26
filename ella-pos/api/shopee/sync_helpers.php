@@ -69,18 +69,26 @@ if (!function_exists('propagateStockToPos')) {
 
                 // 4. Log stock movement
                 $diff = $totalShopeeStock - $prevStock;
+                
+                // If diff is positive (e.g. initial mapping sync, or manual restock on Shopee), it's an allocation adjustment.
+                // If diff is negative, it's a Shopee sale (stock dropped on Shopee).
+                $movementType = ($diff < 0) ? 'shopee_sale' : 'allocation_adjustment';
+                $remarks = ($diff > 0 && $prevStock == 0) ? 'Initial Shopee Mapping Sync' : 'Shopee Sync (Stock Change from Shopee)';
+
                 $movementStmt = $conn->prepare("
                     INSERT INTO stock_movements 
                     (variation_id, store_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
-                    VALUES (?, 2, 'shopee_sale', ?, ?, ?, ?, 'Shopee Sync (Stock Change from Shopee)', ?, ?)
+                    VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $ref = 'SHP-SYNC-' . date('YmdHis') . '-' . rand(100, 999);
                 $movementStmt->execute([
                     $posProductId,
+                    $movementType,
                     $diff,
                     $prevStock,
                     $totalShopeeStock,
                     $ref,
+                    $remarks,
                     $userId,
                     $capitalCost
                 ]);
