@@ -3,6 +3,25 @@
  * api/shopee/sync_helpers.php — Centralized propagation functions Shopee -> POS
  */
 
+// Dynamically ensure shopee_alerts table exists (fixes missing table error on Hostinger)
+try {
+    global $conn;
+    if (isset($conn) && $conn instanceof PDO) {
+        $conn->exec("
+            CREATE TABLE IF NOT EXISTS shopee_alerts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                mapping_id INT NULL,
+                message TEXT NOT NULL,
+                alert_type VARCHAR(50) DEFAULT 'warning',
+                is_read TINYINT(1) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+    }
+} catch (Exception $e) {
+    // Ignore
+}
+
 if (!function_exists('propagateStockToPos')) {
     /**
      * Propagate stock updates from Shopee to POS online inventory (store_id = 2)

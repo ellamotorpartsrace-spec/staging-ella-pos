@@ -171,6 +171,19 @@ try {
             $prodName .= ' — ' . $item['shopee_variation_name'];
         }
         $alertMsg = "'{$prodName}' has run completely out of stock online! Please restock soon.";
+        
+        // Dynamically create the table if it's missing on Hostinger
+        $conn->exec("
+            CREATE TABLE IF NOT EXISTS shopee_alerts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                mapping_id INT NULL,
+                message TEXT NOT NULL,
+                alert_type VARCHAR(50) DEFAULT 'warning',
+                is_read TINYINT(1) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+
         $conn->prepare("INSERT INTO shopee_alerts (mapping_id, message) VALUES (?, ?)")
              ->execute([$id, $alertMsg]);
     }

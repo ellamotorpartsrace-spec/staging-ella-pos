@@ -423,13 +423,7 @@ $type_config = [
                                     </td>
                                     <td>
                                         <small class="text-muted">
-                                            <?php 
-                                            if (strpos($row['reference'] ?? '', 'SHP-SYNC-') === 0) {
-                                                echo '<i class="fa-solid fa-shopping-bag text-shopee me-1"></i>Shopee';
-                                            } else {
-                                                echo htmlspecialchars($row['created_by_name'] ?? 'System');
-                                            }
-                                            ?>
+                                            <?= htmlspecialchars($row['created_by_name'] ?? 'System') ?>
                                         </small>
                                     </td>
                                 </tr>

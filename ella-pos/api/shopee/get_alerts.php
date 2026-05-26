@@ -14,6 +14,18 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
+    // Dynamically create the table if it's missing on Hostinger
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS shopee_alerts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            mapping_id INT NULL,
+            message TEXT NOT NULL,
+            alert_type VARCHAR(50) DEFAULT 'warning',
+            is_read TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
     $stmt = $conn->prepare("SELECT id, message, alert_type, created_at FROM shopee_alerts WHERE is_read = 0 ORDER BY created_at ASC");
     $stmt->execute();
     $alerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
