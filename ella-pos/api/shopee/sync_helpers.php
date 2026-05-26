@@ -73,11 +73,11 @@ if (!function_exists('propagateStockToPos')) {
             $prevStock = $prevStockRow !== false ? (int)$prevStockRow['quantity'] : 0;
 
             if ($prevStockRow === false || $prevStock !== $totalShopeeStock) {
-                // USER REQUEST: Do NOT override POS stock with Shopee stock.
-                // POS is the master source of truth. Shopee should not inject stock 
-                // or create random stock movements in the POS.
-                /*
-                // 2. Insert or update the online inventory
+                // USER REQUEST:
+                // 1. Update POS Online Shop (store_id = 2) to reflect Shopee stock.
+                // 2. Do NOT touch Physical Store (store_id = 1).
+                // 3. Do NOT log any stock movements (no 'shopee_sale' or 'allocation_adjustment' from background syncs).
+
                 $updStore = $conn->prepare("
                     INSERT INTO inventory (variation_id, store_id, quantity) 
                     VALUES (?, 2, ?)
@@ -85,38 +85,8 @@ if (!function_exists('propagateStockToPos')) {
                 ");
                 $updStore->execute([$posProductId, $totalShopeeStock]);
 
-                // 3. Get capital cost from product_variations for movement logging
-                $stmtCap = $conn->prepare("SELECT price_capital FROM product_variations WHERE variation_id = ?");
-                $stmtCap->execute([$posProductId]);
-                $capitalCost = (float)($stmtCap->fetchColumn() ?? 0);
-
-                // 4. Log stock movement
-                $diff = $totalShopeeStock - $prevStock;
-                
-                // If diff is positive (e.g. initial mapping sync, or manual restock on Shopee), it's an allocation adjustment.
-                // If diff is negative, it's a Shopee sale (stock dropped on Shopee).
-                $movementType = ($diff < 0) ? 'shopee_sale' : 'allocation_adjustment';
-                $remarks = ($diff > 0 && $prevStock == 0) ? 'Initial Shopee Mapping Sync' : 'Shopee Sync (Stock Change from Shopee)';
-
-                $movementStmt = $conn->prepare("
-                    INSERT INTO stock_movements 
-                    (variation_id, store_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
-                    VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $ref = 'SHP-SYNC-' . date('YmdHis') . '-' . rand(100, 999);
-                $movementStmt->execute([
-                    $posProductId,
-                    $movementType,
-                    $diff,
-                    $prevStock,
-                    $totalShopeeStock,
-                    $ref,
-                    $remarks,
-                    $userId,
-                    $capitalCost
-                ]);
-
-                // 5. Fetch physical store stock (store_id = 1) to re-calculate the ratio dynamically
+                // Update the stock allocation ratio in mappings
+                // Fetch physical store stock (store_id = 1) just to calculate the ratio
                 $physStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
                 $physStmt->execute([$posProductId]);
                 $physQty = (int)($physStmt->fetchColumn() ?? 0);
@@ -124,7 +94,6 @@ if (!function_exists('propagateStockToPos')) {
                 $totalQty = $physQty + $prevStock;
                 $newRatio = $totalQty > 0 ? (int)round(($shopeeStock / $totalQty) * 100) : 100;
 
-                // Update the stock allocation ratio
                 if (!empty($mapId)) {
                     $conn->prepare("UPDATE shopee_product_mappings SET stock_allocation_ratio = ? WHERE id = ?")
                         ->execute([$newRatio, $mapId]);
@@ -133,16 +102,6 @@ if (!function_exists('propagateStockToPos')) {
                         ->execute([$newRatio, $posProductId]);
                 }
 
-                // Also update physical stock to keep total consistent.
-                // We intentionally allow this to become negative (overallocated) if the online stock
-                // exceeds the total POS stock, to ensure we never artificially inflate the overall total.
-                $newPhysQty = $totalQty - $totalShopeeStock;
-                $conn->prepare("
-                    INSERT INTO inventory (variation_id, store_id, quantity) 
-                    VALUES (?, 1, ?)
-                    ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
-                ")->execute([$posProductId, $newPhysQty]);
-                */
             }
         } catch (Exception $e) {
             // Suppress error to avoid interrupting batch sync
