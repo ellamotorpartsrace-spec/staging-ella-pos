@@ -75,7 +75,7 @@ if (!function_exists('propagateStockToPos')) {
             if ($prevStockRow === false || $prevStock !== $totalShopeeStock) {
                 // USER REQUEST:
                 // 1. Update POS Online Shop (store_id = 2) to reflect Shopee stock.
-                // 2. Do NOT touch Physical Store (store_id = 1).
+                // 2. Deduct from Physical Store (store_id = 1) so total POS stock stays exactly the same.
                 // 3. Do NOT log any stock movements (no 'shopee_sale' or 'allocation_adjustment' from background syncs).
 
                 $updStore = $conn->prepare("
@@ -85,15 +85,25 @@ if (!function_exists('propagateStockToPos')) {
                 ");
                 $updStore->execute([$posProductId, $totalShopeeStock]);
 
-                // Update the stock allocation ratio in mappings
-                // Fetch physical store stock (store_id = 1) just to calculate the ratio
+                // Fetch physical store stock (store_id = 1) to calculate total and deduct
                 $physStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
                 $physStmt->execute([$posProductId]);
                 $physQty = (int)($physStmt->fetchColumn() ?? 0);
                 
                 $totalQty = $physQty + $prevStock;
-                $newRatio = $totalQty > 0 ? (int)round(($shopeeStock / $totalQty) * 100) : 100;
+                
+                // Deduct from physical store to maintain total POS stock
+                $newPhysQty = $totalQty - $totalShopeeStock;
+                $updPhys = $conn->prepare("
+                    INSERT INTO inventory (variation_id, store_id, quantity) 
+                    VALUES (?, 1, ?)
+                    ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
+                ");
+                $updPhys->execute([$posProductId, $newPhysQty]);
 
+                $newRatio = $totalQty > 0 ? (int)round(($totalShopeeStock / $totalQty) * 100) : 100;
+
+                // Update the stock allocation ratio in mappings
                 if (!empty($mapId)) {
                     $conn->prepare("UPDATE shopee_product_mappings SET stock_allocation_ratio = ? WHERE id = ?")
                         ->execute([$newRatio, $mapId]);
@@ -101,7 +111,6 @@ if (!function_exists('propagateStockToPos')) {
                     $conn->prepare("UPDATE shopee_product_mappings SET stock_allocation_ratio = ? WHERE pos_product_id = ?")
                         ->execute([$newRatio, $posProductId]);
                 }
-
             }
         } catch (Exception $e) {
             // Suppress error to avoid interrupting batch sync

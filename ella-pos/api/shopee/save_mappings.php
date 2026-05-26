@@ -38,6 +38,10 @@ if ($trigger === 'auto_match') {
 try {
     $db = new Database();
     $conn = $db->getConnection();
+    
+    // Ensure table exists before beginning transaction to avoid implicit commits
+    $conn->exec("CREATE TABLE IF NOT EXISTS shopee_duplicate_whitelist (sku VARCHAR(255) PRIMARY KEY, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+    
     $conn->beginTransaction();
 
     $oldStmt = $conn->prepare("SELECT shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, mapping_status, shopee_stock FROM shopee_product_mappings WHERE id = ?");
@@ -183,7 +187,6 @@ try {
 
                         if ($hasDuplicateError && $newStatus === 'manual') {
                             // Auto-whitelist it — manual mapping of a duplicate SKU is an implicit "Allow as Shared Listing"
-                            $conn->exec("CREATE TABLE IF NOT EXISTS shopee_duplicate_whitelist (sku VARCHAR(255) PRIMARY KEY, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
                             $conn->prepare("INSERT IGNORE INTO shopee_duplicate_whitelist (sku) VALUES (?)")
                                  ->execute([$checkSkuForWhitelist]);
 
