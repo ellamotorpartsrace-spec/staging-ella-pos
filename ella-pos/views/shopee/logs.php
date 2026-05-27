@@ -24,7 +24,13 @@ if (!empty($where)) {
 }
 
 $stmt = $conn->prepare("
-    SELECT l.*, u.full_name AS user_name 
+    SELECT l.*, u.full_name AS user_name,
+           (SELECT p.product_name 
+            FROM shopee_product_mappings m 
+            JOIN product_variations v ON m.pos_product_id = v.variation_id
+            JOIN products p ON v.product_id = p.product_id
+            WHERE m.shopee_item_id = l.shopee_item_id 
+            ORDER BY m.id DESC LIMIT 1) as current_mapped_pos_name
     FROM shopee_sync_logs l
     LEFT JOIN users u ON l.created_by = u.id
     $whereSql
@@ -47,7 +53,8 @@ foreach ($dbLogs as $l) {
         'source' => $l['source'] ?: 'Automated',
         'status' => $l['status'],
         'error' => $l['error_message'] ?: '',
-        'user' => $l['user_name'] ?: 'System'
+        'user' => $l['user_name'] ?: 'System',
+        'posName' => $l['current_mapped_pos_name'] ?: 'Unknown POS Product'
     ];
 }
 
@@ -416,12 +423,18 @@ function renderLogs() {
                 details = `<span class="small"><i class="fa-solid fa-wand-magic-sparkles me-1" style="color:#6610f2"></i><span class="text-dark">${l.newStock}</span></span>`;
             } else if (isUnlinked) {
                 const displayOld = (l.oldStock === 'Unmapped' || !l.oldStock) ? '[No SKU]' : l.oldStock;
-                details = `<span class="small"><i class="fa-solid fa-link-slash me-1 text-danger"></i><span class="text-secondary">Unlinked from POS SKU:</span> <del class="font-monospace text-muted ms-1" style="background:rgba(220,53,69,0.06);padding:2px 7px;border-radius:4px;border:1px solid rgba(220,53,69,0.15)">${displayOld}</del></span>`;
+                const encName = encodeURIComponent(l.posName || 'Unknown POS Product').replace(/'/g, "%27");
+                const noSkuHtml = `<a href="javascript:void(0)" onclick="showPosName('${encName}')" style="text-decoration:none; color:inherit;">${displayOld} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:var(--text-secondary)"></i></a>`;
+                details = `<span class="small"><i class="fa-solid fa-link-slash me-1 text-danger"></i><span class="text-secondary">Unlinked from POS SKU:</span> <del class="font-monospace text-muted ms-1" style="background:rgba(220,53,69,0.06);padding:2px 7px;border-radius:4px;border:1px solid rgba(220,53,69,0.15)">${noSkuHtml}</del></span>`;
             } else if (isNewLink) {
                 const displayNew = (l.newStock === 'Unmapped' || !l.newStock) ? '[No SKU]' : l.newStock;
-                details = `<span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${displayNew}</span></span>`;
+                const encName = encodeURIComponent(l.posName || 'Unknown POS Product').replace(/'/g, "%27");
+                const noSkuHtml = `<a href="javascript:void(0)" onclick="showPosName('${encName}')" style="text-decoration:none; color:inherit;">${displayNew} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:#198754"></i></a>`;
+                details = `<span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${noSkuHtml}</span></span>`;
             } else {
-                details = `<span class="small"><i class="fa-solid fa-arrows-rotate me-1" style="color:#6610f2"></i><span class="text-secondary">Relinked:</span> <del class="font-monospace text-muted ms-1" style="font-size:0.8rem;padding:2px 6px;background:rgba(0,0,0,0.04);border-radius:4px">${l.oldStock}</del> <i class="fa-solid fa-arrow-right mx-1" style="color:#ee4d2d;font-size:0.72rem"></i> <span class="font-monospace fw-semibold" style="background:rgba(99,102,241,0.08);color:#6366f1;padding:2px 7px;border-radius:4px;border:1px solid rgba(99,102,241,0.2)">${l.newStock}</span></span>`;
+                const encName = encodeURIComponent(l.posName || 'Unknown POS Product').replace(/'/g, "%27");
+                const newHtml = `<a href="javascript:void(0)" onclick="showPosName('${encName}')" style="text-decoration:none; color:inherit;">${l.newStock} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:#6366f1"></i></a>`;
+                details = `<span class="small"><i class="fa-solid fa-arrows-rotate me-1" style="color:#6610f2"></i><span class="text-secondary">Relinked:</span> <del class="font-monospace text-muted ms-1" style="font-size:0.8rem;padding:2px 6px;background:rgba(0,0,0,0.04);border-radius:4px">${l.oldStock}</del> <i class="fa-solid fa-arrow-right mx-1" style="color:#ee4d2d;font-size:0.72rem"></i> <span class="font-monospace fw-semibold" style="background:rgba(99,102,241,0.08);color:#6366f1;padding:2px 7px;border-radius:4px;border:1px solid rgba(99,102,241,0.2)">${newHtml}</span></span>`;
             }
 
         } else if (l.event === 'stock_update') {
@@ -563,6 +576,26 @@ function renderLogs() {
 }
 
 document.addEventListener('DOMContentLoaded', renderLogs);
+
+window.showPosName = function(nameStr) {
+    if (typeof Swal !== 'undefined') {
+        const name = decodeURIComponent(nameStr);
+        let html = `
+            <div class="text-start">
+                <div class="fw-bold text-dark mb-1">${name}</div>
+            </div>
+        `;
+        Swal.fire({
+            title: 'Linked POS Product',
+            html: html,
+            icon: 'info',
+            confirmButtonColor: 'var(--shopee-primary)',
+            confirmButtonText: 'Close'
+        });
+    } else {
+        alert("POS Product Name:\n" + decodeURIComponent(nameStr));
+    }
+};
 
 </script>
 

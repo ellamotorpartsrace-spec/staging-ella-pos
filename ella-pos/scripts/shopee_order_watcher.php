@@ -93,7 +93,7 @@ try {
     } while ($cursor !== '');
 
     $totalFound = count($orderSns);
-    echo "[Order Watcher] Found {$totalFound} updated orders.\n";
+    echo "[Order Watcher] Found {$totalFound} updated orders. Fetching details...\n";
 
     if (empty($orderSns)) {
         echo "[Order Watcher] No updated orders. Exiting.\n";
@@ -106,7 +106,6 @@ try {
 
     foreach ($chunks as $chunkIndex => $chunk) {
         $batchNum = $chunkIndex + 1;
-        echo "[Order Watcher] Fetching details for batch {$batchNum} (" . count($chunk) . " orders)...\n";
 
         $detailRes = $shopee->get('/api/v2/order/get_order_detail', [
             'order_sn_list' => implode(',', $chunk),
@@ -172,7 +171,6 @@ try {
                         $key = "{$itemId}-" . ($modelId ?: '0');
                         $changedItems[$key] = ['item_id' => $itemId, 'model_id' => $modelId];
                     }
-                    echo "[Order Watcher] Released reservation for order {$orderSn} (Status: {$orderStatus})\n";
                 }
             }
         }
