@@ -344,7 +344,7 @@ async function fetchPosItems() {
 };
 
 let activeFilter = sessionStorage.getItem('shopee_map_filter') || 'all';
-let selectedShopee=null, selectedPosId=null, selectedPosUnitId=null;
+let selectedShopee=null, selectedPosId=null, selectedPosUnitId=null, selectedPosBundleSetId=null;
 let shopeeSkuCounts = {};
 let renderTimeout = null;
 let currentPage = parseInt(sessionStorage.getItem('shopee_map_currentPage')) || 1;
@@ -372,10 +372,16 @@ function progressiveMatch(terms, fields) {
 }
 function getMatchKey(v){return v.hasVariation?(v.variationSku||''):(v.parentSku||'');}
 function samePosChoice(p, posId, unitId) {
+    if (p && p.item_type === 'bundle') {
+        return (p.bundle_set_id || null) === (posId || null);
+    }
     return p && p.id === posId && (p.unit_id || null) === (unitId || null);
 }
 function findMappedPosItem(v) {
-    if (!v || !v.posId) return null;
+    if (!v || (!v.posId && !v.posBundleSetId)) return null;
+    if (v.posBundleSetId) {
+        return POS_ITEMS.find(p => p.item_type === 'bundle' && p.bundle_set_id === v.posBundleSetId) || null;
+    }
     return POS_ITEMS.find(p => samePosChoice(p, v.posId, v.posUnitId || null))
         || POS_ITEMS.find(p => p.id === v.posId && p.item_type === 'base')
         || null;
@@ -383,6 +389,7 @@ function findMappedPosItem(v) {
 function formatPosChoiceName(p) {
     if (!p) return '';
     const parts = [p.product_name || ''];
+    if (p.item_type === 'bundle') parts.push('- Bundle Set');
     if (p.variation_name) parts.push(`(${p.variation_name})`);
     if (p.item_type === 'unit') parts.push(`- ${p.unit_name || 'Custom Unit'} x${p.multiplier || 1}`);
     return parts.join(' ');
@@ -390,6 +397,9 @@ function formatPosChoiceName(p) {
 function formatPosChoiceBadge(p) {
     if (!p) return '';
     const sku = escHtml(p.sku || 'No SKU');
+    if (p.item_type === 'bundle') {
+        return `<span class="sp-badge sp-badge-info">${sku}</span><span class="unit-result-badge ms-1"><i class="fa-solid fa-boxes-stacked"></i>Bundle Set${p.component_count ? ` (${p.component_count} items)` : ''}</span>`;
+    }
     if (p.item_type === 'unit') {
         return `<span class="sp-badge sp-badge-success">${sku}</span><span class="unit-result-badge ms-1"><i class="fa-solid fa-boxes-stacked"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1}</span>`;
     }
@@ -766,6 +776,7 @@ function openManualMap(id) {
     selectedShopee = id;
     selectedPosId = null;
     selectedPosUnitId = null;
+    selectedPosBundleSetId = null;
     const v = ALL_ITEMS.find(x => x.id === id);
     if (!v) return;
     
@@ -792,6 +803,7 @@ function debouncedRenderModalPos() {
 function toggleModalUnitSearch() {
     selectedPosId = null;
     selectedPosUnitId = null;
+    selectedPosBundleSetId = null;
     renderModalPos();
 }
 
@@ -810,7 +822,7 @@ function renderModalPos() {
     // Filter POS items: Support global keyword matching across name, SKU, brand, and barcode
     let avail = [];
     const searchUnits = document.getElementById('mmUnitToggle')?.checked;
-    const typeFiltered = POS_ITEMS.filter(p => searchUnits ? p.item_type === 'unit' : p.item_type === 'base');
+    const typeFiltered = POS_ITEMS.filter(p => searchUnits ? p.item_type === 'unit' : (p.item_type === 'base' || p.item_type === 'bundle'));
 
     if (terms.length) {
         avail = typeFiltered.filter(p => {
@@ -831,11 +843,18 @@ function renderModalPos() {
                 const varBadge = p.variation_name 
                     ? `<span class="badge bg-light text-dark border ms-2 small" style="font-size: 0.7rem; font-weight: normal;">${escHtml(p.variation_name)}</span>` 
                     : '';
-                const multBadge = p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-boxes-stacked me-1"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1} ${escHtml(p.base_unit_type || 'pcs')}</span>` : '';
-                const isSelected = selectedPosId === p.id && selectedPosUnitId === p.unit_id;
+                const multBadge = p.item_type === 'bundle'
+                    ? `<span class="badge bg-primary text-white ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-boxes-stacked me-1"></i>Bundle Set${p.component_count ? ` (${p.component_count} items)` : ''}</span>`
+                    : (p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-boxes-stacked me-1"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1} ${escHtml(p.base_unit_type || 'pcs')}</span>` : '');
+                const isSelected = p.item_type === 'bundle'
+                    ? selectedPosBundleSetId === p.bundle_set_id
+                    : (selectedPosId === p.id && selectedPosUnitId === p.unit_id);
+                const selectArgs = p.item_type === 'bundle'
+                    ? `null, null, ${p.bundle_set_id}`
+                    : `${p.id}, ${p.unit_id || 'null'}, null`;
                 
                 html += `
-                <div class="map-item border-success bg-success-light ${isSelected ? 'selected' : ''}" onclick="selectModalPos(${p.id}, ${p.unit_id || 'null'})" style="padding: 0.75rem 1rem;">
+                <div class="map-item border-success bg-success-light ${isSelected ? 'selected' : ''}" onclick="selectModalPos(${selectArgs})" style="padding: 0.75rem 1rem;">
                     <div style="width:30px;height:30px;background:var(--sp-success-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-circle-check" style="color:var(--sp-success);font-size:.75rem"></i></div>
                     <div class="flex-grow-1" style="min-width:0; line-height: 1.4;">
                         <div class="fw-bold text-success" style="font-size: 0.85rem; word-break: break-word;">
@@ -867,11 +886,18 @@ function renderModalPos() {
         const varBadge = p.variation_name 
             ? `<span class="badge bg-light text-dark border ms-2 small" style="font-size: 0.7rem; font-weight: normal;">${escHtml(p.variation_name)}</span>` 
             : '';
-        const multBadge = p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-boxes-stacked me-1"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1} ${escHtml(p.base_unit_type || 'pcs')}</span>` : '';
-        const isSelected = selectedPosId === p.id && selectedPosUnitId === p.unit_id;
+        const multBadge = p.item_type === 'bundle'
+            ? `<span class="badge bg-primary text-white ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-boxes-stacked me-1"></i>Bundle Set${p.component_count ? ` (${p.component_count} items)` : ''}</span>`
+            : (p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-boxes-stacked me-1"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1} ${escHtml(p.base_unit_type || 'pcs')}</span>` : '');
+        const isSelected = p.item_type === 'bundle'
+            ? selectedPosBundleSetId === p.bundle_set_id
+            : (selectedPosId === p.id && selectedPosUnitId === p.unit_id);
+        const selectArgs = p.item_type === 'bundle'
+            ? `null, null, ${p.bundle_set_id}`
+            : `${p.id}, ${p.unit_id || 'null'}, null`;
         
         return `
-        <div class="map-item ${isSelected ? 'selected' : ''}" onclick="selectModalPos(${p.id}, ${p.unit_id || 'null'})" style="padding: 0.75rem 1rem;">
+        <div class="map-item ${isSelected ? 'selected' : ''}" onclick="selectModalPos(${selectArgs})" style="padding: 0.75rem 1rem;">
             <div style="width:30px;height:30px;background:var(--sp-info-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-boxes-stacked" style="color:var(--sp-info);font-size:.75rem"></i></div>
             <div class="flex-grow-1" style="min-width:0; line-height: 1.4;">
                 <div class="fw-bold text-dark" style="font-size: 0.85rem; word-break: break-word;">
@@ -894,24 +920,39 @@ function renderModalPos() {
     }
         
     pp.innerHTML = html;
-    document.getElementById('mmLinkBtn').disabled = !selectedPosId;
+    document.getElementById('mmLinkBtn').disabled = !(selectedPosId || selectedPosBundleSetId);
 }
 
-function selectModalPos(id, unitId) {
+function selectModalPos(id, unitId, bundleSetId = null) {
+    if (bundleSetId) {
+        if (selectedPosBundleSetId === bundleSetId) {
+            selectedPosBundleSetId = null;
+        } else {
+            selectedPosBundleSetId = bundleSetId;
+            selectedPosId = null;
+            selectedPosUnitId = null;
+        }
+        renderModalPos();
+        return;
+    }
+
     if (selectedPosId === id && selectedPosUnitId === unitId) {
         selectedPosId = null;
         selectedPosUnitId = null;
     } else {
         selectedPosId = id;
         selectedPosUnitId = unitId;
+        selectedPosBundleSetId = null;
     }
     renderModalPos();
 }
 
 async function linkFromModal() {
-    if (!selectedShopee || !selectedPosId) return;
+    if (!selectedShopee || (!selectedPosId && !selectedPosBundleSetId)) return;
     const v = ALL_ITEMS.find(x => x.id === selectedShopee);
-    const p = POS_ITEMS.find(x => x.id === selectedPosId && x.unit_id === selectedPosUnitId);
+    const p = selectedPosBundleSetId
+        ? POS_ITEMS.find(x => x.item_type === 'bundle' && x.bundle_set_id === selectedPosBundleSetId)
+        : POS_ITEMS.find(x => x.id === selectedPosId && x.unit_id === selectedPosUnitId);
     if (!v || !p) return;
     
     const btn = document.getElementById('mmLinkBtn');
@@ -927,8 +968,9 @@ async function linkFromModal() {
                 mappings: [{
                     id: v.id,
                     posSku: p.sku,
-                    posId: p.id,
-                    posUnitId: p.unit_id,
+                    posId: p.item_type === 'bundle' ? null : p.id,
+                    posUnitId: p.item_type === 'bundle' ? null : p.unit_id,
+                    posBundleSetId: p.item_type === 'bundle' ? p.bundle_set_id : null,
                     status: 'manual'
                 }],
                 trigger: 'manual_link'
@@ -936,7 +978,13 @@ async function linkFromModal() {
         });
         const data = await res.json();
         if (data.success) {
-            v.mapped = true; v.posId = p.id; v.posUnitId = p.unit_id || null; v.matchedPosSku = p.sku; v.mapStatus = 'manual'; p.used = true;
+            v.mapped = true;
+            v.posId = p.item_type === 'bundle' ? null : p.id;
+            v.posUnitId = p.item_type === 'bundle' ? null : (p.unit_id || null);
+            v.posBundleSetId = p.item_type === 'bundle' ? p.bundle_set_id : null;
+            v.matchedPosSku = p.sku;
+            v.mapStatus = 'manual';
+            p.used = true;
             manualMapModal.hide();
             updateCounts(); renderTable();
             if(typeof EllaToast!=='undefined') {
@@ -951,7 +999,7 @@ async function linkFromModal() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = origHtml;
-        selectedShopee = null; selectedPosId = null; selectedPosUnitId = null;
+        selectedShopee = null; selectedPosId = null; selectedPosUnitId = null; selectedPosBundleSetId = null;
     }
 }
 
@@ -993,15 +1041,17 @@ async function doUnlink(id) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                mappings: [{ id: v.id, posSku: null, posId: null, posUnitId: null, status: 'unmapped' }],
+                mappings: [{ id: v.id, posSku: null, posId: null, posUnitId: null, posBundleSetId: null, status: 'unmapped' }],
                 trigger: 'unlink'
             })
         });
         const data = await res.json();
         if (data.success) {
-            const p = POS_ITEMS.find(x => samePosChoice(x, v.posId, v.posUnitId || null));
+            const p = v.posBundleSetId
+                ? POS_ITEMS.find(x => x.item_type === 'bundle' && x.bundle_set_id === v.posBundleSetId)
+                : POS_ITEMS.find(x => samePosChoice(x, v.posId, v.posUnitId || null));
             if (p) p.used = false;
-            v.mapped = false; v.posId = null; v.posUnitId = null; v.matchedPosSku = null; v.mapStatus = 'unmapped';
+            v.mapped = false; v.posId = null; v.posUnitId = null; v.posBundleSetId = null; v.matchedPosSku = null; v.mapStatus = 'unmapped';
             updateCounts(); renderTable();
             if (typeof EllaToast !== 'undefined') EllaToast.warning(`Unlinked: ${v.groupName}${v.varName ? ' — ' + v.varName : ''}`);
         } else {

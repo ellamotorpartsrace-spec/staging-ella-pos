@@ -16,11 +16,18 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
     ensureShopeeUnitMappingColumn($conn);
+    ensureShopeeBundleMappingColumn($conn);
 
     $rows = $conn->query("
-        SELECT m.*, u.unit_name as pos_unit_name, u.multiplier as pos_unit_multiplier
+        SELECT
+            m.*,
+            u.unit_name as pos_unit_name,
+            u.multiplier as pos_unit_multiplier,
+            s.set_name as pos_bundle_name,
+            s.set_sku as pos_bundle_sku
         FROM shopee_product_mappings m
         LEFT JOIN product_units u ON m.pos_unit_id = u.id
+        LEFT JOIN product_unit_sets s ON m.pos_bundle_set_id = s.id
         ORDER BY m.shopee_product_name ASC, m.shopee_variation_name ASC
     ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -45,6 +52,9 @@ try {
             'mapped' => in_array($r['mapping_status'], ['auto', 'manual']),
             'posId' => $r['pos_product_id'] ? (int)$r['pos_product_id'] : null,
             'posUnitId' => $r['pos_unit_id'] ? (int)$r['pos_unit_id'] : null,
+            'posBundleSetId' => $r['pos_bundle_set_id'] ? (int)$r['pos_bundle_set_id'] : null,
+            'posBundleName' => $r['pos_bundle_name'] ?? '',
+            'posBundleSku' => $r['pos_bundle_sku'] ?? '',
             'posUnitName' => $r['pos_unit_name'] ?? '',
             'posUnitMultiplier' => $r['pos_unit_multiplier'] ? (int)$r['pos_unit_multiplier'] : 1,
             'mapStatus' => $r['mapping_status'],

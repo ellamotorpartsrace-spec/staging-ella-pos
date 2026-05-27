@@ -16,6 +16,7 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
     ensureShopeeUnitMappingColumn($conn);
+    ensureShopeeBundleMappingColumn($conn);
 
     // Query base products and custom units
     $posRows = $conn->query("
@@ -56,14 +57,48 @@ try {
         ORDER BY product_name ASC, item_type ASC
     ")->fetchAll(PDO::FETCH_ASSOC);
 
+    $bundleRows = [];
+    try {
+        $bundleRows = $conn->query("
+            SELECT
+                s.id,
+                s.set_name AS product_name,
+                '' AS variation_name,
+                NULL AS unit_name,
+                COALESCE(s.set_sku, '') AS sku,
+                'Bundle' AS brand,
+                COALESCE(s.set_sku, '') AS barcode,
+                'set' AS base_unit_type,
+                'bundle' AS item_type,
+                NULL AS unit_id,
+                1 AS multiplier,
+                COALESCE(s.description, '') AS unit_description,
+                s.id AS bundle_set_id,
+                COALESCE(sc.component_count, 0) AS component_count
+            FROM product_unit_sets s
+            LEFT JOIN (
+                SELECT product_set_id, COUNT(*) AS component_count
+                FROM product_unit_set_items
+                GROUP BY product_set_id
+            ) sc ON sc.product_set_id = s.id
+            WHERE s.status = 'active'
+            ORDER BY s.set_name ASC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $ignored) {
+        $bundleRows = [];
+    }
+
     // Get used mappings
-    $usedStmt = $conn->query("SELECT pos_product_id, pos_unit_id FROM shopee_product_mappings WHERE pos_product_id IS NOT NULL");
+    $usedStmt = $conn->query("SELECT pos_product_id, pos_unit_id, pos_bundle_set_id FROM shopee_product_mappings WHERE pos_product_id IS NOT NULL OR pos_bundle_set_id IS NOT NULL");
     $usedMappings = $usedStmt->fetchAll(PDO::FETCH_ASSOC);
     
     $usedBase = [];
     $usedUnits = [];
+    $usedBundles = [];
     foreach ($usedMappings as $m) {
-        if ($m['pos_unit_id']) {
+        if (!empty($m['pos_bundle_set_id'])) {
+            $usedBundles[(int)$m['pos_bundle_set_id']] = true;
+        } elseif ($m['pos_unit_id']) {
             $usedUnits[$m['pos_unit_id']] = true;
         } else {
             $usedBase[$m['pos_product_id']] = true;
@@ -98,6 +133,34 @@ try {
             'brand' => $p['brand'],
             'barcode' => $p['barcode'],
             'used' => $isUsed
+        ];
+    }
+
+    foreach ($bundleRows as $p) {
+        $bundleSetId = (int)$p['bundle_set_id'];
+        $componentCount = (int)($p['component_count'] ?? 0);
+        $displayName = $p['product_name'];
+        if ($componentCount > 0) {
+            $displayName .= ' - Bundle Set (' . $componentCount . ' items)';
+        }
+
+        $posJson[] = [
+            'id' => $bundleSetId,
+            'unit_id' => null,
+            'bundle_set_id' => $bundleSetId,
+            'item_type' => 'bundle',
+            'multiplier' => 1,
+            'component_count' => $componentCount,
+            'product_name' => $p['product_name'],
+            'variation_name' => '',
+            'unit_name' => 'Bundle Set',
+            'base_unit_type' => 'set',
+            'unit_description' => $p['unit_description'] ?? '',
+            'name' => $displayName,
+            'sku' => $p['sku'],
+            'brand' => $p['brand'],
+            'barcode' => $p['barcode'],
+            'used' => isset($usedBundles[$bundleSetId])
         ];
     }
 
