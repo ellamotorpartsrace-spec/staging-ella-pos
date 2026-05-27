@@ -40,6 +40,67 @@ git log -1 --oneline
 
 Shows the latest commit in short form.
 
+## Get The Latest Update From GitHub
+
+Use this when you want to download the newest version from GitHub into this folder.
+
+```bash
+git status --short --branch
+git pull --ff-only origin testing
+```
+
+`git status --short --branch` checks your current branch and confirms whether you have local changes first.
+
+`git pull --ff-only origin testing` gets the latest update from the GitHub `testing` branch. The `--ff-only` option keeps the update clean and stops if Git needs a manual merge.
+
+If you are not sure which branch you are on, run:
+
+```bash
+git branch --show-current
+```
+
+If the current branch is not `testing`, switch to it first:
+
+```bash
+git switch testing
+git pull --ff-only origin testing
+```
+
+If Git says you have local changes, check them before pulling:
+
+```bash
+git status --short
+git diff
+```
+
+## Daily Save And Upload Workflow
+
+Use this common flow when you edited files and want to upload them to GitHub:
+
+```bash
+git status --short --branch
+git add -A
+git diff --cached --stat
+git commit -m "Describe your change"
+git push
+```
+
+What each command does:
+
+1. `git status --short --branch` checks your branch and changed files.
+2. `git add -A` stages all new, edited, and deleted files.
+3. `git diff --cached --stat` previews what will be committed.
+4. `git commit -m "Describe your change"` saves the staged files into a commit.
+5. `git push` uploads the commit to GitHub.
+
+If this is the first push for a new branch, use:
+
+```bash
+git push -u origin testing
+```
+
+After that, normal `git push` is enough.
+
 ## Create A Testing Branch
 
 ```bash
@@ -58,6 +119,14 @@ This switches to the existing `testing` branch.
 
 ## Stage And Review Changes
 
+Stage one specific file:
+
+```bash
+git add path/to/file.php
+```
+
+Stage all changes:
+
 ```bash
 git add -A
 ```
@@ -69,6 +138,12 @@ git diff --cached --stat
 ```
 
 Shows a short summary of the staged changes before committing.
+
+```bash
+git diff --cached
+```
+
+Shows the full staged file changes before committing.
 
 ```bash
 git status --short --branch
@@ -103,6 +178,27 @@ After the branch is already tracking GitHub, future uploads can use:
 ```bash
 git push
 ```
+
+Push the current branch to GitHub even if you are not sure of the branch name:
+
+```bash
+git push -u origin HEAD
+```
+
+## Clone A Fresh Copy
+
+Use this when you want a brand-new folder from GitHub instead of updating the current folder.
+
+From `C:\xampp\htdocs`:
+
+```bash
+cd C:\xampp\htdocs
+git clone https://github.com/ellamotorpartsrace-spec/ERP_SYSTEM.git ella-pos-new
+cd ella-pos-new
+git switch testing
+```
+
+This creates a new folder named `ella-pos-new`.
 
 ## Upload The Whole Folder Itself
 
@@ -182,6 +278,40 @@ git push
 ```
 
 This is useful for files that should stay local, like machine-specific config files.
+
+## Undo Local Changes
+
+Use these carefully. Always check status first:
+
+```bash
+git status --short --branch
+```
+
+Unstage files that were added with `git add` but keep the file edits:
+
+```bash
+git restore --staged path/to/file.php
+```
+
+Unstage everything but keep the file edits:
+
+```bash
+git restore --staged .
+```
+
+Discard local edits in one file:
+
+```bash
+git restore path/to/file.php
+```
+
+Discard all local edits in tracked files:
+
+```bash
+git restore .
+```
+
+Do not use discard commands unless you are sure you do not need those local changes.
 
 ## Manual Testing Workflow
 

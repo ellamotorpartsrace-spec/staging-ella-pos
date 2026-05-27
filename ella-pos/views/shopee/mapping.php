@@ -200,6 +200,12 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
                 </div>
                 
                 <h6 class="fw-bold mb-2"><i class="fa-solid fa-boxes-stacked me-2" style="color:var(--sp-info)"></i>Select POS Product</h6>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="mmUnitToggle" onchange="debouncedRenderModalPos()">
+                        <label class="form-check-label small fw-bold" for="mmUnitToggle">Search Custom Units (Boxes, Sets)</label>
+                    </div>
+                </div>
                 <div class="sp-search mb-3">
                     <i class="fa-solid fa-search"></i>
                     <input type="text" id="mmPosSearch" autocomplete="off" placeholder="Search POS by name or SKU..." oninput="debouncedRenderModalPos()">
@@ -320,7 +326,7 @@ async function fetchPosItems() {
 };
 
 let activeFilter = sessionStorage.getItem('shopee_map_filter') || 'all';
-let selectedShopee=null, selectedPos=null;
+let selectedShopee=null, selectedPosId=null, selectedPosUnitId=null;
 let shopeeSkuCounts = {};
 let renderTimeout = null;
 let currentPage = parseInt(sessionStorage.getItem('shopee_map_currentPage')) || 1;
@@ -717,7 +723,8 @@ function renderPaginationButtons(totalItems, totalPages) {
 // Modal Manual Mapping Logic
 function openManualMap(id) {
     selectedShopee = id;
-    selectedPos = null;
+    selectedPosId = null;
+    selectedPosUnitId = null;
     const v = ALL_ITEMS.find(x => x.id === id);
     if (!v) return;
     
@@ -752,9 +759,12 @@ function renderModalPos() {
     
     // Filter POS items: Support global keyword matching across name, SKU, brand, and barcode
     let avail = [];
+    const searchUnits = document.getElementById('mmUnitToggle')?.checked;
+    const typeFiltered = POS_ITEMS.filter(p => searchUnits ? p.item_type === 'unit' : p.item_type === 'base');
+
     if (ps) {
         const keywords = ps.split(/\s+/).filter(k => k.length > 0);
-        avail = POS_ITEMS.filter(p => {
+        avail = typeFiltered.filter(p => {
             const name = p.name.toLowerCase();
             const sku = (p.sku || '').toLowerCase();
             const brand = (p.brand || '').toLowerCase();
@@ -774,20 +784,22 @@ function renderModalPos() {
     
     // Render Suggested Match section if searching is empty and there's a SKU
     if (!ps && shopeeSku) {
-        const exactMatches = POS_ITEMS.filter(p => p.sku && p.sku.toLowerCase() === shopeeSku.toLowerCase());
+        const exactMatches = typeFiltered.filter(p => p.sku && p.sku.toLowerCase() === shopeeSku.toLowerCase());
         if (exactMatches.length > 0) {
             html += `<div class="small fw-bold text-success mb-2"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>Suggested SKU Match:</div>`;
             exactMatches.forEach(p => {
                 const varBadge = p.variation_name 
                     ? `<span class="badge bg-light text-dark border ms-2 small" style="font-size: 0.7rem; font-weight: normal;">${escHtml(p.variation_name)}</span>` 
                     : '';
+                const multBadge = p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-xmark me-1"></i>${p.multiplier} pcs</span>` : '';
+                const isSelected = selectedPosId === p.id && selectedPosUnitId === p.unit_id;
                 
                 html += `
-                <div class="map-item border-success bg-success-light ${selectedPos === p.id ? 'selected' : ''}" onclick="selectModalPos(${p.id})" style="padding: 0.75rem 1rem;">
+                <div class="map-item border-success bg-success-light ${isSelected ? 'selected' : ''}" onclick="selectModalPos(${p.id}, ${p.unit_id || 'null'})" style="padding: 0.75rem 1rem;">
                     <div style="width:30px;height:30px;background:var(--sp-success-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-circle-check" style="color:var(--sp-success);font-size:.75rem"></i></div>
                     <div class="flex-grow-1" style="min-width:0; line-height: 1.4;">
                         <div class="fw-bold text-success" style="font-size: 0.85rem; word-break: break-word;">
-                            ${escHtml(p.product_name)} ${varBadge}
+                            ${escHtml(p.product_name)} ${varBadge} ${multBadge}
                         </div>
                         <div class="d-flex align-items-center gap-2 mt-1" style="font-size:.72rem;">
                             <span class="text-secondary">SKU:</span>
@@ -796,7 +808,7 @@ function renderModalPos() {
                             ${p.barcode ? `<span class="text-secondary">| Barcode: <strong class="text-dark">${escHtml(p.barcode)}</strong></span>` : ''}
                         </div>
                     </div>
-                    ${selectedPos === p.id ? `<i class="fa-solid fa-circle-check text-success fs-5"></i>` : `<span class="badge bg-success text-white small px-2 py-1" style="font-size:0.6rem">SKU Match</span>`}
+                    ${isSelected ? `<i class="fa-solid fa-circle-check text-success fs-5"></i>` : `<span class="badge bg-success text-white small px-2 py-1" style="font-size:0.6rem">SKU Match</span>`}
                 </div>`;
             });
             html += `<hr style="margin:0.75rem 0; opacity:0.1">`;
@@ -815,13 +827,15 @@ function renderModalPos() {
         const varBadge = p.variation_name 
             ? `<span class="badge bg-light text-dark border ms-2 small" style="font-size: 0.7rem; font-weight: normal;">${escHtml(p.variation_name)}</span>` 
             : '';
+        const multBadge = p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-xmark me-1"></i>${p.multiplier} pcs</span>` : '';
+        const isSelected = selectedPosId === p.id && selectedPosUnitId === p.unit_id;
         
         return `
-        <div class="map-item ${selectedPos === p.id ? 'selected' : ''}" onclick="selectModalPos(${p.id})" style="padding: 0.75rem 1rem;">
+        <div class="map-item ${isSelected ? 'selected' : ''}" onclick="selectModalPos(${p.id}, ${p.unit_id || 'null'})" style="padding: 0.75rem 1rem;">
             <div style="width:30px;height:30px;background:var(--sp-info-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-boxes-stacked" style="color:var(--sp-info);font-size:.75rem"></i></div>
             <div class="flex-grow-1" style="min-width:0; line-height: 1.4;">
                 <div class="fw-bold text-dark" style="font-size: 0.85rem; word-break: break-word;">
-                    ${escHtml(p.product_name)} ${varBadge}
+                    ${escHtml(p.product_name)} ${varBadge} ${multBadge}
                 </div>
                 <div class="d-flex align-items-center gap-2 mt-1" style="font-size:.72rem;">
                     <span class="text-secondary">SKU:</span>
@@ -831,7 +845,7 @@ function renderModalPos() {
                 </div>
             </div>
             ${usedBadge}
-            ${selectedPos === p.id ? `<i class="fa-solid fa-circle-check text-shopee ms-2 fs-5"></i>` : ''}
+            ${isSelected ? `<i class="fa-solid fa-circle-check text-shopee ms-2 fs-5"></i>` : ''}
         </div>`;
     }).join('') : `<div class="sp-empty py-4"><i class="fa-solid fa-boxes-stacked d-block"></i><h6>No POS products found</h6></div>`;
     
@@ -840,18 +854,24 @@ function renderModalPos() {
     }
         
     pp.innerHTML = html;
-    document.getElementById('mmLinkBtn').disabled = !selectedPos;
+    document.getElementById('mmLinkBtn').disabled = !selectedPosId;
 }
 
-function selectModalPos(id) {
-    selectedPos = selectedPos === id ? null : id;
+function selectModalPos(id, unitId) {
+    if (selectedPosId === id && selectedPosUnitId === unitId) {
+        selectedPosId = null;
+        selectedPosUnitId = null;
+    } else {
+        selectedPosId = id;
+        selectedPosUnitId = unitId;
+    }
     renderModalPos();
 }
 
 async function linkFromModal() {
-    if (!selectedShopee || !selectedPos) return;
+    if (!selectedShopee || !selectedPosId) return;
     const v = ALL_ITEMS.find(x => x.id === selectedShopee);
-    const p = POS_ITEMS.find(x => x.id === selectedPos);
+    const p = POS_ITEMS.find(x => x.id === selectedPosId && x.unit_id === selectedPosUnitId);
     if (!v || !p) return;
     
     const btn = document.getElementById('mmLinkBtn');
@@ -868,6 +888,7 @@ async function linkFromModal() {
                     id: v.id,
                     posSku: p.sku,
                     posId: p.id,
+                    posUnitId: p.unit_id,
                     status: 'manual'
                 }],
                 trigger: 'manual_link'
@@ -890,7 +911,7 @@ async function linkFromModal() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = origHtml;
-        selectedShopee = null; selectedPos = null;
+        selectedShopee = null; selectedPosId = null; selectedPosUnitId = null;
     }
 }
 
@@ -932,7 +953,7 @@ async function doUnlink(id) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                mappings: [{ id: v.id, posSku: null, posId: null, status: 'unmapped' }],
+                mappings: [{ id: v.id, posSku: null, posId: null, posUnitId: null, status: 'unmapped' }],
                 trigger: 'unlink'
             })
         });

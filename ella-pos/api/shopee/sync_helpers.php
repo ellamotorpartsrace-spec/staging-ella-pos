@@ -48,19 +48,20 @@ if (!function_exists('propagateStockToPos')) {
             $skuStmt->execute([$posProductId]);
             $posSku = $skuStmt->fetchColumn();
             
-            // If SKU is empty, fallback to grouping by pos_product_id for products without SKUs
             if (!empty(trim((string)$posSku))) {
                 $stmtSum = $conn->prepare("
-                    SELECT COALESCE(SUM(shopee_stock), 0) 
-                    FROM shopee_product_mappings 
-                    WHERE matched_pos_sku = ? AND mapping_status IN ('auto','manual')
+                    SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
+                    FROM shopee_product_mappings m
+                    LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                    WHERE m.matched_pos_sku = ? AND m.mapping_status IN ('auto','manual')
                 ");
                 $stmtSum->execute([$posSku]);
             } else {
                 $stmtSum = $conn->prepare("
-                    SELECT COALESCE(SUM(shopee_stock), 0) 
-                    FROM shopee_product_mappings 
-                    WHERE pos_product_id = ? AND (matched_pos_sku IS NULL OR matched_pos_sku = '') AND mapping_status IN ('auto','manual')
+                    SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
+                    FROM shopee_product_mappings m
+                    LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                    WHERE m.pos_product_id = ? AND (m.matched_pos_sku IS NULL OR m.matched_pos_sku = '') AND m.mapping_status IN ('auto','manual')
                 ");
                 $stmtSum->execute([$posProductId]);
             }

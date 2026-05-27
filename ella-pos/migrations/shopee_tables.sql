@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `shopee_product_mappings` (
     `has_variation` TINYINT(1) NOT NULL DEFAULT 0,
     `matched_pos_sku` VARCHAR(100) DEFAULT NULL,
     `pos_product_id` INT DEFAULT NULL,
+    `pos_unit_id` INT DEFAULT NULL,
     `mapping_status` ENUM('auto','manual','unmapped','duplicate','missing_sku') NOT NULL DEFAULT 'unmapped',
     `shopee_stock` INT NOT NULL DEFAULT 0,
     `shopee_price` DECIMAL(10,2) DEFAULT NULL,

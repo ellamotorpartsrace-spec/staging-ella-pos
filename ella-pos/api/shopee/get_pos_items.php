@@ -15,34 +15,70 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    // Query mapping `mapping.php` logic but also checking used IDs to match `mapping.php` implementation
+    // Query base products and custom units
     $posRows = $conn->query("
         SELECT v.variation_id as id,
             p.product_name,
             v.variation_name,
             v.sku,
             COALESCE(p.brand_name, '') as brand,
-            COALESCE(v.barcode, '') as barcode
+            COALESCE(v.barcode, '') as barcode,
+            'base' as item_type,
+            NULL as unit_id,
+            1 as multiplier
         FROM product_variations v JOIN products p ON v.product_id = p.product_id
-        WHERE v.status='active' ORDER BY p.product_name ASC
+        WHERE v.status='active'
+
+        UNION ALL
+
+        SELECT v.variation_id as id,
+            p.product_name,
+            u.unit_name as variation_name,
+            v.sku,
+            COALESCE(p.brand_name, '') as brand,
+            COALESCE(u.barcode, v.barcode, '') as barcode,
+            'unit' as item_type,
+            u.id as unit_id,
+            u.multiplier as multiplier
+        FROM product_units u
+        JOIN product_variations v ON u.variation_id = v.variation_id
+        JOIN products p ON v.product_id = p.product_id
+        WHERE v.status='active'
+
+        ORDER BY product_name ASC, item_type ASC
     ")->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get used IDs
-    $usedStmt = $conn->query("SELECT pos_product_id FROM shopee_product_mappings WHERE pos_product_id IS NOT NULL");
-    $usedIds = $usedStmt->fetchAll(PDO::FETCH_COLUMN);
-    $usedIdsHash = array_flip($usedIds);
+    // Get used mappings
+    $usedStmt = $conn->query("SELECT pos_product_id, pos_unit_id FROM shopee_product_mappings WHERE pos_product_id IS NOT NULL");
+    $usedMappings = $usedStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $usedBase = [];
+    $usedUnits = [];
+    foreach ($usedMappings as $m) {
+        if ($m['pos_unit_id']) {
+            $usedUnits[$m['pos_unit_id']] = true;
+        } else {
+            $usedBase[$m['pos_product_id']] = true;
+        }
+    }
 
     $posJson = [];
     foreach ($posRows as $p) {
+        $isUsed = ($p['item_type'] === 'unit') ? isset($usedUnits[$p['unit_id']]) : isset($usedBase[$p['id']]);
+        $displayName = $p['product_name'] . ($p['variation_name'] ? ' (' . $p['variation_name'] . ')' : '');
+        
         $posJson[] = [
             'id' => (int)$p['id'],
+            'unit_id' => $p['unit_id'] ? (int)$p['unit_id'] : null,
+            'item_type' => $p['item_type'],
+            'multiplier' => (int)$p['multiplier'],
             'product_name' => $p['product_name'],
             'variation_name' => $p['variation_name'] ?? '',
-            'name' => $p['product_name'] . ($p['variation_name'] ? ' (' . $p['variation_name'] . ')' : ''),
+            'name' => $displayName,
             'sku' => $p['sku'],
             'brand' => $p['brand'],
             'barcode' => $p['barcode'],
-            'used' => isset($usedIdsHash[$p['id']])
+            'used' => $isUsed
         ];
     }
 

@@ -44,12 +44,13 @@ try {
     
     $conn->beginTransaction();
 
-    $oldStmt = $conn->prepare("SELECT shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, mapping_status, shopee_stock FROM shopee_product_mappings WHERE id = ?");
+    $oldStmt = $conn->prepare("SELECT shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, pos_unit_id, mapping_status, shopee_stock FROM shopee_product_mappings WHERE id = ?");
 
     $autoMatchedCount = 0; // Counter for items auto-matched in this operation
     $stmt = $conn->prepare("UPDATE shopee_product_mappings SET 
         matched_pos_sku = ?, 
         pos_product_id = ?, 
+        pos_unit_id = ?,
         mapping_status = ?, 
         updated_at = NOW() 
         WHERE id = ?");
@@ -62,18 +63,22 @@ try {
         if ($oldMap) {
             $oldSku = $oldMap['matched_pos_sku'];
             $oldPosId = $oldMap['pos_product_id'];
+            $oldUnitId = $oldMap['pos_unit_id'] ?? null;
             $oldStatus = $oldMap['mapping_status'];
 
             $newSku = $map['posSku'] ?? null;
             $newPosId = $map['posId'] ?? null;
+            $newUnitId = $map['posUnitId'] ?? null;
             $newStatus = $map['status'] ?? null;
 
             $oldSkuNorm = $oldSku !== null ? trim((string)$oldSku) : '';
             $newSkuNorm = $newSku !== null ? trim((string)$newSku) : '';
             $oldPosIdNorm = $oldPosId ? (int)$oldPosId : 0;
             $newPosIdNorm = $newPosId ? (int)$newPosId : 0;
+            $oldUnitIdNorm = $oldUnitId ? (int)$oldUnitId : 0;
+            $newUnitIdNorm = $newUnitId ? (int)$newUnitId : 0;
 
-            if ($oldSkuNorm !== $newSkuNorm || $oldPosIdNorm !== $newPosIdNorm || $oldStatus !== $newStatus) {
+            if ($oldSkuNorm !== $newSkuNorm || $oldPosIdNorm !== $newPosIdNorm || $oldUnitIdNorm !== $newUnitIdNorm || $oldStatus !== $newStatus) {
                 $hasChanged = true;
             }
         }
@@ -81,6 +86,7 @@ try {
         $stmt->execute([
             $map['posSku'],
             $map['posId'],
+            $map['posUnitId'] ?? null,
             $map['status'],
             $map['id']
         ]);
