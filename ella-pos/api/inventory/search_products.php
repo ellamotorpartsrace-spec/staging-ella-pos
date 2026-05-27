@@ -136,7 +136,8 @@ try {
             p.image_path,
             COALESCE(i_phys.quantity, 0) as physical_stock,
             COALESCE(i_online.quantity, 0) as online_stock,
-            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock
+            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
+            (SELECT 1 FROM shopee_product_mappings spm WHERE spm.pos_product_id = v.variation_id LIMIT 1) as is_shopee_mapped
             {$relevanceSelect}
         " . $baseSql . "
         {$orderClause}

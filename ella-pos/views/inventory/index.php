@@ -92,7 +92,8 @@ $sqlProducts = "
            p.product_name, p.brand_name, p.image_path,
            COALESCE(i_phys.quantity, 0) as physical_stock,
            COALESCE(i_online.quantity, 0) as online_stock,
-           COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock
+           COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
+           (SELECT 1 FROM shopee_product_mappings spm WHERE spm.pos_product_id = v.variation_id LIMIT 1) as is_shopee_mapped
     " . $baseSql . "
     ORDER BY p.product_name ASC
     LIMIT $limit OFFSET $offset
@@ -374,7 +375,7 @@ $products = $stmt->fetchAll();
                                             echo '<span class="badge bg-success-subtle text-success border border-success" title="Physical: ' . $phys . ' | Online: ' . $online . '">' . $qty . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
-                                        <?php if ($online > 0): ?>
+                                        <?php if ($online > 0 || !empty($row['is_shopee_mapped'])): ?>
                                             <span class="badge bg-info-subtle text-info border border-info ms-1"
                                                 title="Online Allocation">
                                                 <i class="fa-solid fa-globe"></i> <?= $online ?>
@@ -745,7 +746,7 @@ $products = $stmt->fetchAll();
                 stockBadge = `<span class="badge bg-success-subtle text-success border border-success" title="Physical: ${phys} | Online: ${online}">${qty} ${this.escapeHtml(row.unit_type || '')}</span>`;
             }
 
-            if (online > 0) {
+            if (online > 0 || row.is_shopee_mapped == 1) {
                 onlineBadge = `<span class="badge bg-info-subtle text-info border border-info ms-1" title="Online Allocation"><i class="fa-solid fa-globe"></i> ${online}</span>`;
             }
 
