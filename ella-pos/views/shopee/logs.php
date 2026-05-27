@@ -30,12 +30,21 @@ $stmt = $conn->prepare("
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             JOIN products p ON v.product_id = p.product_id
             WHERE m.shopee_item_id = l.shopee_item_id 
-            ORDER BY m.id DESC LIMIT 1) as current_mapped_pos_name,
+            ORDER BY m.id DESC LIMIT 1) as mapped_pos_name,
            (SELECT v.variation_name 
             FROM shopee_product_mappings m 
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             WHERE m.shopee_item_id = l.shopee_item_id 
-            ORDER BY m.id DESC LIMIT 1) as current_mapped_pos_variation
+            ORDER BY m.id DESC LIMIT 1) as mapped_pos_variation,
+           (SELECT p.product_name 
+            FROM product_variations v 
+            JOIN products p ON v.product_id = p.product_id 
+            WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
+            LIMIT 1) as fallback_pos_name,
+           (SELECT v.variation_name 
+            FROM product_variations v 
+            WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
+            LIMIT 1) as fallback_pos_variation
     FROM shopee_sync_logs l
     LEFT JOIN users u ON l.created_by = u.id
     $whereSql
@@ -59,8 +68,8 @@ foreach ($dbLogs as $l) {
         'status' => $l['status'],
         'error' => $l['error_message'] ?: '',
         'user' => $l['user_name'] ?: 'System',
-        'posName' => $l['current_mapped_pos_name'] ?: 'Unknown POS Product',
-        'posVarName' => $l['current_mapped_pos_variation'] ?: ''
+        'posName' => $l['mapped_pos_name'] ?: ($l['fallback_pos_name'] ?? ''),
+        'posVarName' => $l['mapped_pos_variation'] ?: ($l['fallback_pos_variation'] ?? '')
     ];
 }
 
