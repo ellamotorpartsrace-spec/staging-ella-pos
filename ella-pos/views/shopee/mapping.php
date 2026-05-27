@@ -712,13 +712,8 @@ function renderTable(){
     document.getElementById('paginationStatus').textContent = `Page ${currentPage} of ${totalPages} (${totalItems} products)`;
     renderPaginationButtons(totalItems, totalPages);
 
-    // Initialize popovers
-    if (typeof bootstrap !== 'undefined') {
-        const popoverTriggerList = [].slice.call(document.querySelectorAll('#mapTableBody [data-bs-toggle="popover"]'));
-        popoverTriggerList.map(function (popoverTriggerEl) {
-            return new bootstrap.Popover(popoverTriggerEl, { html: true });
-        });
-    }
+    // Popovers are handled by the delegated initializer in DOMContentLoaded
+
 }
 
 function renderPaginationButtons(totalItems, totalPages) {
