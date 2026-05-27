@@ -149,7 +149,7 @@ $authShopId  = $_GET['shop_id'] ?? '';
                 <div class="sp-card-body">
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Low Stock Warning Threshold</label>
-                        <select class="form-select mb-2" id="lowStockThreshold">
+                        <select class="form-select mb-2" id="lowStockThreshold" onchange="saveCredentials()">
                             <option value="1">1 item or less</option>
                             <option value="2">2 items or less</option>
                             <option value="3">3 items or less</option>
@@ -161,7 +161,7 @@ $authShopId  = $_GET['shop_id'] ?? '';
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Buffer / Ghost Stock</label>
-                        <select class="form-select mb-2" id="bufferStock">
+                        <select class="form-select mb-2" id="bufferStock" onchange="saveCredentials()">
                             <option value="0" selected>0 (No Buffer - Sync Exact Amount)</option>
                             <option value="1">1 item hidden</option>
                             <option value="2">2 items hidden</option>
@@ -176,7 +176,7 @@ $authShopId  = $_GET['shop_id'] ?? '';
                             <div class="fw-bold">Out-of-Stock Alerts</div>
                             <div class="small text-secondary mt-1">If enabled, a popup alert will appear across the POS whenever a Shopee item goes out of stock.</div>
                         </div>
-                        <label class="sp-toggle"><input type="checkbox" id="oosAlerts" checked><span class="sp-toggle-slider"></span></label>
+                        <label class="sp-toggle"><input type="checkbox" id="oosAlerts" checked onchange="saveCredentials()"><span class="sp-toggle-slider"></span></label>
                     </div>
                 </div>
             </div>
