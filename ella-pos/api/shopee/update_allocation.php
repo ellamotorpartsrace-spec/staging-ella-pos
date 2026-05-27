@@ -28,12 +28,15 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    // 1. Get current mapping, Shopee config, and POS stocks
+    // 1. Get current mapping, Shopee config, POS stocks, and unit multiplier
     $stmt = $conn->prepare("SELECT m.*, c.partner_id, c.partner_key, c.shop_id, c.access_token, c.environment, c.buffer_stock, c.out_of_stock_alerts,
         COALESCE(i1.quantity, 0) as pos_physical_qty,
-        COALESCE(i2.quantity, 0) as pos_online_qty
+        COALESCE(i2.quantity, 0) as pos_online_qty,
+        COALESCE(u.multiplier, 1) as unit_multiplier,
+        u.unit_name
         FROM shopee_product_mappings m
         JOIN shopee_config c ON c.is_active = 1
+        LEFT JOIN product_units u ON m.pos_unit_id = u.id
         LEFT JOIN inventory i1 ON m.pos_product_id = i1.variation_id AND i1.store_id = 1
         LEFT JOIN inventory i2 ON m.pos_product_id = i2.variation_id AND i2.store_id = 2
         WHERE m.id = ?");
@@ -48,18 +51,23 @@ try {
     $posPhysicalQty = (int)$item['pos_physical_qty'];
     $posOnlineQty = (int)$item['pos_online_qty'];
     $totalQty = $posPhysicalQty + $posOnlineQty;
+    $unitMultiplier = max(1, (int)$item['unit_multiplier']);
+
+    // Calculate unit-converted total (e.g., 120 pcs / 12 multiplier = 10 boxes)
+    $unitTotal = floor($totalQty / $unitMultiplier);
 
     if ($onlineStock < 0) {
         $onlineStock = 0;
     }
 
-    if ($onlineStock > $totalQty) {
-        echo json_encode(['success' => false, 'error' => "Allocated stock ({$onlineStock}) cannot exceed total POS available stock ({$totalQty})"]);
+    if ($onlineStock > $unitTotal) {
+        $unitLabel = !empty($item['unit_name']) ? " ({$item['unit_name']})" : '';
+        echo json_encode(['success' => false, 'error' => "Allocated stock ({$onlineStock}) cannot exceed total POS available stock ({$unitTotal}{$unitLabel})"]);
         exit;
     }
 
     // Internally save the corresponding ratio percentage for dynamic syncing later
-    $allocationRatio = $totalQty > 0 ? (int)round(($onlineStock / $totalQty) * 100) : 100;
+    $allocationRatio = $unitTotal > 0 ? (int)round(($onlineStock / $unitTotal) * 100) : 100;
 
     $isTest = $item['environment'] === 'test';
     $shopee = new ShopeeAPI($item['partner_id'], $item['partner_key'], $isTest);
@@ -70,22 +78,25 @@ try {
     $updateStmt = $conn->prepare("UPDATE shopee_product_mappings SET stock_allocation_ratio = ?, shopee_stock = ?, updated_at = NOW() WHERE id = ?");
     $updateStmt->execute([$allocationRatio, $onlineStock, $id]);
 
-    // 3. Compute POS online stock = SUM of all shopee_stock sharing the same SKU (or same POS ID if SKU is empty)
+    // 3. Compute POS online stock = SUM of all (shopee_stock * multiplier) sharing the same SKU (or same POS ID if SKU is empty)
+    //    This converts all unit-based allocations back to base pieces for POS inventory deduction
     if (!empty($item['pos_product_id'])) {
         $matchedSku = $item['matched_pos_sku'] ?? '';
         if (!empty(trim((string)$matchedSku))) {
             $posSku = trim((string)$matchedSku);
             $sumStmt = $conn->prepare("
-                SELECT COALESCE(SUM(shopee_stock), 0) 
-                FROM shopee_product_mappings 
-                WHERE matched_pos_sku = ? AND mapping_status IN ('auto','manual')
+                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
+                FROM shopee_product_mappings m
+                LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                WHERE m.matched_pos_sku = ? AND m.mapping_status IN ('auto','manual')
             ");
             $sumStmt->execute([$posSku]);
         } else {
             $sumStmt = $conn->prepare("
-                SELECT COALESCE(SUM(shopee_stock), 0) 
-                FROM shopee_product_mappings 
-                WHERE pos_product_id = ? AND (matched_pos_sku IS NULL OR matched_pos_sku = '') AND mapping_status IN ('auto','manual')
+                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
+                FROM shopee_product_mappings m
+                LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                WHERE m.pos_product_id = ? AND (m.matched_pos_sku IS NULL OR m.matched_pos_sku = '') AND m.mapping_status IN ('auto','manual')
             ");
             $sumStmt->execute([$item['pos_product_id']]);
         }

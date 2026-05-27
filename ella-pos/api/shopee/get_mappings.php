@@ -3,6 +3,7 @@ header("Content-Type: application/json");
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
+require_once __DIR__ . '/unit_mapping_helpers.php';
 
 requireLogin();
 
@@ -14,8 +15,14 @@ if (!hasPermission('shopee_sync')) {
 try {
     $db = new Database();
     $conn = $db->getConnection();
+    ensureShopeeUnitMappingColumn($conn);
 
-    $rows = $conn->query("SELECT * FROM shopee_product_mappings ORDER BY shopee_product_name ASC, shopee_variation_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $conn->query("
+        SELECT m.*, u.unit_name as pos_unit_name, u.multiplier as pos_unit_multiplier
+        FROM shopee_product_mappings m
+        LEFT JOIN product_units u ON m.pos_unit_id = u.id
+        ORDER BY m.shopee_product_name ASC, m.shopee_variation_name ASC
+    ")->fetchAll(PDO::FETCH_ASSOC);
 
     $groups = [];
     foreach ($rows as $r) {
@@ -37,6 +44,9 @@ try {
             'hasVariation' => (bool)$r['has_variation'],
             'mapped' => in_array($r['mapping_status'], ['auto', 'manual']),
             'posId' => $r['pos_product_id'] ? (int)$r['pos_product_id'] : null,
+            'posUnitId' => $r['pos_unit_id'] ? (int)$r['pos_unit_id'] : null,
+            'posUnitName' => $r['pos_unit_name'] ?? '',
+            'posUnitMultiplier' => $r['pos_unit_multiplier'] ? (int)$r['pos_unit_multiplier'] : 1,
             'mapStatus' => $r['mapping_status'],
             'matchedPosSku' => $r['matched_pos_sku'] ?? null,
         ];

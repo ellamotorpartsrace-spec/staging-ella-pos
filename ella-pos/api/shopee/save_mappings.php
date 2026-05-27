@@ -7,6 +7,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 require_once __DIR__ . '/sync_helpers.php';
+require_once __DIR__ . '/unit_mapping_helpers.php';
 
 requireLogin();
 
@@ -38,6 +39,7 @@ if ($trigger === 'auto_match') {
 try {
     $db = new Database();
     $conn = $db->getConnection();
+    ensureShopeeUnitMappingColumn($conn);
     
     // Ensure table exists before beginning transaction to avoid implicit commits
     $conn->exec("CREATE TABLE IF NOT EXISTS shopee_duplicate_whitelist (sku VARCHAR(255) PRIMARY KEY, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
@@ -56,6 +58,11 @@ try {
         WHERE id = ?");
 
     foreach ($mappings as $map) {
+        $newSku = $map['posSku'] ?? null;
+        $newPosId = !empty($map['posId']) ? (int)$map['posId'] : null;
+        $newUnitId = normalizeShopeePosUnitId($conn, $newPosId, $map['posUnitId'] ?? null);
+        $newStatus = $map['status'] ?? 'unmapped';
+
         $oldStmt->execute([$map['id']]);
         $oldMap = $oldStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -65,11 +72,6 @@ try {
             $oldPosId = $oldMap['pos_product_id'];
             $oldUnitId = $oldMap['pos_unit_id'] ?? null;
             $oldStatus = $oldMap['mapping_status'];
-
-            $newSku = $map['posSku'] ?? null;
-            $newPosId = $map['posId'] ?? null;
-            $newUnitId = $map['posUnitId'] ?? null;
-            $newStatus = $map['status'] ?? null;
 
             $oldSkuNorm = $oldSku !== null ? trim((string)$oldSku) : '';
             $newSkuNorm = $newSku !== null ? trim((string)$newSku) : '';
@@ -84,10 +86,10 @@ try {
         }
 
         $stmt->execute([
-            $map['posSku'],
-            $map['posId'],
-            $map['posUnitId'] ?? null,
-            $map['status'],
+            $newSku,
+            $newPosId,
+            $newUnitId,
+            $newStatus,
             $map['id']
         ]);
 

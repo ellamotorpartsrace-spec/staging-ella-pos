@@ -19,6 +19,8 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
 .map-item { padding:.75rem 1rem; border:1px solid var(--border-color); border-radius:var(--sp-radius-sm); margin-bottom:.4rem; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:.75rem; }
 .map-item:hover,.map-item.selected { border-color:var(--shopee-primary); background:var(--shopee-light); }
 .map-item.selected { box-shadow:0 0 0 2px rgba(238,77,45,.2); }
+.unit-map-note { border:1px dashed rgba(238,77,45,.35); background:rgba(238,77,45,.06); border-radius:8px; padding:.65rem .75rem; }
+.unit-result-badge { display:inline-flex; align-items:center; gap:.3rem; border:1px solid rgba(13,202,240,.35); background:rgba(13,202,240,.12); color:#087990; border-radius:999px; padding:.15rem .45rem; font-size:.68rem; font-weight:700; }
 .filter-count { display:inline-flex;align-items:center;justify-content:center;min-width:1.3rem;height:1.3rem;padding:0 4px;margin-left:4px;font-size:0.65rem;font-weight:700;border-radius:20px;background:rgba(0,0,0,0.12);color:inherit;vertical-align:middle;line-height:1; }
 .sp-pill.active .filter-count { background:rgba(255,255,255,0.3); }
     /* Popover Custom Styling */
@@ -200,11 +202,14 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
                 </div>
                 
                 <h6 class="fw-bold mb-2"><i class="fa-solid fa-boxes-stacked me-2" style="color:var(--sp-info)"></i>Select POS Product</h6>
-                <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="unit-map-note d-flex align-items-center justify-content-between gap-3 mb-3">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" id="mmUnitToggle" onchange="debouncedRenderModalPos()">
-                        <label class="form-check-label small fw-bold" for="mmUnitToggle">Search Custom Units (Boxes, Sets)</label>
+                        <input class="form-check-input" type="checkbox" role="switch" id="mmUnitToggle" onchange="toggleModalUnitSearch()">
+                        <label class="form-check-label small fw-bold" for="mmUnitToggle">Search per unit mapping</label>
                     </div>
+                    <a class="small fw-bold text-shopee text-decoration-none" href="<?= BASE_URL ?>views/inventory/unit_types.php" target="_blank">
+                        <i class="fa-solid fa-layer-group me-1"></i>Manage Units
+                    </a>
                 </div>
                 <div class="sp-search mb-3">
                     <i class="fa-solid fa-search"></i>
@@ -303,7 +308,7 @@ async function fetchMappingData() {
             .then(res => res.json())
             .then(data => {
                 POS_ITEMS = data;
-                POS_ITEMS.forEach(p => {
+                POS_ITEMS.filter(p => p.item_type === 'base').forEach(p => {
                     if (!p.sku) return;
                     const sku = String(p.sku).trim().toLowerCase();
                     if (!POS_SKU_MAP[sku]) POS_SKU_MAP[sku] = [];
@@ -353,6 +358,30 @@ function debouncedRender() {
 
 function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function getMatchKey(v){return v.hasVariation?(v.variationSku||''):(v.parentSku||'');}
+function samePosChoice(p, posId, unitId) {
+    return p && p.id === posId && (p.unit_id || null) === (unitId || null);
+}
+function findMappedPosItem(v) {
+    if (!v || !v.posId) return null;
+    return POS_ITEMS.find(p => samePosChoice(p, v.posId, v.posUnitId || null))
+        || POS_ITEMS.find(p => p.id === v.posId && p.item_type === 'base')
+        || null;
+}
+function formatPosChoiceName(p) {
+    if (!p) return '';
+    const parts = [p.product_name || ''];
+    if (p.variation_name) parts.push(`(${p.variation_name})`);
+    if (p.item_type === 'unit') parts.push(`- ${p.unit_name || 'Custom Unit'} x${p.multiplier || 1}`);
+    return parts.join(' ');
+}
+function formatPosChoiceBadge(p) {
+    if (!p) return '';
+    const sku = escHtml(p.sku || 'No SKU');
+    if (p.item_type === 'unit') {
+        return `<span class="sp-badge sp-badge-success">${sku}</span><span class="unit-result-badge ms-1"><i class="fa-solid fa-boxes-stacked"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1}</span>`;
+    }
+    return `<span class="sp-badge sp-badge-success">${sku}</span>`;
+}
 
 function showResults(){
     const idle = document.getElementById('idleState');
@@ -403,6 +432,7 @@ async function runAutoMatch(isReRun = false, btn = null) {
         if (matches.length === 1) {
             v.mapped = true;
             v.posId = matches[0].id;
+            v.posUnitId = matches[0].unit_id || null;
             v.matchedPosSku = matches[0].sku;
             v.mapStatus = 'auto';
             matches[0].used = true;
@@ -411,6 +441,7 @@ async function runAutoMatch(isReRun = false, btn = null) {
                 id: v.id,
                 posSku: matches[0].sku,
                 posId: matches[0].id,
+                posUnitId: matches[0].unit_id || null,
                 status: 'auto',
                 displayName: v.groupName + (v.varName ? ` — ${v.varName}` : ''),
                 posSkuDisplay: matches[0].sku
@@ -432,7 +463,7 @@ async function runAutoMatch(isReRun = false, btn = null) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                mappings: pendingAutoMatches.map(m => ({ id: m.id, posSku: m.posSku, posId: m.posId, status: m.status })),
+                mappings: pendingAutoMatches.map(m => ({ id: m.id, posSku: m.posSku, posId: m.posId, posUnitId: m.posUnitId, status: m.status })),
                 trigger: isReRun ? 're_run_auto_match' : 'auto_match'
             })
         });
@@ -528,7 +559,7 @@ function renderTable(){
         if (isSimple) {
             const v = vars[0];
             if (v) {
-                const posItem = v.posId ? POS_ITEMS.find(p=>p.id===v.posId) : null;
+                const posItem = findMappedPosItem(v);
                 const posSku = v.matchedPosSku || (posItem ? posItem.sku : '');
                 let statusBadge='';
                 switch(v.mapStatus){
@@ -539,12 +570,13 @@ function renderTable(){
                     case 'missing_sku': statusBadge=`<span class="sp-badge sp-badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> No SKU</span>`;break;
                     default:            statusBadge=`<span class="sp-badge sp-badge-neutral">${escHtml(v.mapStatus)}</span>`;
                 }
-                const posCell=posSku?`<span class="sp-badge sp-badge-success">${escHtml(posSku)}</span>`:`<span class="text-secondary">—</span>`;
+                const posCell=posSku?(posItem ? formatPosChoiceBadge(posItem) : `<span class="sp-badge sp-badge-success">${escHtml(posSku)}</span>`):`<span class="text-secondary">—</span>`;
                 let linkPopover = '';
                 if (v.mapped && posItem) {
-                    const safeName = escHtml(posItem.product_name);
-                    const safeVar = posItem.variation_name ? escHtml(posItem.variation_name) : '';
-                    let popContent = safeVar ? `${safeName} <br><span class='text-shopee small fw-bold'>(${safeVar})</span>` : safeName;
+                    let popContent = escHtml(formatPosChoiceName(posItem));
+                    if (posItem.item_type === 'unit') {
+                        popContent += `<br><span class='text-shopee small fw-bold'>1 Shopee unit deducts ${posItem.multiplier || 1} ${escHtml(posItem.base_unit_type || 'pcs')}</span>`;
+                    }
                     popContent = popContent.replace(/"/g, '&quot;');
                     linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
                 }
@@ -613,7 +645,7 @@ function renderTable(){
 
             // Variation Rows
             vars.forEach(v=>{
-                const pos=v.posId?POS_ITEMS.find(p=>p.id===v.posId):null;
+                const pos=findMappedPosItem(v);
                 let statusBadge='';
                 switch(v.mapStatus){
                     case 'auto':        statusBadge=`<span class="sp-badge sp-badge-success"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto</span>`;break;
@@ -623,12 +655,13 @@ function renderTable(){
                     case 'missing_sku': statusBadge=`<span class="sp-badge sp-badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> No SKU</span>`;break;
                     default:            statusBadge=`<span class="sp-badge sp-badge-neutral">${escHtml(v.mapStatus)}</span>`;
                 }
-                const posCell=pos?`<span class="sp-badge sp-badge-success">${escHtml(pos.sku)}</span>`:`<span class="text-secondary">—</span>`;
+                const posCell=pos?formatPosChoiceBadge(pos):`<span class="text-secondary">—</span>`;
                 let linkPopover = '';
                 if (v.mapped && pos) {
-                    const safeName = escHtml(pos.product_name);
-                    const safeVar = pos.variation_name ? escHtml(pos.variation_name) : '';
-                    let popContent = safeVar ? `${safeName} <br><span class='text-shopee small fw-bold'>(${safeVar})</span>` : safeName;
+                    let popContent = escHtml(formatPosChoiceName(pos));
+                    if (pos.item_type === 'unit') {
+                        popContent += `<br><span class='text-shopee small fw-bold'>1 Shopee unit deducts ${pos.multiplier || 1} ${escHtml(pos.base_unit_type || 'pcs')}</span>`;
+                    }
                     popContent = popContent.replace(/"/g, '&quot;');
                     linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
                 }
@@ -728,6 +761,8 @@ function openManualMap(id) {
     document.getElementById('mmShopeeName').textContent = v.groupName + (v.varName ? ` — ${v.varName}` : '');
     document.getElementById('mmShopeeSku').textContent = getMatchKey(v) || 'No SKU';
     document.getElementById('mmPosSearch').value = '';
+    const unitToggle = document.getElementById('mmUnitToggle');
+    if (unitToggle) unitToggle.checked = !!v.posUnitId;
     
     // Proactively restore single-item linking handler
     document.getElementById('mmLinkBtn').onclick = linkFromModal;
@@ -741,6 +776,12 @@ let posSearchTimer;
 function debouncedRenderModalPos() {
     clearTimeout(posSearchTimer);
     posSearchTimer = setTimeout(renderModalPos, 200);
+}
+
+function toggleModalUnitSearch() {
+    selectedPosId = null;
+    selectedPosUnitId = null;
+    renderModalPos();
 }
 
 function renderModalPos() {
@@ -762,7 +803,7 @@ function renderModalPos() {
     if (ps) {
         const keywords = ps.split(/\s+/).filter(k => k.length > 0);
         avail = typeFiltered.filter(p => {
-            const name = p.name.toLowerCase();
+            const name = (p.name || '').toLowerCase();
             const sku = (p.sku || '').toLowerCase();
             const brand = (p.brand || '').toLowerCase();
             const barcode = (p.barcode || '').toLowerCase();
@@ -774,7 +815,7 @@ function renderModalPos() {
             );
         });
     } else {
-        avail = POS_ITEMS;
+        avail = typeFiltered;
     }
     
     let html = '';
@@ -788,7 +829,7 @@ function renderModalPos() {
                 const varBadge = p.variation_name 
                     ? `<span class="badge bg-light text-dark border ms-2 small" style="font-size: 0.7rem; font-weight: normal;">${escHtml(p.variation_name)}</span>` 
                     : '';
-                const multBadge = p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-xmark me-1"></i>${p.multiplier} pcs</span>` : '';
+                const multBadge = p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-boxes-stacked me-1"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1} ${escHtml(p.base_unit_type || 'pcs')}</span>` : '';
                 const isSelected = selectedPosId === p.id && selectedPosUnitId === p.unit_id;
                 
                 html += `
@@ -796,7 +837,7 @@ function renderModalPos() {
                     <div style="width:30px;height:30px;background:var(--sp-success-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-circle-check" style="color:var(--sp-success);font-size:.75rem"></i></div>
                     <div class="flex-grow-1" style="min-width:0; line-height: 1.4;">
                         <div class="fw-bold text-success" style="font-size: 0.85rem; word-break: break-word;">
-                            ${escHtml(p.product_name)} ${varBadge} ${multBadge}
+                            ${escHtml(formatPosChoiceName(p))} ${multBadge}
                         </div>
                         <div class="d-flex align-items-center gap-2 mt-1" style="font-size:.72rem;">
                             <span class="text-secondary">SKU:</span>
@@ -824,7 +865,7 @@ function renderModalPos() {
         const varBadge = p.variation_name 
             ? `<span class="badge bg-light text-dark border ms-2 small" style="font-size: 0.7rem; font-weight: normal;">${escHtml(p.variation_name)}</span>` 
             : '';
-        const multBadge = p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-xmark me-1"></i>${p.multiplier} pcs</span>` : '';
+        const multBadge = p.item_type === 'unit' ? `<span class="badge bg-info text-dark ms-2 small" style="font-size: 0.7rem;"><i class="fa-solid fa-boxes-stacked me-1"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1} ${escHtml(p.base_unit_type || 'pcs')}</span>` : '';
         const isSelected = selectedPosId === p.id && selectedPosUnitId === p.unit_id;
         
         return `
@@ -832,7 +873,7 @@ function renderModalPos() {
             <div style="width:30px;height:30px;background:var(--sp-info-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-boxes-stacked" style="color:var(--sp-info);font-size:.75rem"></i></div>
             <div class="flex-grow-1" style="min-width:0; line-height: 1.4;">
                 <div class="fw-bold text-dark" style="font-size: 0.85rem; word-break: break-word;">
-                    ${escHtml(p.product_name)} ${varBadge} ${multBadge}
+                    ${escHtml(formatPosChoiceName(p))} ${multBadge}
                 </div>
                 <div class="d-flex align-items-center gap-2 mt-1" style="font-size:.72rem;">
                     <span class="text-secondary">SKU:</span>
@@ -893,7 +934,7 @@ async function linkFromModal() {
         });
         const data = await res.json();
         if (data.success) {
-            v.mapped = true; v.posId = p.id; v.mapStatus = 'manual'; p.used = true;
+            v.mapped = true; v.posId = p.id; v.posUnitId = p.unit_id || null; v.matchedPosSku = p.sku; v.mapStatus = 'manual'; p.used = true;
             manualMapModal.hide();
             updateCounts(); renderTable();
             if(typeof EllaToast!=='undefined') {
@@ -956,9 +997,9 @@ async function doUnlink(id) {
         });
         const data = await res.json();
         if (data.success) {
-            const p = POS_ITEMS.find(x => x.id === v.posId);
+            const p = POS_ITEMS.find(x => samePosChoice(x, v.posId, v.posUnitId || null));
             if (p) p.used = false;
-            v.mapped = false; v.posId = null; v.mapStatus = 'unmapped';
+            v.mapped = false; v.posId = null; v.posUnitId = null; v.matchedPosSku = null; v.mapStatus = 'unmapped';
             updateCounts(); renderTable();
             if (typeof EllaToast !== 'undefined') EllaToast.warning(`Unlinked: ${v.groupName}${v.varName ? ' — ' + v.varName : ''}`);
         } else {

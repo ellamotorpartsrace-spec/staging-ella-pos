@@ -12,11 +12,13 @@ $conn = $db->getConnection();
 $mappedRows = $conn->query("
     SELECT m.id, m.shopee_item_id, m.shopee_product_name, m.shopee_variation_name,
         m.shopee_model_id, m.shopee_stock, m.mapping_status, m.shopee_image_url,
-        m.stock_allocation_ratio, m.pos_product_id,
+        m.stock_allocation_ratio, m.pos_product_id, m.pos_unit_id,
         (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0)) as pos_qty,
-        COALESCE(v.sku, m.matched_pos_sku, m.shopee_variation_sku, m.shopee_parent_sku) as sku
+        COALESCE(v.sku, m.matched_pos_sku, m.shopee_variation_sku, m.shopee_parent_sku) as sku,
+        u.unit_name, u.multiplier
     FROM shopee_product_mappings m
     LEFT JOIN product_variations v ON m.pos_product_id = v.variation_id
+    LEFT JOIN product_units u ON m.pos_unit_id = u.id
     LEFT JOIN inventory i1 ON v.variation_id = i1.variation_id AND i1.store_id = 1
     LEFT JOIN inventory i2 ON v.variation_id = i2.variation_id AND i2.store_id = 2
     WHERE m.mapping_status IN ('auto','manual')
@@ -99,16 +101,22 @@ foreach ($mappedRows as $r) {
         }
     }
     
+    $multiplier = isset($r['multiplier']) ? (int)$r['multiplier'] : 1;
+    if ($multiplier <= 0) $multiplier = 1;
+    $unitQty = floor((int)$r['pos_qty'] / $multiplier);
+
     $availableStock = (int)$r['shopee_stock'];
     $st = $r['shopee_stock']==0?'unallocated':($availableStock<=5?'low':'synced');
     $mappedGroups[$iid]['vars'][] = [
         'id'=>(int)$r['id'],'varName'=>$r['shopee_variation_name']??'','sku'=>$r['sku']??'',
-        'total'=>(int)$r['pos_qty'],'online'=>(int)$r['shopee_stock'],'status'=>$st,
+        'total'=>$unitQty,'online'=>(int)$r['shopee_stock'],'status'=>$st,
         'itemId'=>(int)$r['shopee_item_id'],'modelId'=>$r['shopee_model_id'],
         'ratio'=>(int)($r['stock_allocation_ratio'] ?? 100),
         'isDuplicate'=>$isDup,
         'dupDetails'=>$dupDetails,
-        'mappingStatus'=>$r['mapping_status']
+        'mappingStatus'=>$r['mapping_status'],
+        'unitName'=>$r['unit_name'] ?? null,
+        'multiplier'=>$multiplier
     ];
 }
 
@@ -454,7 +462,7 @@ $totalUnmapped = count($unmappedRows);
                             <div class="stock-summary-card flex-fill text-center p-3 rounded-3 border bg-light shadow-xs position-relative" style="border-color: rgba(0,0,0,0.06) !important; min-width: 0;">
                                 <div class="stock-card-label text-uppercase text-secondary mb-1" style="font-size: 0.68rem; letter-spacing: 0.05em; font-weight: 700;">Overall Stock</div>
                                 <div class="stock-card-number text-dark fw-extrabold" id="mTotal" style="font-size: 2.2rem; line-height: 1.1; font-weight: 800 !important;">0</div>
-                                <div class="stock-card-sub text-muted" style="font-size: 0.65rem; font-weight: 500;">Physical POS</div>
+                                <div class="stock-card-sub text-muted" id="mTotalSub" style="font-size: 0.65rem; font-weight: 500;">Physical POS</div>
                             </div>
                             
                             <!-- Sleek Connection indicator -->
@@ -977,6 +985,10 @@ function renderMapped(){
                 const actualPct = v.total > 0 ? Math.floor((v.online / v.total) * 100) : 0;
                 const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
 
+                const unitBadge = v.unitName 
+                    ? `<span class="badge bg-light text-secondary border font-normal ms-1" style="font-size:0.68rem;" title="Mapped to custom unit type"><i class="fa-solid fa-box me-1"></i>${escHtml(v.unitName)} (x${v.multiplier})</span>` 
+                    : '';
+
                 html += `<tr class="sp-group-start">
                     <td>
                         <div class="d-flex align-items-center gap-3">
@@ -997,6 +1009,7 @@ function renderMapped(){
                     </td>
                     <td>
                         ${v.sku?`<span class="sp-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">—</span>`}
+                        ${unitBadge}
                         ${v.isDuplicate?`<span class="badge bg-danger-light text-danger ms-1" style="font-size:0.68rem; border:1px solid rgba(220,53,69,0.25); cursor:pointer;" onclick="openEdit(${v.id})" title="Click to view shared allocation details"><i class="fa-solid fa-clone me-1"></i>Shared (${actualSharedPct}% Allocated)</span>`:''}
                         ${v.mappingStatus==='manual'?`<span class="sp-badge sp-badge-info ms-1" style="padding:0.2rem 0.5rem; font-size:0.68rem;" title="Manually mapped in mapping page"><i class="fa-solid fa-hand-pointer me-1"></i>Manual</span>`:''}
                     </td>
@@ -1066,6 +1079,10 @@ function renderMapped(){
                 const actualPct = v.total > 0 ? Math.floor((v.online / v.total) * 100) : 0;
                 const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
 
+                const unitBadge = v.unitName 
+                    ? `<span class="badge bg-light text-secondary border font-normal ms-1" style="font-size:0.68rem;" title="Mapped to custom unit type"><i class="fa-solid fa-box me-1"></i>${escHtml(v.unitName)} (x${v.multiplier})</span>` 
+                    : '';
+
                 html += `<tr>
                     <td class="sp-tree-indent">
                         <div class="d-flex align-items-center">
@@ -1077,6 +1094,7 @@ function renderMapped(){
                     <td><span class="text-secondary">—</span></td>
                     <td>
                         ${v.sku?`<span class="sp-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">—</span>`}
+                        ${unitBadge}
                         ${v.isDuplicate?`<span class="badge bg-danger-light text-danger ms-1" style="font-size:0.68rem; border:1px solid rgba(220,53,69,0.25); cursor:pointer;" onclick="openEdit(${v.id})" title="Click to view shared allocation details"><i class="fa-solid fa-clone me-1"></i>Shared (${actualSharedPct}% Allocated)</span>`:''}
                         ${v.mappingStatus==='manual'?`<span class="sp-badge sp-badge-info ms-1" style="padding:0.2rem 0.5rem; font-size:0.68rem;" title="Manually mapped in mapping page"><i class="fa-solid fa-hand-pointer me-1"></i>Manual</span>`:''}
                     </td>
@@ -1304,7 +1322,13 @@ function updateSummary(){
 function openEdit(id){
     currentEdit=MAPPED_FLAT.find(v=>v.id===id);
     document.getElementById('mName').textContent =currentEdit.groupName+(currentEdit.varName?' — '+currentEdit.varName:'');
-    document.getElementById('mSku').textContent  =currentEdit.sku||'—';
+    
+    let skuHtml = currentEdit.sku || '—';
+    if (currentEdit.unitName) {
+        skuHtml += ` <span class="badge bg-light text-secondary border font-normal ms-2" style="font-size: 0.72rem;"><i class="fa-solid fa-box me-1"></i>Unit: ${escHtml(currentEdit.unitName)} (${currentEdit.multiplier} pcs)</span>`;
+    }
+    document.getElementById('mSku').innerHTML = skuHtml;
+    
     document.getElementById('mTotal').textContent=currentEdit.total;
     document.getElementById('mOnlineStock').value =currentEdit.online !== undefined ? currentEdit.online : currentEdit.total;
     calcModal();
