@@ -239,9 +239,11 @@ try {
     echo json_encode(['success' => true, 'message' => 'Ratio updated and stock synced to Shopee']);
 
 } catch (Exception $e) {
-    if (isset($conn) && $conn->inTransaction()) {
-        $conn->rollBack();
-    }
+    try {
+        if (isset($conn) && $conn->inTransaction()) {
+            $conn->rollBack();
+        }
+    } catch (Exception $rollbackEx) {}
     // Log the failure
     try {
         if (isset($conn)) {
