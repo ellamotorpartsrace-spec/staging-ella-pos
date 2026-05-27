@@ -356,6 +356,8 @@ function renderLogs() {
         body.innerHTML = '<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-clock-rotate-left d-block"></i><h5>No logs found</h5><p>Try adjusting your filters.</p></div></td></tr>';
         return;
     }
+    // Aggressively remove any stuck popovers from the DOM
+    document.querySelectorAll('.popover').forEach(p => p.remove());
 
     body.innerHTML = items.map(l => {
         let eventBadge = '';
@@ -421,20 +423,26 @@ function renderLogs() {
 
             if (isBulkSummary) {
                 details = `<span class="small"><i class="fa-solid fa-wand-magic-sparkles me-1" style="color:#6610f2"></i><span class="text-dark">${l.newStock}</span></span>`;
-            } else if (isUnlinked) {
-                const displayOld = (l.oldStock === 'Unmapped' || !l.oldStock) ? '[No SKU]' : l.oldStock;
-                const encName = encodeURIComponent(l.posName || 'Unknown POS Product').replace(/'/g, "%27");
-                const noSkuHtml = `<a href="javascript:void(0)" onclick="showPosName('${encName}')" style="text-decoration:none; color:inherit;">${displayOld} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:var(--text-secondary)"></i></a>`;
-                details = `<span class="small"><i class="fa-solid fa-link-slash me-1 text-danger"></i><span class="text-secondary">Unlinked from POS SKU:</span> <del class="font-monospace text-muted ms-1" style="background:rgba(220,53,69,0.06);padding:2px 7px;border-radius:4px;border:1px solid rgba(220,53,69,0.15)">${noSkuHtml}</del></span>`;
-            } else if (isNewLink) {
-                const displayNew = (l.newStock === 'Unmapped' || !l.newStock) ? '[No SKU]' : l.newStock;
-                const encName = encodeURIComponent(l.posName || 'Unknown POS Product').replace(/'/g, "%27");
-                const noSkuHtml = `<a href="javascript:void(0)" onclick="showPosName('${encName}')" style="text-decoration:none; color:inherit;">${displayNew} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:#198754"></i></a>`;
-                details = `<span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${noSkuHtml}</span></span>`;
             } else {
-                const encName = encodeURIComponent(l.posName || 'Unknown POS Product').replace(/'/g, "%27");
-                const newHtml = `<a href="javascript:void(0)" onclick="showPosName('${encName}')" style="text-decoration:none; color:inherit;">${l.newStock} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:#6366f1"></i></a>`;
-                details = `<span class="small"><i class="fa-solid fa-arrows-rotate me-1" style="color:#6610f2"></i><span class="text-secondary">Relinked:</span> <del class="font-monospace text-muted ms-1" style="font-size:0.8rem;padding:2px 6px;background:rgba(0,0,0,0.04);border-radius:4px">${l.oldStock}</del> <i class="fa-solid fa-arrow-right mx-1" style="color:#ee4d2d;font-size:0.72rem"></i> <span class="font-monospace fw-semibold" style="background:rgba(99,102,241,0.08);color:#6366f1;padding:2px 7px;border-radius:4px;border:1px solid rgba(99,102,241,0.2)">${newHtml}</span></span>`;
+                const getPopoverHtml = (text, iconColor) => {
+                    const safeName = (l.posName || 'Unknown POS Product').replace(/"/g, '&quot;');
+                    const popContent = `<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${safeName}</div>`;
+                    const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
+                    return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none;" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}"></i></a>`;
+                };
+
+                if (isUnlinked) {
+                    const displayOld = (l.oldStock === 'Unmapped' || !l.oldStock) ? '[No SKU]' : l.oldStock;
+                    const noSkuHtml = getPopoverHtml(displayOld, 'var(--text-secondary)');
+                    details = `<span class="small"><i class="fa-solid fa-link-slash me-1 text-danger"></i><span class="text-secondary">Unlinked from POS SKU:</span> <del class="font-monospace text-muted ms-1" style="background:rgba(220,53,69,0.06);padding:2px 7px;border-radius:4px;border:1px solid rgba(220,53,69,0.15)">${noSkuHtml}</del></span>`;
+                } else if (isNewLink) {
+                    const displayNew = (l.newStock === 'Unmapped' || !l.newStock) ? '[No SKU]' : l.newStock;
+                    const noSkuHtml = getPopoverHtml(displayNew, '#198754');
+                    details = `<span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${noSkuHtml}</span></span>`;
+                } else {
+                    const newHtml = getPopoverHtml(l.newStock, '#6366f1');
+                    details = `<span class="small"><i class="fa-solid fa-arrows-rotate me-1" style="color:#6610f2"></i><span class="text-secondary">Relinked:</span> <del class="font-monospace text-muted ms-1" style="font-size:0.8rem;padding:2px 6px;background:rgba(0,0,0,0.04);border-radius:4px">${l.oldStock}</del> <i class="fa-solid fa-arrow-right mx-1" style="color:#ee4d2d;font-size:0.72rem"></i> <span class="font-monospace fw-semibold" style="background:rgba(99,102,241,0.08);color:#6366f1;padding:2px 7px;border-radius:4px;border:1px solid rgba(99,102,241,0.2)">${newHtml}</span></span>`;
+                }
             }
 
         } else if (l.event === 'stock_update') {
@@ -575,27 +583,16 @@ function renderLogs() {
     }).join('');
 }
 
-document.addEventListener('DOMContentLoaded', renderLogs);
-
-window.showPosName = function(nameStr) {
-    if (typeof Swal !== 'undefined') {
-        const name = decodeURIComponent(nameStr);
-        let html = `
-            <div class="text-start">
-                <div class="fw-bold text-dark mb-1">${name}</div>
-            </div>
-        `;
-        Swal.fire({
-            title: 'Linked POS Product',
-            html: html,
-            icon: 'info',
-            confirmButtonColor: 'var(--shopee-primary)',
-            confirmButtonText: 'Close'
+document.addEventListener('DOMContentLoaded', () => {
+    // Use Popover event delegation globally to completely bypass dynamic rendering bugs!
+    if (typeof bootstrap !== 'undefined') {
+        new bootstrap.Popover(document.body, {
+            selector: '[data-bs-toggle="popover"]',
+            html: true
         });
-    } else {
-        alert("POS Product Name:\n" + decodeURIComponent(nameStr));
     }
-};
+    renderLogs();
+});
 
 </script>
 

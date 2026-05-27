@@ -225,6 +225,14 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
 window.BASE_URL = '<?= BASE_URL ?>';
 let manualMapModal;
 document.addEventListener('DOMContentLoaded', () => {
+    // Use Popover event delegation globally to completely bypass dynamic rendering bugs!
+    if (typeof bootstrap !== 'undefined') {
+        new bootstrap.Popover(document.body, {
+            selector: '[data-bs-toggle="popover"]',
+            html: true
+        });
+    }
+
     manualMapModal = new bootstrap.Modal(document.getElementById('manualMapModal'));
     
     // Clear session storage if arriving from navigation (not reload)
@@ -538,7 +546,7 @@ function renderTable(){
                     const safeVar = posItem.variation_name ? escHtml(posItem.variation_name) : '';
                     let popContent = safeVar ? `${safeName} <br><span class='text-shopee small fw-bold'>(${safeVar})</span>` : safeName;
                     popContent = popContent.replace(/"/g, '&quot;');
-                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="click" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
+                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
                 }
                 const linkIcon=v.mapped?`<a role="button" tabindex="0" class="text-shopee text-decoration-none" style="cursor:pointer;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
@@ -622,7 +630,7 @@ function renderTable(){
                     const safeVar = pos.variation_name ? escHtml(pos.variation_name) : '';
                     let popContent = safeVar ? `${safeName} <br><span class='text-shopee small fw-bold'>(${safeVar})</span>` : safeName;
                     popContent = popContent.replace(/"/g, '&quot;');
-                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="click" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
+                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
                 }
                 const linkIcon=v.mapped?`<a role="button" tabindex="0" class="text-shopee text-decoration-none" style="cursor:pointer;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
@@ -656,19 +664,8 @@ function renderTable(){
         }
     });
 
-    // Destroy old popovers and tooltips
-    if (typeof bootstrap !== 'undefined') {
-        const oldPopovers = [].slice.call(document.querySelectorAll('#mapTableBody [data-bs-toggle="popover"]'));
-        oldPopovers.forEach(el => {
-            const instance = bootstrap.Popover.getInstance(el);
-            if (instance) instance.dispose();
-        });
-        const oldTooltips = [].slice.call(document.querySelectorAll('#mapTableBody [data-bs-toggle="tooltip"]'));
-        oldTooltips.forEach(el => {
-            const instance = bootstrap.Tooltip.getInstance(el);
-            if (instance) instance.dispose();
-        });
-    }
+    // Aggressively remove any stuck popovers from the DOM
+    document.querySelectorAll('.popover').forEach(p => p.remove());
 
     if(!totalItems){
         body.innerHTML=`<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-filter d-block"></i><h5>No items match this filter</h5></div></td></tr>`;
