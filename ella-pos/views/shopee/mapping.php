@@ -25,34 +25,37 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
 .sp-pill.active .filter-count { background:rgba(255,255,255,0.3); }
     /* Popover Custom Styling */
     .shopee-popover {
-        --bs-popover-max-width: 320px;
-        --bs-popover-border-color: rgba(238, 77, 45, 0.3);
+        --bs-popover-max-width: 300px;
+        --bs-popover-border-color: rgba(238, 77, 45, 0.25);
         --bs-popover-header-bg: #ee4d2d;
         --bs-popover-header-color: #fff;
-        --bs-popover-body-padding-x: 1.25rem;
-        --bs-popover-body-padding-y: 1.25rem;
-        border-radius: 10px;
-        box-shadow: 0 8px 24px rgba(238, 77, 45, 0.15);
+        --bs-popover-body-padding-x: 0.75rem;
+        --bs-popover-body-padding-y: 0.6rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(238, 77, 45, 0.12);
         border: 1px solid var(--bs-popover-border-color);
+        font-size: 0.82rem;
     }
     .shopee-popover .popover-header {
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: 0.78rem;
         border-bottom: none;
-        border-top-left-radius: 9px;
-        border-top-right-radius: 9px;
+        border-top-left-radius: 7px;
+        border-top-right-radius: 7px;
         text-align: center;
-        letter-spacing: 0.5px;
+        padding: 0.35rem 0.75rem;
+        letter-spacing: 0.3px;
     }
     .shopee-popover .popover-body {
         background-color: #fff;
         color: #333;
-        font-size: 0.95rem;
-        border-bottom-left-radius: 9px;
-        border-bottom-right-radius: 9px;
+        font-size: 0.82rem;
+        border-bottom-left-radius: 7px;
+        border-bottom-right-radius: 7px;
+        padding: 0.5rem 0.75rem;
     }
     .shopee-popover .popover-arrow::before {
-        border-top-color: rgba(238, 77, 45, 0.3);
+        border-top-color: rgba(238, 77, 45, 0.25);
     }
     .shopee-popover .popover-arrow::after {
         border-top-color: #fff;
@@ -230,11 +233,13 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
 window.BASE_URL = '<?= BASE_URL ?>';
 let manualMapModal;
 document.addEventListener('DOMContentLoaded', () => {
-    // Use Popover event delegation globally to completely bypass dynamic rendering bugs!
+    // Use Popover event delegation globally — hover to show, mouseout to hide
     if (typeof bootstrap !== 'undefined') {
         new bootstrap.Popover(document.body, {
             selector: '[data-bs-toggle="popover"]',
-            html: true
+            html: true,
+            trigger: 'hover',
+            placement: 'top'
         });
     }
 
@@ -573,14 +578,15 @@ function renderTable(){
                 const posCell=posSku?(posItem ? formatPosChoiceBadge(posItem) : `<span class="sp-badge sp-badge-success">${escHtml(posSku)}</span>`):`<span class="text-secondary">—</span>`;
                 let linkPopover = '';
                 if (v.mapped && posItem) {
-                    let popContent = escHtml(formatPosChoiceName(posItem));
-                    if (posItem.item_type === 'unit') {
-                        popContent += `<br><span class='text-shopee small fw-bold'>1 Shopee unit deducts ${posItem.multiplier || 1} ${escHtml(posItem.base_unit_type || 'pcs')}</span>`;
-                    }
+                    const safeName = escHtml(posItem.product_name || '');
+                    const safeVar = posItem.variation_name ? escHtml(posItem.variation_name) : '';
+                    const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
+                    const unitHtml = posItem.item_type === 'unit' ? `<div style='font-size:0.72rem;color:#6366f1;margin-top:3px;font-weight:600;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px'>1 Shopee unit deducts ${posItem.multiplier || 1} ${escHtml(posItem.base_unit_type || 'pcs')}</div>` : '';
+                    let popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}${unitHtml}</div>`;
                     popContent = popContent.replace(/"/g, '&quot;');
-                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
+                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                 }
-                const linkIcon=v.mapped?`<a role="button" tabindex="0" class="text-shopee text-decoration-none" style="cursor:pointer;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
+                const linkIcon=v.mapped?`<a role="button" class="text-shopee text-decoration-none" style="cursor:pointer;padding:6px;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-shopee" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
@@ -658,14 +664,15 @@ function renderTable(){
                 const posCell=pos?formatPosChoiceBadge(pos):`<span class="text-secondary">—</span>`;
                 let linkPopover = '';
                 if (v.mapped && pos) {
-                    let popContent = escHtml(formatPosChoiceName(pos));
-                    if (pos.item_type === 'unit') {
-                        popContent += `<br><span class='text-shopee small fw-bold'>1 Shopee unit deducts ${pos.multiplier || 1} ${escHtml(pos.base_unit_type || 'pcs')}</span>`;
-                    }
+                    const safeName = escHtml(pos.product_name || '');
+                    const safeVar = pos.variation_name ? escHtml(pos.variation_name) : '';
+                    const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
+                    const unitHtml = pos.item_type === 'unit' ? `<div style='font-size:0.72rem;color:#6366f1;margin-top:3px;font-weight:600;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px'>1 Shopee unit deducts ${pos.multiplier || 1} ${escHtml(pos.base_unit_type || 'pcs')}</div>` : '';
+                    let popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}${unitHtml}</div>`;
                     popContent = popContent.replace(/"/g, '&quot;');
-                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${popContent}</div>"`;
+                    linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                 }
-                const linkIcon=v.mapped?`<a role="button" tabindex="0" class="text-shopee text-decoration-none" style="cursor:pointer;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
+                const linkIcon=v.mapped?`<a role="button" class="text-shopee text-decoration-none" style="cursor:pointer;padding:6px;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-shopee" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;

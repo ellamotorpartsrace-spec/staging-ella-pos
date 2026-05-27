@@ -30,7 +30,12 @@ $stmt = $conn->prepare("
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             JOIN products p ON v.product_id = p.product_id
             WHERE m.shopee_item_id = l.shopee_item_id 
-            ORDER BY m.id DESC LIMIT 1) as current_mapped_pos_name
+            ORDER BY m.id DESC LIMIT 1) as current_mapped_pos_name,
+           (SELECT v.variation_name 
+            FROM shopee_product_mappings m 
+            JOIN product_variations v ON m.pos_product_id = v.variation_id
+            WHERE m.shopee_item_id = l.shopee_item_id 
+            ORDER BY m.id DESC LIMIT 1) as current_mapped_pos_variation
     FROM shopee_sync_logs l
     LEFT JOIN users u ON l.created_by = u.id
     $whereSql
@@ -54,7 +59,8 @@ foreach ($dbLogs as $l) {
         'status' => $l['status'],
         'error' => $l['error_message'] ?: '',
         'user' => $l['user_name'] ?: 'System',
-        'posName' => $l['current_mapped_pos_name'] ?: 'Unknown POS Product'
+        'posName' => $l['current_mapped_pos_name'] ?: 'Unknown POS Product',
+        'posVarName' => $l['current_mapped_pos_variation'] ?: ''
     ];
 }
 
@@ -219,6 +225,43 @@ require_once '../../includes/sidebar.php';
 @keyframes premium-fadeIn {
     from { opacity: 0; transform: scale(0.98); }
     to { opacity: 1; transform: scale(1); }
+}
+/* Green Popover for Logs */
+.logs-popover {
+    --bs-popover-max-width: 300px;
+    --bs-popover-border-color: rgba(25, 135, 84, 0.25);
+    --bs-popover-header-bg: #198754;
+    --bs-popover-header-color: #fff;
+    --bs-popover-body-padding-x: 0.75rem;
+    --bs-popover-body-padding-y: 0.6rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(25, 135, 84, 0.12);
+    border: 1px solid var(--bs-popover-border-color);
+    font-size: 0.82rem;
+}
+.logs-popover .popover-header {
+    font-weight: 600;
+    font-size: 0.78rem;
+    border-bottom: none;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    text-align: center;
+    padding: 0.35rem 0.75rem;
+    letter-spacing: 0.3px;
+}
+.logs-popover .popover-body {
+    background-color: #fff;
+    color: #333;
+    font-size: 0.82rem;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+    padding: 0.5rem 0.75rem;
+}
+.logs-popover .popover-arrow::before {
+    border-top-color: rgba(25, 135, 84, 0.25);
+}
+.logs-popover .popover-arrow::after {
+    border-top-color: #fff;
 }
 </style>
 
@@ -426,8 +469,10 @@ function renderLogs() {
             } else {
                 const getPopoverHtml = (text, iconColor) => {
                     const safeName = (l.posName || 'Unknown POS Product').replace(/"/g, '&quot;');
-                    const popContent = `<div class='text-center fw-bold' style='user-select:all; word-break:break-word; line-height:1.4;'>${safeName}</div>`;
-                    const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
+                    const safeVar = (l.posVarName || '').replace(/"/g, '&quot;');
+                    const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
+                    const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
+                    const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="logs-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                     return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none;" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}"></i></a>`;
                 };
 
@@ -584,11 +629,13 @@ function renderLogs() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Use Popover event delegation globally to completely bypass dynamic rendering bugs!
+    // Use Popover event delegation globally — hover to show, mouseout to hide
     if (typeof bootstrap !== 'undefined') {
         new bootstrap.Popover(document.body, {
             selector: '[data-bs-toggle="popover"]',
-            html: true
+            html: true,
+            trigger: 'hover',
+            placement: 'top'
         });
     }
     renderLogs();
