@@ -69,7 +69,9 @@ foreach ($mappedRows as $r) {
             'itemId' => $r['shopee_item_id'],
             'ratio' => (int)($r['stock_allocation_ratio'] ?? 100),
             'online' => (int)$r['shopee_stock'],
-            'imageUrl' => $r['shopee_image_url'] ?? ''
+            'imageUrl' => $r['shopee_image_url'] ?? '',
+            'unitName' => $r['unit_name'] ?? null,
+            'multiplier' => max(1, (int)($r['multiplier'] ?? 1))
         ];
     }
 }
@@ -103,13 +105,14 @@ foreach ($mappedRows as $r) {
     
     $multiplier = isset($r['multiplier']) ? (int)$r['multiplier'] : 1;
     if ($multiplier <= 0) $multiplier = 1;
-    $unitQty = floor((int)$r['pos_qty'] / $multiplier);
+    $baseQty = (int)$r['pos_qty'];
+    $unitQty = floor($baseQty / $multiplier);
 
     $availableStock = (int)$r['shopee_stock'];
     $st = $r['shopee_stock']==0?'unallocated':($availableStock<=5?'low':'synced');
     $mappedGroups[$iid]['vars'][] = [
         'id'=>(int)$r['id'],'varName'=>$r['shopee_variation_name']??'','sku'=>$r['sku']??'',
-        'total'=>$unitQty,'online'=>(int)$r['shopee_stock'],'status'=>$st,
+        'total'=>$baseQty,'unitTotal'=>$unitQty,'online'=>(int)$r['shopee_stock'],'status'=>$st,
         'itemId'=>(int)$r['shopee_item_id'],'modelId'=>$r['shopee_model_id'],
         'ratio'=>(int)($r['stock_allocation_ratio'] ?? 100),
         'isDuplicate'=>$isDup,
@@ -625,6 +628,63 @@ let sessionChangedCount = 0;
 
 function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+function unitMultiplier(item) {
+    return Math.max(1, parseInt(item?.multiplier, 10) || 1);
+}
+function unitLimit(item) {
+    const explicit = parseInt(item?.unitTotal, 10);
+    if (!Number.isNaN(explicit) && explicit >= 0) return explicit;
+    return Math.floor((parseInt(item?.total, 10) || 0) / unitMultiplier(item));
+}
+function toBaseQty(qty, item) {
+    return (parseInt(qty, 10) || 0) * unitMultiplier(item);
+}
+function allocationUnitLabel(item) {
+    return item?.unitName ? item.unitName : 'item';
+}
+function formatAllocatedLabel(units, baseQty, item) {
+    if (unitMultiplier(item) <= 1) return `${baseQty} item${baseQty === 1 ? '' : 's'}`;
+    return `${units} ${allocationUnitLabel(item)}${units === 1 ? '' : 's'} / ${baseQty} pcs`;
+}
+function sharedItemById(id) {
+    if (!currentEdit || !currentEdit.dupDetails) return null;
+    return currentEdit.dupDetails.find(d => parseInt(d.id, 10) === parseInt(id, 10)) || null;
+}
+function getSharedInputItem(inp) {
+    return sharedItemById(inp.dataset.id) || currentEdit;
+}
+function getTotalAllocatedBaseFromModal() {
+    let totalBase = toBaseQty(document.getElementById('mOnlineStock')?.value || 0, currentEdit);
+    const sharedInputs = document.querySelectorAll('.shared-alloc-input');
+    if (sharedInputs.length > 0) {
+        sharedInputs.forEach(inp => {
+            totalBase += toBaseQty(inp.value, getSharedInputItem(inp));
+        });
+    } else if (currentEdit?.dupDetails) {
+        currentEdit.dupDetails.forEach(d => {
+            totalBase += toBaseQty(d.online, d);
+        });
+    }
+    return totalBase;
+}
+function getTotalAllocatedUnitsFromModal() {
+    let totalUnits = parseInt(document.getElementById('mOnlineStock')?.value, 10) || 0;
+    const sharedInputs = document.querySelectorAll('.shared-alloc-input');
+    if (sharedInputs.length > 0) {
+        sharedInputs.forEach(inp => totalUnits += (parseInt(inp.value, 10) || 0));
+    } else if (currentEdit?.dupDetails) {
+        currentEdit.dupDetails.forEach(d => totalUnits += (parseInt(d.online, 10) || 0));
+    }
+    return totalUnits;
+}
+function getExistingAllocatedBase(item) {
+    let totalBase = toBaseQty(item.online, item);
+    if (item.isDuplicate && item.dupDetails) {
+        item.dupDetails.forEach(d => totalBase += toBaseQty(d.online, d));
+    }
+    return totalBase;
+}
+
 let renderTimeout = null;
 
 function saveState() {
@@ -792,8 +852,10 @@ function renderModalSharedDetails(v) {
 
     let itemsHtml = '';
     const currentInputVal = parseInt(document.getElementById('mOnlineStock').value) || 0;
-    const currentRatio = v.total > 0 ? Math.round((currentInputVal / v.total) * 100) : 100;
+    const currentBaseQty = toBaseQty(currentInputVal, v);
+    const currentRatio = v.total > 0 ? Math.round((currentBaseQty / v.total) * 100) : 100;
     let totalOnlineStock = currentInputVal;
+    let totalOnlineBase = currentBaseQty;
     
     // Add current listing detail (Active)
     itemsHtml += `
@@ -802,7 +864,7 @@ function renderModalSharedDetails(v) {
             <i class="fa-solid fa-angle-right text-shopee"></i>
             <span>This Listing (Active)</span>
         </div>
-        <div class="fw-bold text-shopee fs-6" id="mSharedCurrentOnline" style="padding-right: 0.5rem;">${currentInputVal}</div>
+        <div class="fw-bold text-shopee fs-6" style="padding-right: 0.5rem;"><span id="mSharedCurrentOnline">${currentInputVal}</span>${unitMultiplier(v) > 1 ? `<span class="d-block small text-secondary fw-normal" id="mSharedCurrentBase">${currentBaseQty} pcs</span>` : ''}</div>
     </div>`;
 
     // Add other listings
@@ -831,9 +893,10 @@ function renderModalSharedDetails(v) {
             </div>
         </div>`;
         totalOnlineStock += d.online;
+        totalOnlineBase += toBaseQty(d.online, d);
     });
 
-    const isExceeded = totalOnlineStock > v.total;
+    const isExceeded = totalOnlineBase > v.total;
     const alertClass = isExceeded ? 'alert-danger' : 'alert-success';
     const alertIcon = isExceeded ? 'fa-triangle-exclamation' : 'fa-circle-check';
     const alertMsg = isExceeded 
@@ -843,7 +906,7 @@ function renderModalSharedDetails(v) {
     container.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-2.5">
             <h6 class="mb-0 fw-bold" style="font-size: 0.9rem; color: var(--text-primary);"><i class="fa-solid fa-clone me-2 text-shopee"></i>Shared Allocations</h6>
-            <div class="badge bg-light text-secondary border px-2.5 py-1.5 shadow-none" style="font-size: 0.72rem; font-weight: 600;"><span id="mSharedTotalOnline" class="fw-bold text-shopee" style="font-size:0.8rem">${totalOnlineStock}</span> <span class="opacity-50 fw-normal">/ ${v.total} Total</span></div>
+            <div class="badge bg-light text-secondary border px-2.5 py-1.5 shadow-none" style="font-size: 0.72rem; font-weight: 600;"><span id="mSharedTotalOnline" class="fw-bold text-shopee" style="font-size:0.8rem">${totalOnlineStock}</span> <span class="opacity-50 fw-normal" id="mSharedTotalBase">/ ${totalOnlineBase} of ${v.total} pcs</span></div>
         </div>
         <div class="flex-grow-1 p-1" style="max-height: 48vh; overflow-y: auto; scrollbar-width: thin;" id="mSharedDetailsList">
             ${itemsHtml}
@@ -851,7 +914,7 @@ function renderModalSharedDetails(v) {
         <div class="alert ${alertClass} py-2 px-3 small mt-2.5 mb-0 d-flex align-items-center gap-2 border-0 shadow-xs" id="mSharedAlertBox" style="border-radius: 8px;">
             <i class="fa-solid ${alertIcon} fs-6" id="mSharedAlertIcon"></i>
             <div class="flex-grow-1 d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <strong id="mSharedTotalOnlineMsg" class="mb-0" style="font-size: 0.75rem;">Total Allocated: ${totalOnlineStock} / ${v.total}</strong>
+                <strong id="mSharedTotalOnlineMsg" class="mb-0" style="font-size: 0.75rem;">Total Allocated: ${totalOnlineStock} units / ${totalOnlineBase} of ${v.total} pcs</strong>
                 <span id="mSharedAlertText" style="font-size: 0.75rem;">${alertMsg}</span>
             </div>
         </div>
@@ -864,6 +927,7 @@ function adjSharedStock(btn, delta) {
     let val = parseInt(input.value) || 0;
     val += delta;
     if (val < 0) val = 0;
+    val = Math.min(val, unitLimit(getSharedInputItem(input)));
     input.value = val;
     updateModalSharedDetailsAlert();
     calcModal();
@@ -877,14 +941,26 @@ function updateModalSharedDetailsAlert() {
     if (activeRow) {
         activeRow.textContent = currentInputVal;
     }
+    const activeBase = document.getElementById('mSharedCurrentBase');
+    if (activeBase) {
+        activeBase.textContent = `${toBaseQty(currentInputVal, currentEdit)} pcs`;
+    }
 
     let totalOnlineStock = currentInputVal;
+    let totalOnlineBase = toBaseQty(currentInputVal, currentEdit);
     const sharedInputs = document.querySelectorAll('.shared-alloc-input');
     if (sharedInputs.length > 0) {
-        sharedInputs.forEach(inp => totalOnlineStock += (parseInt(inp.value)||0));
+        sharedInputs.forEach(inp => {
+            const item = getSharedInputItem(inp);
+            const clamped = Math.max(0, Math.min(parseInt(inp.value, 10) || 0, unitLimit(item)));
+            if ((parseInt(inp.value, 10) || 0) !== clamped) inp.value = clamped;
+            totalOnlineStock += (parseInt(inp.value)||0);
+            totalOnlineBase += toBaseQty(inp.value, item);
+        });
     } else {
         currentEdit.dupDetails.forEach(d => {
             totalOnlineStock += d.online;
+            totalOnlineBase += toBaseQty(d.online, d);
         });
     }
 
@@ -892,22 +968,26 @@ function updateModalSharedDetailsAlert() {
     if (totalLabel) {
         totalLabel.textContent = totalOnlineStock;
     }
+    const totalBaseLabel = document.getElementById('mSharedTotalBase');
+    if (totalBaseLabel) {
+        totalBaseLabel.textContent = `/ ${totalOnlineBase} of ${currentEdit.total} pcs`;
+    }
 
     const alertContainer = document.querySelector('#mSharedDetailsContainer .alert');
     if (alertContainer) {
-        const isExceeded = totalOnlineStock > currentEdit.total;
+        const isExceeded = totalOnlineBase > currentEdit.total;
         alertContainer.className = `alert ${isExceeded ? 'alert-danger' : 'alert-success'} py-2 px-3 small mb-0 mt-2.5 d-flex align-items-center gap-2 border-0 shadow-xs`;
         alertContainer.querySelector('i').className = `fa-solid ${isExceeded ? 'fa-triangle-exclamation' : 'fa-circle-check'}`;
         
         const totalMsg = alertContainer.querySelector('#mSharedTotalOnlineMsg');
         if (totalMsg) {
-            totalMsg.textContent = `Total Allocated: ${totalOnlineStock} / ${currentEdit.total}`;
+            totalMsg.textContent = `Total Allocated: ${totalOnlineStock} units / ${totalOnlineBase} of ${currentEdit.total} pcs`;
         }
         
         const spanText = alertContainer.querySelector('#mSharedAlertText');
         if (spanText) {
             if (isExceeded) {
-                spanText.innerHTML = `Exceeds POS stock by ${totalOnlineStock - currentEdit.total}!`;
+                spanText.innerHTML = `Exceeds POS stock by ${totalOnlineBase - currentEdit.total} pcs!`;
             } else {
                 spanText.innerHTML = `Stock is safely allocated across all shared listings.`;
             }
@@ -929,10 +1009,7 @@ function renderMapped(){
             if(allocFilter==='duplicate'&&!v.isDuplicate)return false;
             if(allocFilter==='low'&&v.status!=='low')return false;
             if(allocFilter==='unallocated'&&v.online!==0)return false;
-            let totalAlloc = v.online;
-            if (v.isDuplicate && v.dupDetails) {
-                totalAlloc += v.dupDetails.reduce((sum, d) => sum + d.online, 0);
-            }
+            let totalAlloc = getExistingAllocatedBase(v);
             if(allocFilter==='overallocated' && totalAlloc <= v.total) return false;
             return true;
         });
@@ -968,10 +1045,7 @@ function renderMapped(){
             const v = vars[0];
             if (v) {
                 const available = v.online;
-                let totalAllocated = v.online;
-                if (v.isDuplicate && v.dupDetails) {
-                    totalAllocated += v.dupDetails.reduce((sum, d) => sum + d.online, 0);
-                }
+                let totalAllocated = getExistingAllocatedBase(v);
                 const rem = v.total - totalAllocated;
                 const availCls = available <= 0 ? 'text-danger fw-bold' : (available <= 5 ? 'text-warning fw-bold' : 'text-success fw-bold');
                 let badge = '';
@@ -982,7 +1056,7 @@ function renderMapped(){
                 else badge = `<span class="sp-badge sp-badge-success"><i class="fa-solid fa-check"></i> OK</span>`;
 
 
-                const actualPct = v.total > 0 ? Math.floor((v.online / v.total) * 100) : 0;
+                const actualPct = v.total > 0 ? Math.floor((toBaseQty(v.online, v) / v.total) * 100) : 0;
                 const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
 
                 const unitBadge = v.unitName 
@@ -1016,7 +1090,7 @@ function renderMapped(){
                     <td class="text-center fw-bold">${v.total.toLocaleString()}</td>
                     <td class="text-center">
                         <span class="fw-bold text-shopee d-block">${v.online.toLocaleString()}</span>
-                        <span class="text-secondary small font-normal" style="font-size:0.72rem;">(${actualPct}%)</span>
+                        <span class="text-secondary small font-normal" style="font-size:0.72rem;">${unitMultiplier(v) > 1 ? `${toBaseQty(v.online, v).toLocaleString()} pcs - ` : ''}${actualPct}%</span>
                     </td>
                     <td class="text-center fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</td>
                     <td>${badge}</td>
@@ -1058,10 +1132,7 @@ function renderMapped(){
             // Variation Rows
             vars.forEach(v=>{
                 const available = v.online;
-                let totalAllocated = v.online;
-                if (v.isDuplicate && v.dupDetails) {
-                    totalAllocated += v.dupDetails.reduce((sum, d) => sum + d.online, 0);
-                }
+                let totalAllocated = getExistingAllocatedBase(v);
                 const rem = v.total - totalAllocated;
                 const availCls = available <= 0 ? 'text-danger fw-bold' : (available <= 5 ? 'text-warning fw-bold' : 'text-success fw-bold');
                 let badge = '';
@@ -1076,7 +1147,7 @@ function renderMapped(){
                     ? `<span class="sp-var-name-text">${escHtml(v.varName)}</span>`
                     : `<span class="sp-var-name-text text-secondary fst-italic">Main Item</span>`;
 
-                const actualPct = v.total > 0 ? Math.floor((v.online / v.total) * 100) : 0;
+                const actualPct = v.total > 0 ? Math.floor((toBaseQty(v.online, v) / v.total) * 100) : 0;
                 const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
 
                 const unitBadge = v.unitName 
@@ -1101,7 +1172,7 @@ function renderMapped(){
                     <td class="text-center fw-bold">${v.total.toLocaleString()}</td>
                     <td class="text-center">
                         <span class="fw-bold text-shopee d-block">${v.online.toLocaleString()}</span>
-                        <span class="text-secondary small font-normal" style="font-size:0.72rem;">(${actualPct}%)</span>
+                        <span class="text-secondary small font-normal" style="font-size:0.72rem;">${unitMultiplier(v) > 1 ? `${toBaseQty(v.online, v).toLocaleString()} pcs - ` : ''}${actualPct}%</span>
                     </td>
                     <td class="text-center fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</td>
                     <td>${badge}</td>
@@ -1300,10 +1371,7 @@ function updateSummary(){
             unallocated++;
         } else {
             allocated++;
-            let totalAlloc = v.online;
-            if (v.isDuplicate && v.dupDetails) {
-                totalAlloc += v.dupDetails.reduce((sum, d) => sum + d.online, 0);
-            }
+            let totalAlloc = getExistingAllocatedBase(v);
             if (totalAlloc > v.total) {
                 overallocated++;
             }
@@ -1330,7 +1398,8 @@ function openEdit(id){
     document.getElementById('mSku').innerHTML = skuHtml;
     
     document.getElementById('mTotal').textContent=currentEdit.total;
-    document.getElementById('mOnlineStock').value =currentEdit.online !== undefined ? currentEdit.online : currentEdit.total;
+    document.getElementById('mOnlineStock').max = unitLimit(currentEdit);
+    document.getElementById('mOnlineStock').value =currentEdit.online !== undefined ? currentEdit.online : unitLimit(currentEdit);
     calcModal();
     renderModalSharedDetails(currentEdit);
     editModal.show();
@@ -1338,14 +1407,15 @@ function openEdit(id){
 
 function adjStock(d){
     const inp=document.getElementById('mOnlineStock');
-    const newVal = Math.max(0, Math.min(currentEdit.total, (parseInt(inp.value)||0)+d));
+    const newVal = Math.max(0, Math.min(unitLimit(currentEdit), (parseInt(inp.value)||0)+d));
     inp.value=newVal;
     calcModal();
 }
 
 function presetStock(pct){
     const totalPos = currentEdit.total;
-    const targetTotalAllocated = Math.floor(totalPos * (pct / 100));
+    const targetBaseAllocated = Math.floor(totalPos * (pct / 100));
+    const targetTotalAllocated = Math.floor(targetBaseAllocated / unitMultiplier(currentEdit));
 
     if (currentEdit.isDuplicate) {
         // Distribute evenly among all listings (1 active + N shared)
@@ -1379,27 +1449,35 @@ function presetStock(pct){
 }
 
 function calcModal(){
-    const onlineVal=parseInt(document.getElementById('mOnlineStock').value)||0;
+    const mainInput = document.getElementById('mOnlineStock');
+    let onlineVal=parseInt(mainInput.value)||0;
+    onlineVal = Math.max(0, Math.min(onlineVal, unitLimit(currentEdit)));
+    mainInput.value = onlineVal;
     
     let totalOnlineStock = onlineVal;
+    let totalOnlineBase = toBaseQty(onlineVal, currentEdit);
     if (currentEdit.isDuplicate) {
         const sharedInputs = document.querySelectorAll('.shared-alloc-input');
         if (sharedInputs.length > 0) {
-            sharedInputs.forEach(inp => totalOnlineStock += (parseInt(inp.value)||0));
+            sharedInputs.forEach(inp => {
+                totalOnlineStock += (parseInt(inp.value)||0);
+                totalOnlineBase += toBaseQty(inp.value, getSharedInputItem(inp));
+            });
         } else {
             currentEdit.dupDetails.forEach(d => {
                 totalOnlineStock += d.online;
+                totalOnlineBase += toBaseQty(d.online, d);
             });
         }
     }
-    const remaining = Math.max(0, currentEdit.total - totalOnlineStock);
+    const remaining = Math.max(0, currentEdit.total - totalOnlineBase);
     const warn=document.getElementById('mWarning');
     
     document.getElementById('mRemainingCalc').textContent=remaining;
     
     // Dynamic Stock Breakdown Meter calculations
     const totalStock = currentEdit.total;
-    const shopeePct = totalStock > 0 ? Math.round((totalOnlineStock / totalStock) * 100) : 0;
+    const shopeePct = totalStock > 0 ? Math.round((totalOnlineBase / totalStock) * 100) : 0;
     const posPct = totalStock > 0 ? Math.max(0, 100 - shopeePct) : 0;
 
     const ratioText = document.getElementById('mRatioText');
@@ -1420,15 +1498,15 @@ function calcModal(){
         barPos.setAttribute('aria-valuenow', posPct);
     }
     if (labelShopee) {
-        labelShopee.textContent = `${totalOnlineStock} item${totalOnlineStock === 1 ? '' : 's'}`;
+        labelShopee.textContent = formatAllocatedLabel(totalOnlineStock, totalOnlineBase, currentEdit);
     }
     if (labelPos) {
         labelPos.textContent = `${remaining} item${remaining === 1 ? '' : 's'}`;
     }
 
-    if(onlineVal > currentEdit.total){
+    if(onlineVal > unitLimit(currentEdit)){
         warn.className='alert alert-danger py-2 small mb-0 mt-2';
-        warn.innerHTML=`<i class="fa-solid fa-triangle-exclamation me-2"></i>Allocated stock cannot exceed physical POS stock (${currentEdit.total})`;
+        warn.innerHTML=`<i class="fa-solid fa-triangle-exclamation me-2"></i>Allocated stock cannot exceed available ${allocationUnitLabel(currentEdit)} stock (${unitLimit(currentEdit)}).`;
     } else if(onlineVal === 0 && currentEdit.total > 0){
         warn.className='alert alert-warning py-2 small mb-0 mt-2';
         warn.innerHTML=`<i class="fa-solid fa-triangle-exclamation me-2"></i>Shopee will receive 0 stock.`;
@@ -1447,22 +1525,26 @@ function calcModal(){
         if (totalLabel) {
             totalLabel.textContent = totalOnlineStock;
         }
+        const totalBaseLabel = document.getElementById('mSharedTotalBase');
+        if (totalBaseLabel) {
+            totalBaseLabel.textContent = `/ ${totalOnlineBase} of ${currentEdit.total} pcs`;
+        }
 
         const alertContainer = document.querySelector('#mSharedDetailsContainer .alert');
         if (alertContainer) {
-            const isExceeded = totalOnlineStock > currentEdit.total;
+            const isExceeded = totalOnlineBase > currentEdit.total;
             alertContainer.className = `alert ${isExceeded ? 'alert-danger' : 'alert-success'} py-2 px-3 small mb-0 mt-2.5 d-flex align-items-center gap-2 border-0 shadow-xs`;
             alertContainer.querySelector('i').className = `fa-solid ${isExceeded ? 'fa-triangle-exclamation' : 'fa-circle-check'}`;
             
             const totalMsg = alertContainer.querySelector('#mSharedTotalOnlineMsg');
             if (totalMsg) {
-                totalMsg.textContent = `Total Allocated: ${totalOnlineStock} / ${currentEdit.total}`;
+                totalMsg.textContent = `Total Allocated: ${totalOnlineStock} units / ${totalOnlineBase} of ${currentEdit.total} pcs`;
             }
             
             const spanText = alertContainer.querySelector('#mSharedAlertText');
             if (spanText) {
                 if (isExceeded) {
-                    spanText.innerHTML = `Exceeds POS stock by ${totalOnlineStock - currentEdit.total}!`;
+                    spanText.innerHTML = `Exceeds POS stock by ${totalOnlineBase - currentEdit.total} pcs!`;
                 } else {
                     spanText.innerHTML = `Stock is safely allocated across all shared listings.`;
                 }
@@ -1474,18 +1556,18 @@ function calcModal(){
 async function saveAllocation(btnEl) {
     const onlineVal = parseInt(document.getElementById('mOnlineStock').value) || 0;
     
-    let totalVal = onlineVal;
+    let totalVal = toBaseQty(onlineVal, currentEdit);
     const sharedInputs = document.querySelectorAll('.shared-alloc-input');
     const updates = [{ id: currentEdit.id, val: onlineVal, orig: (currentEdit.online !== undefined ? currentEdit.online : currentEdit.total) }];
     
     sharedInputs.forEach(inp => {
         const val = parseInt(inp.value) || 0;
-        totalVal += val;
+        totalVal += toBaseQty(val, getSharedInputItem(inp));
         updates.push({ id: parseInt(inp.dataset.id), val: val, orig: parseInt(inp.dataset.orig) });
     });
 
     if(totalVal > currentEdit.total){
-        EllaToast.error(`Total allocated stock cannot exceed physical POS stock (${currentEdit.total}).`);
+        EllaToast.error(`Total allocated stock cannot exceed physical POS stock (${currentEdit.total} pcs).`);
         return;
     }
     
@@ -1523,10 +1605,10 @@ async function saveAllocation(btnEl) {
                 successCount++;
                 const item = MAPPED_FLAT.find(v => v.id === u.id);
                 if (item) {
-                    const newRatio = item.total > 0 ? Math.round((u.val / item.total) * 100) : 100;
+                    const newRatio = item.total > 0 ? Math.round((toBaseQty(u.val, item) / item.total) * 100) : 100;
                     item.ratio = newRatio;
                     item.online = u.val;
-                    item.status = u.val === 0 ? 'unallocated' : (item.total - u.val <= 5 ? 'low' : 'synced');
+                    item.status = u.val === 0 ? 'unallocated' : (unitLimit(item) - u.val <= 5 ? 'low' : 'synced');
                 }
             } else {
                 hasError = true;
@@ -1563,7 +1645,7 @@ async function saveAllocation(btnEl) {
 }
 
 function showFixOverallocatedModal() {
-    const overallocatedCount = MAPPED_FLAT.filter(v => v.online > v.total).length;
+    const overallocatedCount = MAPPED_FLAT.filter(v => getExistingAllocatedBase(v) > v.total).length;
     if (overallocatedCount === 0) {
         if (typeof EllaToast !== 'undefined') EllaToast.info('No overallocated products found. Your stock is healthy!');
         else alert('No overallocated products found. Your stock is healthy!');
@@ -1583,7 +1665,7 @@ function showFixOverallocatedModal() {
 }
 
 async function executeFixOverallocated() {
-    const overallocatedItems = MAPPED_FLAT.filter(v => v.online > v.total);
+    const overallocatedItems = MAPPED_FLAT.filter(v => getExistingAllocatedBase(v) > v.total);
     if (overallocatedItems.length === 0) {
         fixOverallocatedModal.hide();
         return;
@@ -1607,7 +1689,8 @@ async function executeFixOverallocated() {
             
             await Promise.all(batch.map(async (item) => {
                 // calculate new stock
-                const newVal = Math.floor(item.total * (selectedFixPct / 100));
+                const targetBase = Math.floor(item.total * (selectedFixPct / 100));
+                const newVal = Math.min(unitLimit(item), Math.floor(targetBase / unitMultiplier(item)));
                 
                 try {
                     const res = await fetch(`${window.BASE_URL}api/shopee/update_allocation.php`,{
@@ -1623,9 +1706,9 @@ async function executeFixOverallocated() {
                     if(data.success) {
                         successCount++;
                         item.online = newVal;
-                        const newRatio = item.total > 0 ? Math.round((newVal / item.total) * 100) : 100;
+                        const newRatio = item.total > 0 ? Math.round((toBaseQty(newVal, item) / item.total) * 100) : 100;
                         item.ratio = newRatio;
-                        item.status = newVal === 0 ? 'unallocated' : (item.total - newVal <= 5 ? 'low' : 'synced');
+                        item.status = newVal === 0 ? 'unallocated' : (unitLimit(item) - newVal <= 5 ? 'low' : 'synced');
                     } else {
                         failCount++;
                     }
@@ -1771,6 +1854,7 @@ async function refreshLiveRow(id, btn) {
             if (item) {
                 item.online = upd.shopee_stock;
                 item.total = upd.pos_physical_stock + upd.pos_online_stock;
+                item.unitTotal = Math.floor(item.total / unitMultiplier(item));
                 item.ratio = upd.stock_allocation_ratio;
                 const avail = item.online;
                 item.status = item.online === 0 ? 'unallocated' : (avail <= 5 ? 'low' : 'synced');
@@ -1781,6 +1865,7 @@ async function refreshLiveRow(id, btn) {
                     if (v.id === id) {
                         v.online = upd.shopee_stock;
                         v.total = upd.pos_physical_stock + upd.pos_online_stock;
+                        v.unitTotal = Math.floor(v.total / unitMultiplier(v));
                         v.ratio = upd.stock_allocation_ratio;
                         const avail = v.online;
                         v.status = v.online === 0 ? 'unallocated' : (avail <= 5 ? 'low' : 'synced');
@@ -1837,6 +1922,7 @@ async function autoSyncOnLoad() {
                     if (item) {
                         item.online = upd.shopee_stock;
                         item.total = upd.pos_physical_stock + upd.pos_online_stock;
+                        item.unitTotal = Math.floor(item.total / unitMultiplier(item));
                         item.ratio = upd.stock_allocation_ratio;
                         const avail = item.online;
                         item.status = item.online === 0 ? 'unallocated' : (avail <= 5 ? 'low' : 'synced');
@@ -1847,6 +1933,7 @@ async function autoSyncOnLoad() {
                             if (v.id === upd.id) {
                                 v.online = upd.shopee_stock;
                                 v.total = upd.pos_physical_stock + upd.pos_online_stock;
+                                v.unitTotal = Math.floor(v.total / unitMultiplier(v));
                                 v.ratio = upd.stock_allocation_ratio;
                                 const avail = v.online;
                                 v.status = v.online === 0 ? 'unallocated' : (avail <= 5 ? 'low' : 'synced');
