@@ -107,23 +107,16 @@ try {
     ];
 
     // Modes: Quick, Price, Stock - Use update_time_from for speed
-    // Cap lookback window to max 14 days to prevent Shopee API errors
     if (in_array($mode, ['quick', 'price', 'stock'])) {
-        $lastSyncStmt = $conn->query("SELECT MAX(last_synced_at) as last_sync FROM shopee_product_mappings");
-        $lastSyncRow = $lastSyncStmt->fetch();
-        if ($lastSyncRow && $lastSyncRow['last_sync']) {
-            // Shopee update_time_from is UNIX timestamp
-            $fromTime = strtotime($lastSyncRow['last_sync']) - 3600; // Subtract 1 hour as buffer
-            $toTime = time() + 3600;
-            
-            // Limit lookback to exactly 14 days ago (14 * 86400 = 1209600)
-            if ($toTime - $fromTime > 1209600) {
-                $fromTime = $toTime - 1209600;
-            }
-            
-            $apiParams['update_time_from'] = $fromTime;
-            $apiParams['update_time_to'] = $toTime;
-        }
+        // FIXED LOGIC: Do NOT use MAX(last_synced_at) because background stock syncs constantly pull it forward,
+        // causing Quick Sync to miss user edits made earlier in the day!
+        // Instead, we use a fixed lookback window of 7 days (604800 seconds). 
+        // Shopee API allows up to 15 days. 7 days guarantees we catch any recent edits while staying fast.
+        $fromTime = time() - 604800; // 7 days ago
+        $toTime = time() + 3600;     // 1 hour in the future (buffer for timezone drift)
+        
+        $apiParams['update_time_from'] = $fromTime;
+        $apiParams['update_time_to'] = $toTime;
     }
 
     $listResult = $shopee->get('/api/v2/product/get_item_list', $apiParams, $accessToken, $shopId);
