@@ -194,6 +194,16 @@ $products = $stmt->fetchAll();
             }
         }
     }
+
+    .capital-copy-btn {
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border-radius: 6px;
+    }
 </style>
 
 <div class="container-fluid p-4">
@@ -213,9 +223,18 @@ $products = $stmt->fetchAll();
             <div class="col-md-4 capital-col">
                 <div class="card shadow-sm border-start border-4 border-success h-100">
                     <div class="card-body">
-                        <div class="text-secondary small text-uppercase fw-bold">Total Stock Value (Cost)</div>
-                        <div class="h3 mb-0 fw-bold" style="color: var(--text-primary);">
-                            ₱<?= number_format($total_asset_value, 2) ?></div>
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="text-secondary small text-uppercase fw-bold">Total Stock Value (Cost)</div>
+                                <div class="h3 mb-0 fw-bold" style="color: var(--text-primary);">
+                                    &#8369;<?= number_format($total_asset_value, 2) ?></div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm capital-copy-btn"
+                                title="Copy capital fund"
+                                onclick="copyCapitalValue('<?= number_format((float) $total_asset_value, 2, '.', '') ?>', this)">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -351,7 +370,14 @@ $products = $stmt->fetchAll();
 
                                     <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                                         <td class="capital-col">
-                                            <span class="text-muted small">₱</span> <?= number_format($row['price_capital'], 2) ?>
+                                            <div class="d-inline-flex align-items-center gap-2">
+                                                <span><span class="text-muted small">&#8369;</span> <?= number_format($row['price_capital'], 2) ?></span>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm capital-copy-btn"
+                                                    title="Copy capital cost"
+                                                    onclick="copyCapitalValue('<?= number_format((float) $row['price_capital'], 2, '.', '') ?>', this)">
+                                                    <i class="fa-solid fa-copy"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     <?php endif; ?>
 
@@ -584,6 +610,55 @@ $products = $stmt->fetchAll();
         }
     });
 
+    function copyCapitalValue(value, button) {
+        const text = String(value || '0.00');
+        const resetButton = () => {
+            if (!button) return;
+            button.innerHTML = '<i class="fa-solid fa-copy"></i>';
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        };
+        const markCopied = () => {
+            if (!button) return;
+            button.innerHTML = '<i class="fa-solid fa-check"></i>';
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-success');
+            setTimeout(resetButton, 1200);
+        };
+        const notify = () => {
+            if (window.EllaToast && typeof window.EllaToast.show === 'function') {
+                window.EllaToast.show('Capital copied', 'success');
+            }
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                markCopied();
+                notify();
+            }).catch(() => fallbackCopy(text, markCopied, notify));
+            return;
+        }
+
+        fallbackCopy(text, markCopied, notify);
+    }
+
+    function fallbackCopy(text, onSuccess, onNotify) {
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        try {
+            document.execCommand('copy');
+            onSuccess();
+            onNotify();
+        } finally {
+            document.body.removeChild(input);
+        }
+    }
+
     function confirmDelete(id) {
         if (confirm("Are you sure? This will archive the product.")) {
             window.location.href = `delete.php?id=${id}`;
@@ -780,7 +855,14 @@ $products = $stmt->fetchAll();
                          </div>
                      </td>
                      ${!<?= json_encode(isset($_SESSION['role']) && $_SESSION['role'] === 'admin') ?> ? '' : `<td class="capital-col ${isHidden ? 'd-none' : ''}">
-                         <span class="text-muted small">₱</span> ${parseFloat(row.price_capital || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                         <div class="d-inline-flex align-items-center gap-2">
+                             <span><span class="text-muted small">&#8369;</span> ${parseFloat(row.price_capital || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                             <button type="button" class="btn btn-outline-secondary btn-sm capital-copy-btn"
+                                 title="Copy capital cost"
+                                 onclick="copyCapitalValue('${parseFloat(row.price_capital || 0).toFixed(2)}', this)">
+                                 <i class="fa-solid fa-copy"></i>
+                             </button>
+                         </div>
                      </td>`}
                      <td>
                          <span class="text-success fw-bold small">₱</span> <span class="fw-bold" style="color: var(--text-primary);">${parseFloat(row.price_retail || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
