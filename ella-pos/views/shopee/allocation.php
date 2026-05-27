@@ -35,6 +35,7 @@ foreach ($mappedRows as $r) {
 }
 
 $bundleStockMap = [];
+$bundleStockDetailsMap = [];
 if (!empty($bundleSetIds)) {
     // Reserve map per component variation from existing non-bundle mapped allocations (base pieces).
     $reservedByVariation = [];
@@ -56,9 +57,13 @@ if (!empty($bundleSetIds)) {
             si.component_qty,
             si.component_unit_id,
             si.component_variation_id,
+            p.product_name AS component_product_name,
+            v.variation_name AS component_variation_name,
             COALESCE(cu.multiplier, 1) AS component_unit_multiplier,
             (COALESCE(i1.quantity, 0) + COALESCE(i2.quantity, 0)) AS component_base_qty
         FROM product_unit_set_items si
+        LEFT JOIN product_variations v ON v.variation_id = si.component_variation_id
+        LEFT JOIN products p ON p.product_id = v.product_id
         LEFT JOIN product_units cu ON cu.id = si.component_unit_id
         LEFT JOIN inventory i1 ON i1.variation_id = si.component_variation_id AND i1.store_id = 1
         LEFT JOIN inventory i2 ON i2.variation_id = si.component_variation_id AND i2.store_id = 2
@@ -77,6 +82,7 @@ if (!empty($bundleSetIds)) {
         }
         $componentsBySet[$setId][] = [
             'variation_id' => (int)$c['component_variation_id'],
+            'name' => trim((string)($c['component_product_name'] ?? '') . ' ' . (string)($c['component_variation_name'] ?? '')),
             'required_base' => $requiredBase,
             'stock_base' => (int)$c['component_base_qty'],
         ];
@@ -107,6 +113,7 @@ if (!empty($bundleSetIds)) {
         }
 
         $minSets = null;
+        $bundleDetails = [];
         foreach ($componentsBySet[$setId] as $component) {
             $variationId = $component['variation_id'];
             $reservedBase = (float)($reservedByVariation[$variationId] ?? 0);
@@ -119,8 +126,17 @@ if (!empty($bundleSetIds)) {
             $freeBase = max(0, $component['stock_base'] - $reservedBase);
             $possibleSets = (int)floor($freeBase / $component['required_base']);
             $minSets = $minSets === null ? $possibleSets : min($minSets, $possibleSets);
+            $bundleDetails[] = [
+                'name' => $component['name'],
+                'stock' => (int)$component['stock_base'],
+                'reserved' => (int)$reservedBase,
+                'free' => (int)$freeBase,
+                'required' => (float)$component['required_base'],
+                'possible' => $possibleSets,
+            ];
         }
         $bundleStockMap[$mapId] = max(0, (int)($minSets ?? 0));
+        $bundleStockDetailsMap[$mapId] = $bundleDetails;
     }
 }
 
@@ -221,7 +237,8 @@ foreach ($mappedRows as $r) {
         'mappingStatus'=>$r['mapping_status'],
         'unitName'=>$isBundle ? 'Bundle Set' : ($r['unit_name'] ?? null),
         'multiplier'=>$multiplier,
-        'isBundle'=>$isBundle
+        'isBundle'=>$isBundle,
+        'bundleDetails'=>$isBundle ? ($bundleStockDetailsMap[(int)$r['id']] ?? []) : []
     ];
 }
 
@@ -756,6 +773,22 @@ function formatAllocatedLabel(units, baseQty, item) {
     if (unitMultiplier(item) <= 1) return `${baseQty} item${baseQty === 1 ? '' : 's'}`;
     return `${units} ${allocationUnitLabel(item)}${units === 1 ? '' : 's'} / ${baseQty} pcs`;
 }
+function bundleFormulaHtml(item) {
+    if (!item?.isBundle || !Array.isArray(item.bundleDetails) || item.bundleDetails.length === 0) return '';
+    const rows = item.bundleDetails.map(d => {
+        const required = Number(d.required || 0);
+        const requiredLabel = Number.isInteger(required) ? required : required.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+        return `<div class="small text-secondary" style="line-height:1.35;">
+            <span class="fw-semibold text-dark">${escHtml(d.name || 'Component')}</span>:
+            ${parseInt(d.stock || 0, 10).toLocaleString()} stock
+            - ${parseInt(d.reserved || 0, 10).toLocaleString()} reserved
+            = <strong>${parseInt(d.free || 0, 10).toLocaleString()} free</strong>
+            / ${requiredLabel} per bundle
+            = <strong>${parseInt(d.possible || 0, 10).toLocaleString()}</strong>
+        </div>`;
+    }).join('');
+    return `<div class="mt-1">${rows}<div class="small fw-bold text-success mt-1">Bundle sellable stock = lowest component result (${parseInt(item.total || 0, 10).toLocaleString()})</div></div>`;
+}
 function sharedItemById(id) {
     if (!currentEdit || !currentEdit.dupDetails) return null;
     return currentEdit.dupDetails.find(d => parseInt(d.id, 10) === parseInt(id, 10)) || null;
@@ -1171,8 +1204,9 @@ function renderMapped(){
                 const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
 
                 const unitBadge = v.unitName 
-                    ? `<span class="badge bg-light text-secondary border font-normal ms-1" style="font-size:0.68rem;" title="Mapped to custom unit type"><i class="fa-solid fa-box me-1"></i>${escHtml(v.unitName)} (x${v.multiplier})</span>` 
+                    ? `<span class="badge bg-light text-secondary border font-normal ms-1" style="font-size:0.68rem;" title="${v.isBundle ? 'Bundle stock is computed from component pairable stock' : 'Mapped to custom unit type'}"><i class="fa-solid fa-box me-1"></i>${escHtml(v.unitName)} (x${v.multiplier})</span>` 
                     : '';
+                const bundleBreakdown = bundleFormulaHtml(v);
 
                 html += `<tr class="sp-group-start">
                     <td>
@@ -1197,6 +1231,7 @@ function renderMapped(){
                         ${unitBadge}
                         ${v.isDuplicate?`<span class="badge bg-danger-light text-danger ms-1" style="font-size:0.68rem; border:1px solid rgba(220,53,69,0.25); cursor:pointer;" onclick="openEdit(${v.id})" title="Click to view shared allocation details"><i class="fa-solid fa-clone me-1"></i>Shared (${actualSharedPct}% Allocated)</span>`:''}
                         ${v.mappingStatus==='manual'?`<span class="sp-badge sp-badge-info ms-1" style="padding:0.2rem 0.5rem; font-size:0.68rem;" title="Manually mapped in mapping page"><i class="fa-solid fa-hand-pointer me-1"></i>Manual</span>`:''}
+                        ${bundleBreakdown}
                     </td>
                     <td class="text-center fw-bold">${v.total.toLocaleString()}</td>
                     <td class="text-center">
@@ -1262,8 +1297,9 @@ function renderMapped(){
                 const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
 
                 const unitBadge = v.unitName 
-                    ? `<span class="badge bg-light text-secondary border font-normal ms-1" style="font-size:0.68rem;" title="Mapped to custom unit type"><i class="fa-solid fa-box me-1"></i>${escHtml(v.unitName)} (x${v.multiplier})</span>` 
+                    ? `<span class="badge bg-light text-secondary border font-normal ms-1" style="font-size:0.68rem;" title="${v.isBundle ? 'Bundle stock is computed from component pairable stock' : 'Mapped to custom unit type'}"><i class="fa-solid fa-box me-1"></i>${escHtml(v.unitName)} (x${v.multiplier})</span>` 
                     : '';
+                const bundleBreakdown = bundleFormulaHtml(v);
 
                 html += `<tr>
                     <td class="sp-tree-indent">
@@ -1279,6 +1315,7 @@ function renderMapped(){
                         ${unitBadge}
                         ${v.isDuplicate?`<span class="badge bg-danger-light text-danger ms-1" style="font-size:0.68rem; border:1px solid rgba(220,53,69,0.25); cursor:pointer;" onclick="openEdit(${v.id})" title="Click to view shared allocation details"><i class="fa-solid fa-clone me-1"></i>Shared (${actualSharedPct}% Allocated)</span>`:''}
                         ${v.mappingStatus==='manual'?`<span class="sp-badge sp-badge-info ms-1" style="padding:0.2rem 0.5rem; font-size:0.68rem;" title="Manually mapped in mapping page"><i class="fa-solid fa-hand-pointer me-1"></i>Manual</span>`:''}
+                        ${bundleBreakdown}
                     </td>
                     <td class="text-center fw-bold">${v.total.toLocaleString()}</td>
                     <td class="text-center">
@@ -1506,9 +1543,13 @@ function openEdit(id){
     if (currentEdit.unitName) {
         skuHtml += ` <span class="badge bg-light text-secondary border font-normal ms-2" style="font-size: 0.72rem;"><i class="fa-solid fa-box me-1"></i>Unit: ${escHtml(currentEdit.unitName)} (${currentEdit.multiplier} pcs)</span>`;
     }
+    if (currentEdit.isBundle) {
+        skuHtml += bundleFormulaHtml(currentEdit);
+    }
     document.getElementById('mSku').innerHTML = skuHtml;
     
     document.getElementById('mTotal').textContent=currentEdit.total;
+    document.getElementById('mTotalSub').textContent = currentEdit.isBundle ? 'Pairable bundle sets' : 'Physical POS';
     document.getElementById('mOnlineStock').max = unitLimit(currentEdit);
     document.getElementById('mOnlineStock').value =currentEdit.online !== undefined ? currentEdit.online : unitLimit(currentEdit);
     calcModal();

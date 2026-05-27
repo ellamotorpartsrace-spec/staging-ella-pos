@@ -384,4 +384,9 @@ git add ella-pos/views/shopee/allocation.php
 git commit -m "Fix Shopee allocation math for unit-mapped items"
 git push origin testing
 git pull --ff-only origin testing
+
+
+git add .
+git pull 
+git push
 ```
