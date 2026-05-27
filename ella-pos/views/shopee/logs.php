@@ -384,12 +384,22 @@ function clearFilters() {
     window.location.href = 'logs.php';
 }
 
+function searchTerms(q) {
+    return String(q || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+}
+function progressiveMatch(terms, fields) {
+    if (!terms.length) return true;
+    const haystack = fields.map(v => String(v || '').toLowerCase());
+    return terms.every(term => haystack.some(field => field.includes(term)));
+}
+
 function renderLogs() {
-    const search = (document.getElementById('logSearch')?.value || '').toLowerCase();
+    const search = document.getElementById('logSearch')?.value || '';
+    const terms = searchTerms(search);
     const body = document.getElementById('logBody');
 
     let items = LOGS.filter(l => {
-        if (search && !l.product.toLowerCase().includes(search) && !l.sku.toLowerCase().includes(search) && !l.type.toLowerCase().includes(search) && !l.source.toLowerCase().includes(search)) return false;
+        if (!progressiveMatch(terms, [l.product, l.sku, l.type, l.source, l.status, l.error, l.user, l.posName, l.posVarName])) return false;
         if (logFilter === 'failed') { if (l.status !== 'failed') return false; }
         else if (logFilter !== 'all' && l.event !== logFilter) return false;
         return true;

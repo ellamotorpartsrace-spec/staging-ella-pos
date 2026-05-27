@@ -362,6 +362,14 @@ function debouncedRender() {
 }
 
 function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function searchTerms(q) {
+    return String(q || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+}
+function progressiveMatch(terms, fields) {
+    if (!terms.length) return true;
+    const haystack = fields.map(v => String(v || '').toLowerCase());
+    return terms.every(term => haystack.some(field => field.includes(term)));
+}
 function getMatchKey(v){return v.hasVariation?(v.variationSku||''):(v.parentSku||'');}
 function samePosChoice(p, posId, unitId) {
     return p && p.id === posId && (p.unit_id || null) === (unitId || null);
@@ -516,14 +524,15 @@ function goToPage(page) {
 }
 
 function renderTable(){
-    const q=(document.getElementById('mapSearch')?.value||'').toLowerCase();
+    const q=(document.getElementById('mapSearch')?.value||'');
+    const terms = searchTerms(q);
     const body=document.getElementById('mapTableBody');
 
     // First, filter groups
     const matchedGroups = [];
     GROUPS.forEach(g=>{
         const vars=g.variations.filter(v=>{
-            if(q && !String(g.name || '').toLowerCase().includes(q) && !String(v.variationSku || '').toLowerCase().includes(q) && !String((g.variations[0] && g.variations[0].parentSku) || '').toLowerCase().includes(q) && !String(v.varName || '').toLowerCase().includes(q)) return false;
+            if(!progressiveMatch(terms, [g.name, v.variationSku, v.parentSku, (g.variations[0] && g.variations[0].parentSku), v.varName, g.itemId])) return false;
             if(activeFilter==='mapped'&&!v.mapped)return false;
             if(activeFilter==='unmapped'&&v.mapStatus!=='unmapped')return false;
             if(activeFilter==='dupes') {
@@ -787,7 +796,8 @@ function toggleModalUnitSearch() {
 }
 
 function renderModalPos() {
-    const ps = (document.getElementById('mmPosSearch')?.value || '').trim().toLowerCase();
+    const ps = (document.getElementById('mmPosSearch')?.value || '').trim();
+    const terms = searchTerms(ps);
     const pp = document.getElementById('mmPosPanel');
     
     // Find current Shopee item SKU
@@ -802,19 +812,9 @@ function renderModalPos() {
     const searchUnits = document.getElementById('mmUnitToggle')?.checked;
     const typeFiltered = POS_ITEMS.filter(p => searchUnits ? p.item_type === 'unit' : p.item_type === 'base');
 
-    if (ps) {
-        const keywords = ps.split(/\s+/).filter(k => k.length > 0);
+    if (terms.length) {
         avail = typeFiltered.filter(p => {
-            const name = (p.name || '').toLowerCase();
-            const sku = (p.sku || '').toLowerCase();
-            const brand = (p.brand || '').toLowerCase();
-            const barcode = (p.barcode || '').toLowerCase();
-            return keywords.every(k => 
-                name.includes(k) || 
-                sku.includes(k) || 
-                brand.includes(k) || 
-                barcode.includes(k)
-            );
+            return progressiveMatch(terms, [p.name, p.product_name, p.variation_name, p.sku, p.brand, p.barcode, p.unit_name]);
         });
     } else {
         avail = typeFiltered;

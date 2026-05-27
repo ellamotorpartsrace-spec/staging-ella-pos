@@ -166,6 +166,14 @@ function debouncedRender() {
 }
 
 function escHtml(s) { if(!s)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function searchTerms(q) {
+    return String(q || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+}
+function progressiveMatch(terms, fields) {
+    if (!terms.length) return true;
+    const haystack = fields.map(v => String(v || '').toLowerCase());
+    return terms.every(term => haystack.some(field => field.includes(term)));
+}
 
 function stockPill(qty) {
     if (qty===0)  return `<span class="sp-stock-pill stock-zero"><i class="fa-solid fa-times"></i>${qty}</span>`;
@@ -193,7 +201,8 @@ function goToPage(page) {
 }
 
 function renderProducts() {
-    const q    = (document.getElementById('prodSearch')?.value||'').toLowerCase().trim();
+    const q    = (document.getElementById('prodSearch')?.value||'').trim();
+    const terms = searchTerms(q);
     const body = document.getElementById('prodBody');
     let inStock=0, oos=0;
     
@@ -204,10 +213,7 @@ function renderProducts() {
         g.variations.forEach(v => { if(v.stock>0) inStock++; else oos++; });
 
         const vars = g.variations.filter(v => {
-            if (q && !g.name.toLowerCase().includes(q) &&
-                !(g.parentSku||'').toLowerCase().includes(q) &&
-                !(v.varName||'').toLowerCase().includes(q) &&
-                !(v.varSku||'').toLowerCase().includes(q)) return false;
+            if (!progressiveMatch(terms, [g.name, g.parentSku, v.varName, v.varSku, g.itemId, v.modelId])) return false;
             if (activeFilter==='in_stock' && v.stock<=5)  return false;
             if (activeFilter==='low'      && (v.stock===0||v.stock>5)) return false;
             if (activeFilter==='oos'      && v.stock!==0)  return false;

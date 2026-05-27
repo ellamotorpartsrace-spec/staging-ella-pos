@@ -627,6 +627,14 @@ let unmappedItemsPerPage = 25;
 let sessionChangedCount = 0;
 
 function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function searchTerms(q) {
+    return String(q || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+}
+function progressiveMatch(terms, fields) {
+    if (!terms.length) return true;
+    const haystack = fields.map(v => String(v || '').toLowerCase());
+    return terms.every(term => haystack.some(field => field.includes(term)));
+}
 
 function unitMultiplier(item) {
     return Math.max(1, parseInt(item?.multiplier, 10) || 1);
@@ -996,14 +1004,15 @@ function updateModalSharedDetailsAlert() {
 }
 
 function renderMapped(){
-    const q=(document.getElementById('allocSearch')?.value||'').toLowerCase();
+    const q=(document.getElementById('allocSearch')?.value||'');
+    const terms = searchTerms(q);
     const body=document.getElementById('allocBody');
 
     // First, filter groups
     const matchedGroups = [];
     MAPPED_GROUPS.forEach(g=>{
         const vars=g.vars.filter(v=>{
-            if(q&&!g.name.toLowerCase().includes(q)&&!(v.sku||'').toLowerCase().includes(q)&&!(v.varName||'').toLowerCase().includes(q))return false;
+            if(!progressiveMatch(terms, [g.name, v.sku, v.varName, g.itemId, v.modelId, v.unitName]))return false;
             if(allocFilter==='manual'&&v.mappingStatus!=='manual')return false;
             if(allocFilter==='synced'&&v.online===0)return false;
             if(allocFilter==='duplicate'&&!v.isDuplicate)return false;

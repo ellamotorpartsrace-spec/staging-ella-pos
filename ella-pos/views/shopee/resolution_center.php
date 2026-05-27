@@ -23,9 +23,17 @@ $where_clause = "status = 'open'";
 $params = [];
 
 if ($search_query !== '') {
-    $where_clause .= " AND (sku LIKE ? OR error_message LIKE ?)";
-    $params[] = "%$search_query%";
-    $params[] = "%$search_query%";
+    $words = preg_split('/\s+/', $search_query);
+    foreach ($words as $word) {
+        $word = trim($word);
+        if ($word === '') continue;
+        $where_clause .= " AND (sku LIKE ? OR error_message LIKE ? OR shopee_item_id LIKE ? OR shopee_model_id LIKE ?)";
+        $like = "%$word%";
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
 }
 
 if ($type_filter !== '') {
@@ -192,14 +200,14 @@ require_once '../../includes/sidebar.php';
     <!-- Search & Filter Toolbar -->
     <div class="sp-card mb-3">
         <div class="sp-card-body py-3">
-            <form method="GET" action="" class="row g-2 align-items-center">
+            <form method="GET" action="" class="row g-2 align-items-center" id="resolutionFilterForm">
                 <!-- Search Input -->
                 <div class="col-md-5">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-transparent border-end-0 text-secondary">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
-                        <input type="text" name="search" autocomplete="off" class="form-control border-start-0 ps-0" placeholder="Search by SKU or error details..." value="<?= htmlspecialchars($search_query) ?>">
+                        <input type="text" name="search" id="resolutionSearch" autocomplete="off" class="form-control border-start-0 ps-0" placeholder="Search by SKU or error details..." value="<?= htmlspecialchars($search_query) ?>">
                     </div>
                 </div>
                 <!-- Type Filter Dropdown -->
@@ -442,6 +450,36 @@ require_once '../../includes/sidebar.php';
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('resolutionFilterForm');
+    const search = document.getElementById('resolutionSearch');
+    if (!form || !search) return;
+
+    let searchTimer = null;
+    let lastSubmittedSearch = search.value.trim();
+
+    function submitSearch() {
+        const nextSearch = search.value.trim();
+        if (nextSearch === lastSubmittedSearch) return;
+        lastSubmittedSearch = nextSearch;
+        const pageInput = form.querySelector('input[name="page"]');
+        if (pageInput) pageInput.value = '1';
+        form.submit();
+    }
+
+    search.addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(submitSearch, 800);
+    });
+
+    search.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        clearTimeout(searchTimer);
+        submitSearch();
+    });
+});
+
 async function startQuickScan(btn) {
     const origHtml = btn.innerHTML;
     btn.disabled = true;
