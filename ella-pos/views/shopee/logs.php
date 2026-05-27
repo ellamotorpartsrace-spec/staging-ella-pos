@@ -500,9 +500,18 @@ function renderLogs() {
                     const noSkuHtml = getPopoverHtml(displayOld, 'var(--text-secondary)');
                     details = `<span class="small"><i class="fa-solid fa-link-slash me-1 text-danger"></i><span class="text-secondary">Unlinked from POS SKU:</span> <del class="font-monospace text-muted ms-1" style="background:rgba(220,53,69,0.06);padding:2px 7px;border-radius:4px;border:1px solid rgba(220,53,69,0.15)">${noSkuHtml}</del></span>`;
                 } else if (isNewLink) {
-                    const displayNew = (l.newStock === 'Unmapped' || !l.newStock) ? '[No SKU]' : l.newStock;
-                    const noSkuHtml = getPopoverHtml(displayNew, '#198754');
-                    details = `<span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${noSkuHtml}</span></span>`;
+                    if (l.newStock === 'Allowed as Shared Listing') {
+                        const skuPopoverHtml = getPopoverHtml(l.sku || '[No SKU]', '#198754');
+                        details = `
+                            <div class="d-flex flex-column gap-1 mt-1">
+                                <span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${skuPopoverHtml}</span></span>
+                                <span class="small text-muted ms-3" style="font-size: 0.78rem;"><i class="fa-solid fa-share-nodes me-1 text-primary"></i>Allowed as shared listing</span>
+                            </div>`;
+                    } else {
+                        const displayNew = (l.newStock === 'Unmapped' || !l.newStock) ? '[No SKU]' : l.newStock;
+                        const noSkuHtml = getPopoverHtml(displayNew, '#198754');
+                        details = `<span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${noSkuHtml}</span></span>`;
+                    }
                 } else {
                     const newHtml = getPopoverHtml(l.newStock, '#6366f1');
                     details = `<span class="small"><i class="fa-solid fa-arrows-rotate me-1" style="color:#6610f2"></i><span class="text-secondary">Relinked:</span> <del class="font-monospace text-muted ms-1" style="font-size:0.8rem;padding:2px 6px;background:rgba(0,0,0,0.04);border-radius:4px">${l.oldStock}</del> <i class="fa-solid fa-arrow-right mx-1" style="color:#ee4d2d;font-size:0.72rem"></i> <span class="font-monospace fw-semibold" style="background:rgba(99,102,241,0.08);color:#6366f1;padding:2px 7px;border-radius:4px;border:1px solid rgba(99,102,241,0.2)">${newHtml}</span></span>`;
