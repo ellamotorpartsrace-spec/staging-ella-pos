@@ -303,12 +303,15 @@ function highlightQuery($text, $query) {
             <p class="text-muted small mb-0">Manage packaging and custom multipliers for your inventory items.</p>
         </div>
 
-        <form method="GET" action="unit_types.php" class="d-flex" style="width: 100%; max-width: 450px;">
+        <form method="GET" action="unit_types.php" class="d-flex gap-2" style="width: 100%; max-width: 640px;">
             <div class="input-group search-input-group w-100 bg-white shadow-sm">
                 <input type="text" name="search" class="form-control border-0"
                     placeholder="Search product name, brand, or barcode..." value="<?= htmlspecialchars($search) ?>">
                 <button class="btn btn-primary border-0" type="submit"><i class="fa-solid fa-search"></i></button>
             </div>
+            <a href="<?= BASE_URL ?>views/inventory/unit_sets.php" class="btn btn-outline-primary rounded-pill px-3 fw-medium">
+                <i class="fa-solid fa-boxes-stacked me-1"></i>Set Builder
+            </a>
         </form>
     </div>
 
