@@ -36,7 +36,7 @@ foreach ($mappedRows as $r) {
 
 $bundleStockMap = [];
 if (!empty($bundleSetIds)) {
-    // Reserve map per component variation from existing mapped allocations (base pieces).
+    // Reserve map per component variation from existing non-bundle mapped allocations (base pieces).
     $reservedByVariation = [];
     foreach ($mappedRows as $mr) {
         $variationId = (int)($mr['pos_product_id'] ?? 0);
@@ -68,29 +68,59 @@ if (!empty($bundleSetIds)) {
     $stmtBundleComp->execute(array_map('intval', array_keys($bundleSetIds)));
     $bundleComponents = $stmtBundleComp->fetchAll(PDO::FETCH_ASSOC);
 
-    $bundleMin = [];
+    $componentsBySet = [];
     foreach ($bundleComponents as $c) {
         $setId = (int)$c['product_set_id'];
-        $componentVariationId = (int)$c['component_variation_id'];
-        $componentQty = (float)$c['component_qty'];
-        $mult = max(1, (int)$c['component_unit_multiplier']);
-        $requiredBase = $componentQty * $mult;
-        if ($requiredBase <= 0) {
+        $requiredBase = (float)$c['component_qty'] * max(1, (int)$c['component_unit_multiplier']);
+        if ($setId <= 0 || $requiredBase <= 0) {
             continue;
         }
-        $availableBase = (int)$c['component_base_qty'];
-        $reservedBase = (int)($reservedByVariation[$componentVariationId] ?? 0);
-        $freeBase = max(0, $availableBase - $reservedBase);
-        $possibleSets = (int)floor($freeBase / $requiredBase);
-        if (!isset($bundleMin[$setId])) {
-            $bundleMin[$setId] = $possibleSets;
-        } else {
-            $bundleMin[$setId] = min($bundleMin[$setId], $possibleSets);
+        $componentsBySet[$setId][] = [
+            'variation_id' => (int)$c['component_variation_id'],
+            'required_base' => $requiredBase,
+            'stock_base' => (int)$c['component_base_qty'],
+        ];
+    }
+
+    // Bundle mappings also reserve their component stock. Exclude the row being displayed
+    // so Overall Stock means this listing's current allocation plus remaining pairable capacity.
+    $bundleReservedByMap = [];
+    foreach ($mappedRows as $mr) {
+        $mapId = (int)($mr['id'] ?? 0);
+        $setId = (int)($mr['pos_bundle_set_id'] ?? 0);
+        $allocatedSets = (int)($mr['shopee_stock'] ?? 0);
+        if ($mapId <= 0 || $setId <= 0 || $allocatedSets <= 0 || empty($componentsBySet[$setId])) {
+            continue;
+        }
+        foreach ($componentsBySet[$setId] as $component) {
+            $variationId = $component['variation_id'];
+            $bundleReservedByMap[$mapId][$variationId] = ($bundleReservedByMap[$mapId][$variationId] ?? 0)
+                + ($allocatedSets * $component['required_base']);
         }
     }
 
-    foreach (array_keys($bundleSetIds) as $setId) {
-        $bundleStockMap[(int)$setId] = max(0, (int)($bundleMin[(int)$setId] ?? 0));
+    foreach ($mappedRows as $mr) {
+        $mapId = (int)($mr['id'] ?? 0);
+        $setId = (int)($mr['pos_bundle_set_id'] ?? 0);
+        if ($mapId <= 0 || $setId <= 0 || empty($componentsBySet[$setId])) {
+            continue;
+        }
+
+        $minSets = null;
+        foreach ($componentsBySet[$setId] as $component) {
+            $variationId = $component['variation_id'];
+            $reservedBase = (float)($reservedByVariation[$variationId] ?? 0);
+            foreach ($bundleReservedByMap as $otherMapId => $reservedComponents) {
+                if ((int)$otherMapId === $mapId) {
+                    continue;
+                }
+                $reservedBase += (float)($reservedComponents[$variationId] ?? 0);
+            }
+            $freeBase = max(0, $component['stock_base'] - $reservedBase);
+            $possibleSets = (int)floor($freeBase / $component['required_base']);
+            $minSets = $minSets === null ? $possibleSets : min($minSets, $possibleSets);
+        }
+        $bundleStockMap[$mapId] = max(0, (int)($minSets ?? 0));
     }
 }
 
@@ -176,7 +206,7 @@ foreach ($mappedRows as $r) {
     if ($multiplier <= 0) $multiplier = 1;
     $bundleSetId = (int)($r['pos_bundle_set_id'] ?? 0);
     $isBundle = $bundleSetId > 0;
-    $baseQty = $isBundle ? (int)($bundleStockMap[$bundleSetId] ?? 0) : (int)$r['pos_qty'];
+    $baseQty = $isBundle ? (int)($bundleStockMap[(int)$r['id']] ?? 0) : (int)$r['pos_qty'];
     $unitQty = floor($baseQty / $multiplier);
 
     $availableStock = (int)$r['shopee_stock'];
