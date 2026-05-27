@@ -233,28 +233,30 @@ try {
         $_SESSION['user_id'] ?? null
     ]);
     
-    // Also write a standard mapping log!
-    $oldValLog = $mapping['matched_pos_sku'] ?: 'Unmapped';
-    $newValLog = $posVarId ? $newSku : 'Unmapped';
-    $logSrc = $posVarId ? 'Shopee SKU Edit (Auto)' : 'Shopee SKU Edit (Unlink)';
-    $prodName = $mapping['shopee_product_name'];
-    if (!empty($mapping['shopee_variation_name'])) {
-        $prodName .= ' — ' . $mapping['shopee_variation_name'];
-    }
+    // Also write a standard mapping log ONLY if it was actually mapped before!
+    if (!empty($mapping['matched_pos_sku'])) {
+        $oldValLog = $mapping['matched_pos_sku'];
+        $newValLog = 'Unmapped';
+        $logSrc = 'Shopee SKU Edit (Unlink)';
+        $prodName = $mapping['shopee_product_name'];
+        if (!empty($mapping['shopee_variation_name'])) {
+            $prodName .= ' — ' . $mapping['shopee_variation_name'];
+        }
 
-    $shopeeSku = $newSku ?: $mapping['shopee_variation_sku'] ?: $mapping['shopee_parent_sku'] ?: '—';
-    $conn->prepare("
-        INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, old_value, new_value, source, status, created_by, created_at)
-        VALUES ('mapping', ?, ?, ?, ?, ?, ?, 'success', ?, NOW())
-    ")->execute([
-        $mapping['shopee_item_id'],
-        $prodName,
-        $shopeeSku,
-        $oldValLog,
-        $newValLog,
-        $logSrc,
-        $_SESSION['user_id'] ?? null
-    ]);
+        $shopeeSku = $newSku ?: $mapping['shopee_variation_sku'] ?: $mapping['shopee_parent_sku'] ?: '—';
+        $conn->prepare("
+            INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, old_value, new_value, source, status, created_by, created_at)
+            VALUES ('mapping', ?, ?, ?, ?, ?, ?, 'success', ?, NOW())
+        ")->execute([
+            $mapping['shopee_item_id'],
+            $prodName,
+            $shopeeSku,
+            $oldValLog,
+            $newValLog,
+            $logSrc,
+            $_SESSION['user_id'] ?? null
+        ]);
+    }
     
     // 7. Run conflict detection to clear the error log dynamically in real-time
     require_once __DIR__ . '/detect_conflicts.php';

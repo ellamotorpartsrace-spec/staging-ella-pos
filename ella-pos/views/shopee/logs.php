@@ -340,10 +340,10 @@ require_once '../../includes/sidebar.php';
                 <!-- Category Pills -->
                 <div class="sp-filter-pills ms-auto d-flex gap-2 flex-wrap">
                     <button type="button" class="premium-pill sp-pill pill-all active" onclick="setLogFilter('all',this)">All Events</button>
-                    <button type="button" class="premium-pill sp-pill pill-sync" onclick="setLogFilter('product_import',this)">Product Sync</button>
                     <button type="button" class="premium-pill sp-pill pill-stock" onclick="setLogFilter('stock_update',this)">Stock Updates</button>
+                    <button type="button" class="premium-pill sp-pill pill-map" onclick="setLogFilter('mapping',this)">Mapping</button>
                     <button type="button" class="premium-pill sp-pill pill-sku" onclick="setLogFilter('shopee_sku',this)">Shopee SKU</button>
-                    <button type="button" class="premium-pill sp-pill pill-map" onclick="setLogFilter('mapping',this)">Mappings</button>
+                    <button type="button" class="premium-pill sp-pill pill-sync" onclick="setLogFilter('product_import',this)">Product Sync</button>
                     <button type="button" class="premium-pill sp-pill pill-token" onclick="setLogFilter('token_refresh',this)">Token</button>
                     <button type="button" class="premium-pill sp-pill pill-failed" onclick="setLogFilter('failed',this)">Failed</button>
                 </div>
@@ -408,7 +408,7 @@ function renderLogs() {
     const body = document.getElementById('logBody');
 
     let items = LOGS.filter(l => {
-        if (!progressiveMatch(terms, [l.product, l.sku, l.type, l.source, l.status, l.error, l.user, l.posName, l.posVarName])) return false;
+        if (!progressiveMatch(terms, [l.product, l.sku, l.type, l.source, l.status, l.error, l.user, l.posName, l.posVarName, l.newStock])) return false;
         if (logFilter === 'failed') { if (l.status !== 'failed') return false; }
         else if (logFilter !== 'all' && l.event !== logFilter) return false;
         return true;
@@ -422,6 +422,15 @@ function renderLogs() {
     document.querySelectorAll('.popover').forEach(p => p.remove());
 
     body.innerHTML = items.map(l => {
+        const getPopoverHtml = (text, iconColor) => {
+            const safeName = (l.posName || 'Unknown POS Product').replace(/"/g, '&quot;');
+            const safeVar = (l.posVarName || '').replace(/"/g, '&quot;');
+            const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
+            const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
+            const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="logs-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
+            return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none;" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}"></i></a>`;
+        };
+
         let eventBadge = '';
         switch(l.event) {
             case 'product_import': 
@@ -486,15 +495,6 @@ function renderLogs() {
             if (isBulkSummary) {
                 details = `<span class="small"><i class="fa-solid fa-wand-magic-sparkles me-1" style="color:#6610f2"></i><span class="text-dark">${l.newStock}</span></span>`;
             } else {
-                const getPopoverHtml = (text, iconColor) => {
-                    const safeName = (l.posName || 'Unknown POS Product').replace(/"/g, '&quot;');
-                    const safeVar = (l.posVarName || '').replace(/"/g, '&quot;');
-                    const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
-                    const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
-                    const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="logs-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
-                    return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none;" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}"></i></a>`;
-                };
-
                 if (isUnlinked) {
                     const displayOld = (l.oldStock === 'Unmapped' || !l.oldStock) ? '[No SKU]' : l.oldStock;
                     const noSkuHtml = getPopoverHtml(displayOld, 'var(--text-secondary)');
@@ -553,7 +553,8 @@ function renderLogs() {
             // ── Shopee SKU — show the SKU value that was set ──────────────────────
             const rawSkuVal = (l.newStock || '').replace('Added/Fix Missing SKU: ', '').trim();
             if (rawSkuVal) {
-                details = `<span class="small"><i class="fa-solid fa-tag me-1" style="color:#fd7e14"></i><span class="text-secondary">SKU set to:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(253,126,20,0.08);color:#fd7e14;padding:2px 7px;border-radius:4px;border:1px solid rgba(253,126,20,0.2)">${rawSkuVal}</span></span>`;
+                const skuPopoverHtml = getPopoverHtml(rawSkuVal, '#fd7e14');
+                details = `<span class="small"><i class="fa-solid fa-tag me-1" style="color:#fd7e14"></i><span class="text-secondary">Added/Fix Missing SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(253,126,20,0.08);color:#fd7e14;padding:2px 7px;border-radius:4px;border:1px solid rgba(253,126,20,0.2)">${skuPopoverHtml}</span></span>`;
             } else {
                 details = '<span class="small text-secondary">SKU updated</span>';
             }
