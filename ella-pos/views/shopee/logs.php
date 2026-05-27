@@ -44,7 +44,16 @@ $stmt = $conn->prepare("
            (SELECT v.variation_name 
             FROM product_variations v 
             WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
-            LIMIT 1) as fallback_pos_variation
+            LIMIT 1) as fallback_pos_variation,
+           (SELECT p.product_name 
+            FROM product_variations v 
+            JOIN products p ON v.product_id = p.product_id 
+            WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.old_value) COLLATE utf8mb4_unicode_ci 
+            LIMIT 1) as fallback_old_pos_name,
+           (SELECT v.variation_name 
+            FROM product_variations v 
+            WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.old_value) COLLATE utf8mb4_unicode_ci 
+            LIMIT 1) as fallback_old_pos_variation
     FROM shopee_sync_logs l
     LEFT JOIN users u ON l.created_by = u.id
     $whereSql
@@ -68,8 +77,8 @@ foreach ($dbLogs as $l) {
         'status' => $l['status'],
         'error' => $l['error_message'] ?: '',
         'user' => $l['user_name'] ?: 'System',
-        'posName' => $l['mapped_pos_name'] ?: ($l['fallback_pos_name'] ?? ''),
-        'posVarName' => $l['mapped_pos_variation'] ?: ($l['fallback_pos_variation'] ?? '')
+        'posName' => $l['mapped_pos_name'] ?: ($l['fallback_old_pos_name'] ?? $l['fallback_pos_name'] ?? ''),
+        'posVarName' => $l['mapped_pos_variation'] ?: ($l['fallback_old_pos_variation'] ?? $l['fallback_pos_variation'] ?? '')
     ];
 }
 
@@ -427,7 +436,7 @@ function renderLogs() {
 
     body.innerHTML = items.map(l => {
         const getPopoverHtml = (text, iconColor) => {
-            const safeName = (l.posName || 'Unknown POS Product').replace(/"/g, '&quot;');
+            const safeName = (l.posName || l.product || 'Unknown Product').replace(/"/g, '&quot;');
             const safeVar = (l.posVarName || '').replace(/"/g, '&quot;');
             const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
             const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
