@@ -113,24 +113,59 @@ try {
                 $bundleSetId = (int)$map['pos_bundle_set_id'];
                 $compStmt = $conn->prepare("
                     SELECT
+                        si.component_variation_id,
                         si.component_qty,
                         COALESCE(cu.multiplier, 1) AS component_unit_multiplier,
-                        (COALESCE(i1.quantity, 0) + COALESCE(i2.quantity, 0)) AS component_base_qty
+                        (COALESCE(i1.quantity, 0) + COALESCE(i2.quantity, 0)) AS component_base_qty,
+                        COALESCE(res.reserved_base_qty, 0) AS reserved_base_qty
                     FROM product_unit_set_items si
                     LEFT JOIN product_units cu ON cu.id = si.component_unit_id
                     LEFT JOIN inventory i1 ON i1.variation_id = si.component_variation_id AND i1.store_id = 1
                     LEFT JOIN inventory i2 ON i2.variation_id = si.component_variation_id AND i2.store_id = 2
+                    LEFT JOIN (
+                        SELECT
+                            m.pos_product_id,
+                            SUM(m.shopee_stock * COALESCE(u.multiplier, 1)) AS reserved_base_qty
+                        FROM shopee_product_mappings m
+                        LEFT JOIN product_units u ON u.id = m.pos_unit_id
+                        WHERE m.mapping_status IN ('auto','manual')
+                          AND m.pos_bundle_set_id IS NULL
+                          AND m.pos_product_id IS NOT NULL
+                        GROUP BY m.pos_product_id
+                    ) res ON res.pos_product_id = si.component_variation_id
                     WHERE si.product_set_id = ?
                 ");
                 $compStmt->execute([$bundleSetId]);
                 $compRows = $compStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $otherBundleReserveStmt = $conn->prepare("
+                    SELECT
+                        si.component_variation_id,
+                        SUM(m.shopee_stock * si.component_qty * COALESCE(cu.multiplier, 1)) AS reserved_base_qty
+                    FROM shopee_product_mappings m
+                    INNER JOIN product_unit_set_items si ON si.product_set_id = m.pos_bundle_set_id
+                    LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+                    WHERE m.mapping_status IN ('auto','manual')
+                      AND m.pos_bundle_set_id IS NOT NULL
+                      AND m.id <> ?
+                    GROUP BY si.component_variation_id
+                ");
+                $otherBundleReserveStmt->execute([$mapId]);
+                $otherBundleReserved = [];
+                foreach ($otherBundleReserveStmt->fetchAll(PDO::FETCH_ASSOC) as $reserveRow) {
+                    $otherBundleReserved[(int)$reserveRow['component_variation_id']] = (float)$reserveRow['reserved_base_qty'];
+                }
+
                 $minSets = null;
                 foreach ($compRows as $c) {
                     $requiredBase = (float)$c['component_qty'] * max(1, (int)$c['component_unit_multiplier']);
                     if ($requiredBase <= 0) {
                         continue;
                     }
-                    $possible = (int)floor(((int)$c['component_base_qty']) / $requiredBase);
+                    $componentVariationId = (int)$c['component_variation_id'];
+                    $reservedBase = (float)$c['reserved_base_qty'] + (float)($otherBundleReserved[$componentVariationId] ?? 0);
+                    $freeBase = max(0, (float)$c['component_base_qty'] - $reservedBase);
+                    $possible = (int)floor($freeBase / $requiredBase);
                     $minSets = $minSets === null ? $possible : min($minSets, $possible);
                 }
                 $bundleTotalSets = max(0, (int)($minSets ?? 0));
