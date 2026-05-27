@@ -20,9 +20,9 @@ if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_arra
     exit;
 }
 
-$productUnitId = isset($_GET['product_unit_id']) ? (int) $_GET['product_unit_id'] : 0;
-if ($productUnitId <= 0) {
-    echo json_encode(['success' => false, 'message' => 'Invalid unit ID']);
+$productSetId = isset($_GET['product_set_id']) ? (int) $_GET['product_set_id'] : 0;
+if ($productSetId <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Invalid set ID']);
     exit;
 }
 
@@ -30,26 +30,17 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    $stmtUnit = $conn->prepare("
-        SELECT 
-            u.id AS unit_id,
-            u.variation_id,
-            u.unit_name,
-            u.multiplier,
-            v.sku,
-            v.variation_name,
-            p.product_name
-        FROM product_units u
-        INNER JOIN product_variations v ON v.variation_id = u.variation_id
-        INNER JOIN products p ON p.product_id = v.product_id
-        WHERE u.id = ?
+    $stmtSet = $conn->prepare("
+        SELECT id, set_name, set_sku, description, price_retail, price_wholesale, price_dealer, status
+        FROM product_unit_sets
+        WHERE id = ?
         LIMIT 1
     ");
-    $stmtUnit->execute([$productUnitId]);
-    $unit = $stmtUnit->fetch(PDO::FETCH_ASSOC);
+    $stmtSet->execute([$productSetId]);
+    $set = $stmtSet->fetch(PDO::FETCH_ASSOC);
 
-    if (!$unit) {
-        echo json_encode(['success' => false, 'message' => 'Unit not found']);
+    if (!$set) {
+        echo json_encode(['success' => false, 'message' => 'Bundle set not found']);
         exit;
     }
 
@@ -69,41 +60,40 @@ try {
         INNER JOIN product_variations v ON v.variation_id = si.component_variation_id
         INNER JOIN products p ON p.product_id = v.product_id
         LEFT JOIN product_units pu ON pu.id = si.component_unit_id
-        WHERE si.product_unit_id = ?
+        WHERE si.product_set_id = ?
         ORDER BY p.product_name ASC, v.variation_name ASC
     ");
-    $stmtItems->execute([$productUnitId]);
+    $stmtItems->execute([$productSetId]);
     $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
-
-    $normalized = array_map(static function (array $row): array {
-        return [
-            'id' => (int) $row['id'],
-            'component_variation_id' => (int) $row['component_variation_id'],
-            'component_unit_id' => $row['component_unit_id'] !== null ? (int) $row['component_unit_id'] : null,
-            'component_qty' => (float) $row['component_qty'],
-            'sku' => $row['sku'] ?? '',
-            'product_name' => $row['product_name'] ?? '',
-            'variation_name' => $row['variation_name'] ?? '',
-            'base_unit_type' => $row['base_unit_type'] ?? 'pc',
-            'component_unit_name' => $row['component_unit_name'] ?? null,
-            'component_unit_multiplier' => $row['component_unit_multiplier'] !== null ? (int) $row['component_unit_multiplier'] : 1,
-            'item_type' => $row['component_unit_id'] !== null ? 'unit' : 'base',
-        ];
-    }, $items);
 
     echo json_encode([
         'success' => true,
         'data' => [
-            'unit' => [
-                'unit_id' => (int) $unit['unit_id'],
-                'variation_id' => (int) $unit['variation_id'],
-                'unit_name' => $unit['unit_name'],
-                'multiplier' => (int) $unit['multiplier'],
-                'sku' => $unit['sku'],
-                'variation_name' => $unit['variation_name'],
-                'product_name' => $unit['product_name'],
+            'set' => [
+                'id' => (int) $set['id'],
+                'set_name' => $set['set_name'],
+                'set_sku' => $set['set_sku'],
+                'description' => $set['description'],
+                'price_retail' => (float) $set['price_retail'],
+                'price_wholesale' => (float) $set['price_wholesale'],
+                'price_dealer' => (float) $set['price_dealer'],
+                'status' => $set['status'],
             ],
-            'items' => $normalized,
+            'items' => array_map(static function (array $row): array {
+                return [
+                    'id' => (int) $row['id'],
+                    'component_variation_id' => (int) $row['component_variation_id'],
+                    'component_unit_id' => $row['component_unit_id'] !== null ? (int) $row['component_unit_id'] : null,
+                    'component_qty' => (float) $row['component_qty'],
+                    'sku' => $row['sku'] ?? '',
+                    'product_name' => $row['product_name'] ?? '',
+                    'variation_name' => $row['variation_name'] ?? '',
+                    'base_unit_type' => $row['base_unit_type'] ?? 'pc',
+                    'component_unit_name' => $row['component_unit_name'] ?? null,
+                    'component_unit_multiplier' => $row['component_unit_multiplier'] !== null ? (int) $row['component_unit_multiplier'] : 1,
+                    'item_type' => $row['component_unit_id'] !== null ? 'unit' : 'base',
+                ];
+            }, $items),
         ],
     ]);
 } catch (Throwable $e) {

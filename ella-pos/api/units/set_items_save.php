@@ -27,11 +27,18 @@ if (!is_array($payload)) {
     exit;
 }
 
-$productUnitId = isset($payload['product_unit_id']) ? (int) $payload['product_unit_id'] : 0;
+$productSetId = isset($payload['product_set_id']) ? (int) $payload['product_set_id'] : 0;
+$setName = trim((string) ($payload['set_name'] ?? ''));
+$setSku = trim((string) ($payload['set_sku'] ?? ''));
+$description = trim((string) ($payload['description'] ?? ''));
+$priceRetail = isset($payload['price_retail']) ? (float) $payload['price_retail'] : 0.0;
+$priceWholesale = isset($payload['price_wholesale']) ? (float) $payload['price_wholesale'] : 0.0;
+$priceDealer = isset($payload['price_dealer']) ? (float) $payload['price_dealer'] : 0.0;
+$status = in_array(($payload['status'] ?? 'active'), ['active', 'inactive'], true) ? $payload['status'] : 'active';
 $items = $payload['items'] ?? [];
 
-if ($productUnitId <= 0 || !is_array($items)) {
-    echo json_encode(['success' => false, 'message' => 'Invalid set data']);
+if ($setName === '' || !is_array($items)) {
+    echo json_encode(['success' => false, 'message' => 'Set name and component list are required.']);
     exit;
 }
 
@@ -40,14 +47,55 @@ try {
     $conn = $db->getConnection();
     $conn->beginTransaction();
 
-    $stmtUnit = $conn->prepare("SELECT id, variation_id, unit_name FROM product_units WHERE id = ? LIMIT 1");
-    $stmtUnit->execute([$productUnitId]);
-    $unit = $stmtUnit->fetch(PDO::FETCH_ASSOC);
-    if (!$unit) {
-        throw new RuntimeException('Target unit does not exist.');
+    if ($setSku !== '') {
+        $skuStmt = $conn->prepare("SELECT id FROM product_unit_sets WHERE set_sku = ? AND id <> ? LIMIT 1");
+        $skuStmt->execute([$setSku, $productSetId]);
+        if ($skuStmt->fetch(PDO::FETCH_ASSOC)) {
+            throw new RuntimeException('Bundle SKU already exists.');
+        }
     }
 
-    // Normalize duplicate entries by key (variation + unit).
+    if ($productSetId > 0) {
+        $updateStmt = $conn->prepare("
+            UPDATE product_unit_sets
+            SET set_name = ?, set_sku = ?, description = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, status = ?
+            WHERE id = ?
+        ");
+        $updateStmt->execute([
+            $setName,
+            $setSku !== '' ? $setSku : null,
+            $description !== '' ? $description : null,
+            max(0, $priceRetail),
+            max(0, $priceWholesale),
+            max(0, $priceDealer),
+            $status,
+            $productSetId,
+        ]);
+
+        if ($updateStmt->rowCount() === 0) {
+            $existsStmt = $conn->prepare("SELECT id FROM product_unit_sets WHERE id = ? LIMIT 1");
+            $existsStmt->execute([$productSetId]);
+            if (!$existsStmt->fetch(PDO::FETCH_ASSOC)) {
+                throw new RuntimeException('Bundle set does not exist.');
+            }
+        }
+    } else {
+        $insertStmt = $conn->prepare("
+            INSERT INTO product_unit_sets (set_name, set_sku, description, price_retail, price_wholesale, price_dealer, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        $insertStmt->execute([
+            $setName,
+            $setSku !== '' ? $setSku : null,
+            $description !== '' ? $description : null,
+            max(0, $priceRetail),
+            max(0, $priceWholesale),
+            max(0, $priceDealer),
+            $status,
+        ]);
+        $productSetId = (int) $conn->lastInsertId();
+    }
+
     $normalized = [];
     foreach ($items as $row) {
         if (!is_array($row)) {
@@ -72,15 +120,15 @@ try {
         $normalized[$key]['component_qty'] += $qty;
     }
 
-    $deleteStmt = $conn->prepare("DELETE FROM product_unit_set_items WHERE product_unit_id = ?");
-    $deleteStmt->execute([$productUnitId]);
+    $deleteStmt = $conn->prepare("DELETE FROM product_unit_set_items WHERE product_set_id = ?");
+    $deleteStmt->execute([$productSetId]);
 
     if (!empty($normalized)) {
         $verifyVariationStmt = $conn->prepare("SELECT variation_id FROM product_variations WHERE variation_id = ? LIMIT 1");
         $verifyUnitStmt = $conn->prepare("SELECT id FROM product_units WHERE id = ? AND variation_id = ? LIMIT 1");
-        $insertStmt = $conn->prepare("
+        $insertItemStmt = $conn->prepare("
             INSERT INTO product_unit_set_items (
-                product_unit_id,
+                product_set_id,
                 component_variation_id,
                 component_unit_id,
                 component_qty
@@ -104,7 +152,7 @@ try {
                 }
             }
 
-            $insertStmt->execute([$productUnitId, $variationId, $componentUnitId, $qty]);
+            $insertItemStmt->execute([$productSetId, $variationId, $componentUnitId, $qty]);
         }
     }
 
@@ -114,15 +162,16 @@ try {
         logActivity(
             $conn,
             $_SESSION['user_id'],
-            'SAVE_UNIT_SET_ITEMS',
+            'SAVE_BUNDLE_SET',
             'Inventory',
-            'Updated set recipe for unit ID ' . $productUnitId . ' (' . ($unit['unit_name'] ?? 'Unit') . ')'
+            'Saved bundle set ID ' . $productSetId . ' (' . $setName . ')'
         );
     }
 
     echo json_encode([
         'success' => true,
-        'message' => 'Set recipe saved successfully.',
+        'message' => 'Bundle set saved successfully.',
+        'product_set_id' => $productSetId,
         'component_count' => count($normalized),
     ]);
 } catch (Throwable $e) {

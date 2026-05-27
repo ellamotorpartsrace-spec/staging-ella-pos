@@ -373,3 +373,15 @@ Shows files already tracked by Git.
 
 -single dash  = short option, usually one letter
 --double dash = long option, usually a word
+
+============================================================
+HIGHLIGHT: COPY BASH COMMANDS USED FOR LATEST PUSH
+============================================================
+
+```bash
+git status --short --branch --untracked-files=all
+git add ella-pos/views/shopee/allocation.php
+git commit -m "Fix Shopee allocation math for unit-mapped items"
+git push origin testing
+git pull --ff-only origin testing
+```
