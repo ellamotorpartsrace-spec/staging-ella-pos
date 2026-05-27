@@ -40,26 +40,29 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
     ensureShopeeUnitMappingColumn($conn);
+    ensureShopeeBundleMappingColumn($conn);
     
     // Ensure table exists before beginning transaction to avoid implicit commits
     $conn->exec("CREATE TABLE IF NOT EXISTS shopee_duplicate_whitelist (sku VARCHAR(255) PRIMARY KEY, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
     
     $conn->beginTransaction();
 
-    $oldStmt = $conn->prepare("SELECT shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, pos_unit_id, mapping_status, shopee_stock FROM shopee_product_mappings WHERE id = ?");
+    $oldStmt = $conn->prepare("SELECT shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, pos_unit_id, pos_bundle_set_id, mapping_status, shopee_stock FROM shopee_product_mappings WHERE id = ?");
 
     $autoMatchedCount = 0; // Counter for items auto-matched in this operation
     $stmt = $conn->prepare("UPDATE shopee_product_mappings SET 
         matched_pos_sku = ?, 
         pos_product_id = ?, 
         pos_unit_id = ?,
+        pos_bundle_set_id = ?,
         mapping_status = ?, 
         updated_at = NOW() 
         WHERE id = ?");
 
     foreach ($mappings as $map) {
         $newSku = $map['posSku'] ?? null;
-        $newPosId = !empty($map['posId']) ? (int)$map['posId'] : null;
+        $newBundleSetId = normalizeShopeeBundleSetId($conn, $map['posBundleSetId'] ?? null);
+        $newPosId = $newBundleSetId ? null : (!empty($map['posId']) ? (int)$map['posId'] : null);
         $newUnitId = normalizeShopeePosUnitId($conn, $newPosId, $map['posUnitId'] ?? null);
         $newStatus = $map['status'] ?? 'unmapped';
 
@@ -71,6 +74,7 @@ try {
             $oldSku = $oldMap['matched_pos_sku'];
             $oldPosId = $oldMap['pos_product_id'];
             $oldUnitId = $oldMap['pos_unit_id'] ?? null;
+            $oldBundleSetId = $oldMap['pos_bundle_set_id'] ?? null;
             $oldStatus = $oldMap['mapping_status'];
 
             $oldSkuNorm = $oldSku !== null ? trim((string)$oldSku) : '';
@@ -79,8 +83,10 @@ try {
             $newPosIdNorm = $newPosId ? (int)$newPosId : 0;
             $oldUnitIdNorm = $oldUnitId ? (int)$oldUnitId : 0;
             $newUnitIdNorm = $newUnitId ? (int)$newUnitId : 0;
+            $oldBundleSetIdNorm = $oldBundleSetId ? (int)$oldBundleSetId : 0;
+            $newBundleSetIdNorm = $newBundleSetId ? (int)$newBundleSetId : 0;
 
-            if ($oldSkuNorm !== $newSkuNorm || $oldPosIdNorm !== $newPosIdNorm || $oldUnitIdNorm !== $newUnitIdNorm || $oldStatus !== $newStatus) {
+            if ($oldSkuNorm !== $newSkuNorm || $oldPosIdNorm !== $newPosIdNorm || $oldUnitIdNorm !== $newUnitIdNorm || $oldBundleSetIdNorm !== $newBundleSetIdNorm || $oldStatus !== $newStatus) {
                 $hasChanged = true;
             }
         }
@@ -89,6 +95,7 @@ try {
             $newSku,
             $newPosId,
             $newUnitId,
+            $newBundleSetId,
             $newStatus,
             $map['id']
         ]);

@@ -30,7 +30,7 @@ try {
 
     // Prepare statement to fetch mappings
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $conn->prepare("SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, mapping_status, stock_allocation_ratio, shopee_stock, shopee_price FROM shopee_product_mappings WHERE id IN ($placeholders)");
+    $stmt = $conn->prepare("SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, pos_bundle_set_id, mapping_status, stock_allocation_ratio, shopee_stock, shopee_price FROM shopee_product_mappings WHERE id IN ($placeholders)");
     $stmt->execute($ids);
     $mappings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -96,6 +96,7 @@ try {
             // Fetch POS physical stock and POS online stock for UI update
             $posPhysStock = 0;
             $posOnlineStock = 0;
+            $bundleTotalSets = null;
             if (!empty($posProductId)) {
                 $invStmt = $conn->prepare("SELECT store_id, quantity FROM inventory WHERE variation_id = ?");
                 $invStmt->execute([$posProductId]);
@@ -108,6 +109,33 @@ try {
                         $posOnlineStock = (int)$row['quantity'];
                     }
                 }
+            } elseif (!empty($map['pos_bundle_set_id'])) {
+                $bundleSetId = (int)$map['pos_bundle_set_id'];
+                $compStmt = $conn->prepare("
+                    SELECT
+                        si.component_qty,
+                        COALESCE(cu.multiplier, 1) AS component_unit_multiplier,
+                        (COALESCE(i1.quantity, 0) + COALESCE(i2.quantity, 0)) AS component_base_qty
+                    FROM product_unit_set_items si
+                    LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+                    LEFT JOIN inventory i1 ON i1.variation_id = si.component_variation_id AND i1.store_id = 1
+                    LEFT JOIN inventory i2 ON i2.variation_id = si.component_variation_id AND i2.store_id = 2
+                    WHERE si.product_set_id = ?
+                ");
+                $compStmt->execute([$bundleSetId]);
+                $compRows = $compStmt->fetchAll(PDO::FETCH_ASSOC);
+                $minSets = null;
+                foreach ($compRows as $c) {
+                    $requiredBase = (float)$c['component_qty'] * max(1, (int)$c['component_unit_multiplier']);
+                    if ($requiredBase <= 0) {
+                        continue;
+                    }
+                    $possible = (int)floor(((int)$c['component_base_qty']) / $requiredBase);
+                    $minSets = $minSets === null ? $possible : min($minSets, $possible);
+                }
+                $bundleTotalSets = max(0, (int)($minSets ?? 0));
+                $posPhysStock = $bundleTotalSets;
+                $posOnlineStock = 0;
             }
 
             $oldStock = (int)$map['shopee_stock'];
@@ -120,6 +148,7 @@ try {
                 'stock_allocation_ratio' => (int)($fresh['stock_allocation_ratio'] ?? 0),
                 'pos_physical_stock' => $posPhysStock,
                 'pos_online_stock' => $posOnlineStock,
+                'bundle_total_sets' => $bundleTotalSets,
                 'success' => true,
                 'changed' => ($oldStock !== $newStock)
             ];

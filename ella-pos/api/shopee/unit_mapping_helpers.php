@@ -13,6 +13,16 @@ if (!function_exists('ensureShopeeUnitMappingColumn')) {
     }
 }
 
+if (!function_exists('ensureShopeeBundleMappingColumn')) {
+    function ensureShopeeBundleMappingColumn(PDO $conn): void
+    {
+        $stmt = $conn->query("SHOW COLUMNS FROM shopee_product_mappings LIKE 'pos_bundle_set_id'");
+        if (!$stmt || !$stmt->fetch(PDO::FETCH_ASSOC)) {
+            $conn->exec("ALTER TABLE shopee_product_mappings ADD COLUMN pos_bundle_set_id INT DEFAULT NULL AFTER pos_unit_id");
+        }
+    }
+}
+
 if (!function_exists('normalizeShopeePosUnitId')) {
     function normalizeShopeePosUnitId(PDO $conn, $posProductId, $posUnitId): ?int
     {
@@ -27,5 +37,20 @@ if (!function_exists('normalizeShopeePosUnitId')) {
         $stmt->execute([$unitId, $productId]);
 
         return $stmt->fetchColumn() ? $unitId : null;
+    }
+}
+
+if (!function_exists('normalizeShopeeBundleSetId')) {
+    function normalizeShopeeBundleSetId(PDO $conn, $bundleSetId): ?int
+    {
+        $setId = (int)($bundleSetId ?? 0);
+        if ($setId <= 0) {
+            return null;
+        }
+
+        $stmt = $conn->prepare("SELECT id FROM product_unit_sets WHERE id = ? AND status = 'active' LIMIT 1");
+        $stmt->execute([$setId]);
+
+        return $stmt->fetchColumn() ? $setId : null;
     }
 }

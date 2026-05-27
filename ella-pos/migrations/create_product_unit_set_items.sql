@@ -1,5 +1,9 @@
 -- migration: create_product_unit_set_items.sql
 -- purpose: store bundle/set definitions and their component products
+-- note: this rebuilds the bundle tables for the new standalone bundle model
+
+DROP TABLE IF EXISTS `product_unit_set_items`;
+DROP TABLE IF EXISTS `product_unit_sets`;
 
 CREATE TABLE IF NOT EXISTS `product_unit_sets` (
   `id` INT NOT NULL AUTO_INCREMENT,
@@ -40,3 +44,19 @@ CREATE TABLE IF NOT EXISTS `product_unit_set_items` (
     FOREIGN KEY (`component_unit_id`) REFERENCES `product_units` (`id`)
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Shopee mappings can point to a standalone bundle set.
+SET @add_pos_bundle_set_id := (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `shopee_product_mappings` ADD COLUMN `pos_bundle_set_id` INT NULL AFTER `pos_unit_id`',
+    'SELECT 1'
+  )
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'shopee_product_mappings'
+    AND COLUMN_NAME = 'pos_bundle_set_id'
+);
+PREPARE stmt_add_pos_bundle_set_id FROM @add_pos_bundle_set_id;
+EXECUTE stmt_add_pos_bundle_set_id;
+DEALLOCATE PREPARE stmt_add_pos_bundle_set_id;

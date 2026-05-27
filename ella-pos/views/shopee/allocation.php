@@ -12,7 +12,7 @@ $conn = $db->getConnection();
 $mappedRows = $conn->query("
     SELECT m.id, m.shopee_item_id, m.shopee_product_name, m.shopee_variation_name,
         m.shopee_model_id, m.shopee_stock, m.mapping_status, m.shopee_image_url,
-        m.stock_allocation_ratio, m.pos_product_id, m.pos_unit_id,
+        m.stock_allocation_ratio, m.pos_product_id, m.pos_unit_id, m.pos_bundle_set_id,
         (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0)) as pos_qty,
         COALESCE(v.sku, m.matched_pos_sku, m.shopee_variation_sku, m.shopee_parent_sku) as sku,
         u.unit_name, u.multiplier
@@ -24,6 +24,75 @@ $mappedRows = $conn->query("
     WHERE m.mapping_status IN ('auto','manual')
     ORDER BY m.shopee_product_name ASC, m.shopee_variation_name ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+// Compute available stock for standalone bundle sets from component recipe.
+$bundleSetIds = [];
+foreach ($mappedRows as $r) {
+    $bundleId = (int)($r['pos_bundle_set_id'] ?? 0);
+    if ($bundleId > 0) {
+        $bundleSetIds[$bundleId] = true;
+    }
+}
+
+$bundleStockMap = [];
+if (!empty($bundleSetIds)) {
+    // Reserve map per component variation from existing mapped allocations (base pieces).
+    $reservedByVariation = [];
+    foreach ($mappedRows as $mr) {
+        $variationId = (int)($mr['pos_product_id'] ?? 0);
+        $rowBundleId = (int)($mr['pos_bundle_set_id'] ?? 0);
+        if ($variationId <= 0 || $rowBundleId > 0) {
+            continue;
+        }
+        $rowMultiplier = max(1, (int)($mr['multiplier'] ?? 1));
+        $rowAllocatedBase = ((int)($mr['shopee_stock'] ?? 0)) * $rowMultiplier;
+        $reservedByVariation[$variationId] = ($reservedByVariation[$variationId] ?? 0) + $rowAllocatedBase;
+    }
+
+    $placeholders = implode(',', array_fill(0, count($bundleSetIds), '?'));
+    $stmtBundleComp = $conn->prepare("
+        SELECT
+            si.product_set_id,
+            si.component_qty,
+            si.component_unit_id,
+            si.component_variation_id,
+            COALESCE(cu.multiplier, 1) AS component_unit_multiplier,
+            (COALESCE(i1.quantity, 0) + COALESCE(i2.quantity, 0)) AS component_base_qty
+        FROM product_unit_set_items si
+        LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+        LEFT JOIN inventory i1 ON i1.variation_id = si.component_variation_id AND i1.store_id = 1
+        LEFT JOIN inventory i2 ON i2.variation_id = si.component_variation_id AND i2.store_id = 2
+        WHERE si.product_set_id IN ($placeholders)
+        ORDER BY si.product_set_id ASC
+    ");
+    $stmtBundleComp->execute(array_map('intval', array_keys($bundleSetIds)));
+    $bundleComponents = $stmtBundleComp->fetchAll(PDO::FETCH_ASSOC);
+
+    $bundleMin = [];
+    foreach ($bundleComponents as $c) {
+        $setId = (int)$c['product_set_id'];
+        $componentVariationId = (int)$c['component_variation_id'];
+        $componentQty = (float)$c['component_qty'];
+        $mult = max(1, (int)$c['component_unit_multiplier']);
+        $requiredBase = $componentQty * $mult;
+        if ($requiredBase <= 0) {
+            continue;
+        }
+        $availableBase = (int)$c['component_base_qty'];
+        $reservedBase = (int)($reservedByVariation[$componentVariationId] ?? 0);
+        $freeBase = max(0, $availableBase - $reservedBase);
+        $possibleSets = (int)floor($freeBase / $requiredBase);
+        if (!isset($bundleMin[$setId])) {
+            $bundleMin[$setId] = $possibleSets;
+        } else {
+            $bundleMin[$setId] = min($bundleMin[$setId], $possibleSets);
+        }
+    }
+
+    foreach (array_keys($bundleSetIds) as $setId) {
+        $bundleStockMap[(int)$setId] = max(0, (int)($bundleMin[(int)$setId] ?? 0));
+    }
+}
 
 $unmappedRows = $conn->query("
     SELECT id, shopee_item_id, shopee_product_name, shopee_variation_name, shopee_stock, shopee_image_url,
@@ -105,7 +174,9 @@ foreach ($mappedRows as $r) {
     
     $multiplier = isset($r['multiplier']) ? (int)$r['multiplier'] : 1;
     if ($multiplier <= 0) $multiplier = 1;
-    $baseQty = (int)$r['pos_qty'];
+    $bundleSetId = (int)($r['pos_bundle_set_id'] ?? 0);
+    $isBundle = $bundleSetId > 0;
+    $baseQty = $isBundle ? (int)($bundleStockMap[$bundleSetId] ?? 0) : (int)$r['pos_qty'];
     $unitQty = floor($baseQty / $multiplier);
 
     $availableStock = (int)$r['shopee_stock'];
@@ -118,8 +189,9 @@ foreach ($mappedRows as $r) {
         'isDuplicate'=>$isDup,
         'dupDetails'=>$dupDetails,
         'mappingStatus'=>$r['mapping_status'],
-        'unitName'=>$r['unit_name'] ?? null,
-        'multiplier'=>$multiplier
+        'unitName'=>$isBundle ? 'Bundle Set' : ($r['unit_name'] ?? null),
+        'multiplier'=>$multiplier,
+        'isBundle'=>$isBundle
     ];
 }
 
@@ -1862,7 +1934,7 @@ async function refreshLiveRow(id, btn) {
             const item = MAPPED_FLAT.find(v => v.id === id);
             if (item) {
                 item.online = upd.shopee_stock;
-                item.total = upd.pos_physical_stock + upd.pos_online_stock;
+                item.total = item.isBundle ? (parseInt(upd.bundle_total_sets, 10) || 0) : (upd.pos_physical_stock + upd.pos_online_stock);
                 item.unitTotal = Math.floor(item.total / unitMultiplier(item));
                 item.ratio = upd.stock_allocation_ratio;
                 const avail = item.online;
@@ -1873,7 +1945,7 @@ async function refreshLiveRow(id, btn) {
                 g.vars.forEach(v => {
                     if (v.id === id) {
                         v.online = upd.shopee_stock;
-                        v.total = upd.pos_physical_stock + upd.pos_online_stock;
+                        v.total = v.isBundle ? (parseInt(upd.bundle_total_sets, 10) || 0) : (upd.pos_physical_stock + upd.pos_online_stock);
                         v.unitTotal = Math.floor(v.total / unitMultiplier(v));
                         v.ratio = upd.stock_allocation_ratio;
                         const avail = v.online;
@@ -1930,7 +2002,7 @@ async function autoSyncOnLoad() {
                     const item = MAPPED_FLAT.find(v => v.id === upd.id);
                     if (item) {
                         item.online = upd.shopee_stock;
-                        item.total = upd.pos_physical_stock + upd.pos_online_stock;
+                        item.total = item.isBundle ? (parseInt(upd.bundle_total_sets, 10) || 0) : (upd.pos_physical_stock + upd.pos_online_stock);
                         item.unitTotal = Math.floor(item.total / unitMultiplier(item));
                         item.ratio = upd.stock_allocation_ratio;
                         const avail = item.online;
@@ -1941,7 +2013,7 @@ async function autoSyncOnLoad() {
                         g.vars.forEach(v => {
                             if (v.id === upd.id) {
                                 v.online = upd.shopee_stock;
-                                v.total = upd.pos_physical_stock + upd.pos_online_stock;
+                                v.total = v.isBundle ? (parseInt(upd.bundle_total_sets, 10) || 0) : (upd.pos_physical_stock + upd.pos_online_stock);
                                 v.unitTotal = Math.floor(v.total / unitMultiplier(v));
                                 v.ratio = upd.stock_allocation_ratio;
                                 const avail = v.online;
