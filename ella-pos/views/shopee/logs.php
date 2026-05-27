@@ -410,7 +410,11 @@ function renderLogs() {
     let items = LOGS.filter(l => {
         if (!progressiveMatch(terms, [l.product, l.sku, l.type, l.source, l.status, l.error, l.user, l.posName, l.posVarName, l.newStock])) return false;
         if (logFilter === 'failed') { if (l.status !== 'failed') return false; }
-        else if (logFilter !== 'all' && l.event !== logFilter) return false;
+        else if (logFilter !== 'all') {
+            const isRetroactiveSku = (l.event === '' && l.newStock && l.newStock.includes('Added/Fix Missing SKU'));
+            const effectiveEvent = isRetroactiveSku ? 'shopee_sku' : l.event;
+            if (effectiveEvent !== logFilter) return false;
+        }
         return true;
     });
 
@@ -462,7 +466,12 @@ function renderLogs() {
                     eventBadge = '<span class="sp-badge sp-badge-warning"><i class="fa-solid fa-key me-1"></i>Token Refresh</span>';
                 }
                 break;
-            default: eventBadge = '<span class="sp-badge sp-badge-neutral">' + l.type + '</span>';
+            default: 
+                if (l.event === '' && l.newStock && l.newStock.includes('Added/Fix Missing SKU')) {
+                    eventBadge = '<span class="sp-badge" style="background:rgba(253,126,20,0.12);color:#fd7e14;border:1px solid rgba(253,126,20,0.25)"><i class="fa-solid fa-tag me-1"></i>Shopee SKU</span>';
+                } else {
+                    eventBadge = '<span class="sp-badge sp-badge-neutral">' + l.type + '</span>';
+                }
         }
 
         let statusBadge = l.status === 'success'
@@ -598,9 +607,16 @@ function renderLogs() {
             details = `<span class="small">${tokenIcon}<span class="text-dark">${tokenMsg}</span></span>`;
 
         } else {
-            details = l.newStock && l.newStock !== '—'
-                ? `<span class="small text-secondary">${l.newStock}</span>`
-                : '<span class="small text-secondary">—</span>';
+            if (l.event === '' && l.newStock && l.newStock.includes('Added/Fix Missing SKU')) {
+                // Retroactive fix for older logs that had an empty event_type in the DB
+                const rawSkuVal = (l.newStock || '').replace('Added/Fix Missing SKU: ', '').trim();
+                const skuPopoverHtml = getPopoverHtml(rawSkuVal, '#fd7e14');
+                details = `<span class="small"><i class="fa-solid fa-tag me-1" style="color:#fd7e14"></i><span class="text-secondary">Added/Fix Missing SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(253,126,20,0.08);color:#fd7e14;padding:2px 7px;border-radius:4px;border:1px solid rgba(253,126,20,0.2)">${skuPopoverHtml}</span></span>`;
+            } else {
+                details = l.newStock && l.newStock !== '—'
+                    ? `<span class="small text-secondary">${l.newStock}</span>`
+                    : '<span class="small text-secondary">—</span>';
+            }
         }
 
         let productHtml = '';
