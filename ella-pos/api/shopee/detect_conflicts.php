@@ -79,6 +79,7 @@ function runConflictDetection($conn) {
         SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name
         FROM shopee_product_mappings 
         WHERE has_variation = 0 AND (shopee_parent_sku IS NULL OR shopee_parent_sku = '')
+        AND pos_product_id IS NULL
     ");
     $missingParents = $stmt->fetchAll();
     
@@ -87,6 +88,7 @@ function runConflictDetection($conn) {
         SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name
         FROM shopee_product_mappings 
         WHERE has_variation = 1 AND (shopee_variation_sku IS NULL OR shopee_variation_sku = '')
+        AND pos_product_id IS NULL
     ");
     $missingVars = $stmt->fetchAll();
 
