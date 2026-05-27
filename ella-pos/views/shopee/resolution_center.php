@@ -215,6 +215,7 @@ require_once '../../includes/sidebar.php';
                     <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">All Issue Types</option>
                         <option value="missing_sku" <?= $type_filter === 'missing_sku' ? 'selected' : '' ?>>Missing SKU</option>
+                        <option value="unmapped" <?= $type_filter === 'unmapped' ? 'selected' : '' ?>>Unmapped SKU</option>
                         <option value="duplicate_sku" <?= $type_filter === 'duplicate_sku' ? 'selected' : '' ?>>Duplicate SKU</option>
                         <option value="sync_error" <?= $type_filter === 'sync_error' ? 'selected' : '' ?>>Other Sync Errors</option>
                     </select>
@@ -277,6 +278,8 @@ require_once '../../includes/sidebar.php';
                                             <?php else: ?>
                                                 <span class="sp-badge sp-badge-danger"><i class="fa-solid fa-box me-1"></i> Missing Parent SKU</span>
                                             <?php endif; ?>
+                                        <?php elseif ($e['error_type'] === 'unmapped'): ?>
+                                            <span class="sp-badge sp-badge-warning" style="color:#d97706;background:#fef3c7;border-color:#fde68a"><i class="fa-solid fa-link-slash me-1"></i> Unmapped SKU</span>
                                         <?php elseif ($e['error_type'] === 'duplicate_sku'): ?>
                                             <span class="sp-badge sp-badge-warning"><i class="fa-solid fa-clone me-1"></i> Duplicate SKU</span>
                                         <?php else: ?>
@@ -349,7 +352,7 @@ require_once '../../includes/sidebar.php';
                                         </span>
                                     </td>
                                     <td class="text-end">
-                                        <?php if ($e['error_type'] === 'missing_sku'): ?>
+                                        <?php if ($e['error_type'] === 'missing_sku' || $e['error_type'] === 'unmapped'): ?>
                                             <button class="btn btn-sm btn-shopee" onclick="openFixMissingSkuModal(<?= $e['shopee_item_id'] ?>, <?= (int)$e['shopee_model_id'] ?>, '<?= htmlspecialchars(addslashes($e['error_message']), ENT_QUOTES) ?>')">
                                                 <i class="fa-solid fa-wrench me-1"></i>Fix SKU
                                             </button>

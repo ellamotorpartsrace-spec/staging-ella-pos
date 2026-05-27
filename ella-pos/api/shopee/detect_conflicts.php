@@ -50,7 +50,7 @@ function runConflictDetection($conn) {
         $foundId = null;
         foreach ($remainingOpen as $id => $err) {
             if ($err['error_type'] === $type) {
-                if ($type === 'missing_sku' && $err['shopee_item_id'] == $itemId && $err['shopee_model_id'] == $modelId) {
+                if (($type === 'missing_sku' || $type === 'unmapped') && $err['shopee_item_id'] == $itemId && $err['shopee_model_id'] == $modelId) {
                     $foundId = $id; break;
                 }
                 if ($type === 'duplicate_sku' && $err['sku'] === $sku) {
@@ -99,6 +99,32 @@ function runConflictDetection($conn) {
     foreach ($missingVars as $row) {
         $msg = "Variation '{$row['shopee_variation_name']}' under '{$row['shopee_product_name']}' is missing a SKU.";
         $markActiveOrInsert('missing_sku', $row['shopee_item_id'], $row['shopee_model_id'], null, $msg);
+    }
+
+    // 2.5 Detect Unmapped SKUs (Has SKU, but not matched to POS)
+    $stmt = $conn->query("
+        SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_parent_sku
+        FROM shopee_product_mappings 
+        WHERE has_variation = 0 AND shopee_parent_sku != '' AND shopee_parent_sku IS NOT NULL
+        AND pos_product_id IS NULL
+    ");
+    $unmappedParents = $stmt->fetchAll();
+
+    $stmt = $conn->query("
+        SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku
+        FROM shopee_product_mappings 
+        WHERE has_variation = 1 AND shopee_variation_sku != '' AND shopee_variation_sku IS NOT NULL
+        AND pos_product_id IS NULL
+    ");
+    $unmappedVars = $stmt->fetchAll();
+
+    foreach ($unmappedParents as $row) {
+        $msg = "Product '{$row['shopee_product_name']}' has Shopee SKU '{$row['shopee_parent_sku']}' but is not linked to any POS product.";
+        $markActiveOrInsert('unmapped', $row['shopee_item_id'], $row['shopee_model_id'], $row['shopee_parent_sku'], $msg);
+    }
+    foreach ($unmappedVars as $row) {
+        $msg = "Variation '{$row['shopee_variation_name']}' under '{$row['shopee_product_name']}' has Shopee SKU '{$row['shopee_variation_sku']}' but is not linked to any POS product.";
+        $markActiveOrInsert('unmapped', $row['shopee_item_id'], $row['shopee_model_id'], $row['shopee_variation_sku'], $msg);
     }
 
     // Reset all non-mapped items to 'unmapped' before applying new dynamic issues
