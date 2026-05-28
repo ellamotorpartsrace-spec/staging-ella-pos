@@ -5,6 +5,13 @@ require_once __DIR__ . '/settings_helper.php';
 
 $role = $_SESSION['role'] ?? 'cashier';
 $current_page = basename($_SERVER['PHP_SELF']);
+$canManageInventory = $role === 'admin' || hasPermission('adjust_prices') || in_array($role, ['manager', 'stockman']);
+$canViewInventory = $canManageInventory || hasPermission('view_product_history');
+$canViewShopee = $role === 'admin' || in_array($role, ['manager']);
+$canViewSales = hasPermission('make_sales') || hasPermission('view_sales');
+$canViewCustomers = hasPermission('view_buyers') || hasPermission('view_wallet_ledger') || hasPermission('view_receivables');
+$canViewFinance = hasPermission('view_finance') || hasPermission('view_payables') || hasPermission('view_expenses') || hasPermission('manage_service_fees');
+$canViewAdmin = $role === 'admin' || hasPermission('manage_users') || hasPermission('manage_settings');
 
 // Load store name from settings
 try {
@@ -65,141 +72,23 @@ try {
             </li>
         <?php endif; ?>
 
-        <?php if (hasPermission('make_sales')): ?>
-            <li>
-                <a href="<?= BASE_URL ?>views/pos/simple_checkout.php"
-                    class="<?= $current_page === 'simple_checkout.php' ? 'active' : '' ?>">
-                    <i class="fa-solid fa-cash-register"></i> <span class="nav-text">POS Terminal</span>
-                </a>
-            </li>
-        <?php endif; ?>
-
-        <!-- INVENTORY MANAGEMENT -->
-        <?php if ($role === 'admin' || hasPermission('adjust_prices') || in_array($role, ['manager', 'stockman'])): ?>
-            <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
-                style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#inventoryCollapse">
-                <span class="nav-text">Inventory Management</span>
-                <i class="fa-solid fa-chevron-down small transition-transform" id="inventoryChevron"></i>
-            </div>
-            <div class="collapse show" id="inventoryCollapse">
-                <li>
-                    <a href="<?= BASE_URL ?>views/inventory/index.php"
-                        class="<?= strpos($_SERVER['REQUEST_URI'], 'inventory') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-boxes-stacked"></i> <span class="nav-text">Inventory</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/categories/index.php"
-                        class="<?= strpos($_SERVER['REQUEST_URI'], 'categories') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-tags"></i> <span class="nav-text">Categories</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/inventory/unit_types.php"
-                        class="<?= $current_page === 'unit_types.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-boxes-packing"></i> <span class="nav-text">Unit Types</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/inventory/restock.php"
-                        class="<?= $current_page === 'restock.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-truck-ramp-box"></i> <span class="nav-text">Stocks</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/inventory/online_stock.php"
-                        class="<?= $current_page === 'online_stock.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-globe"></i> <span class="nav-text">Online Stock</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/inventory/adjustment.php"
-                        class="<?= $current_page === 'adjustment.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-sliders"></i> <span class="nav-text">Adjustment</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/inventory/movements.php"
-                        class="<?= $current_page === 'movements.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-arrow-right-arrow-left"></i> <span class="nav-text">Stock Movements</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/inventory/stockin_records.php"
-                        class="<?= $current_page === 'stockin_records.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-file-invoice"></i> <span class="nav-text">Stock-In Records</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/inventory/price_history_records.php"
-                        class="<?= $current_page === 'price_history_records.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-chart-line"></i> <span class="nav-text">Price History</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/suppliers/index.php"
-                        class="<?= strpos($_SERVER['REQUEST_URI'], 'suppliers') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-person"></i> <span class="nav-text">Suppliers</span>
-                    </a>
-                </li>
-            </div>
-        <?php endif; ?>
-
-        <!-- SHOPEE SYNC -->
-        <?php if ($role === 'admin' || in_array($role, ['manager'])): ?>
-            <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
-                style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#shopeeCollapse">
-                <span class="nav-text">Shopee Sync</span>
-                <i class="fa-solid fa-chevron-down small transition-transform" id="shopeeChevron"></i>
-            </div>
-            <div class="collapse <?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'show' : '' ?>" id="shopeeCollapse">
-                <li>
-                    <a href="<?= BASE_URL ?>views/shopee/index.php"
-                        class="<?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/shopee/products.php"
-                        class="<?= $current_page === 'products.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-bag-shopping"></i> <span class="nav-text">Shopee Products</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/shopee/mapping.php"
-                        class="<?= $current_page === 'mapping.php' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-link"></i> <span class="nav-text">Product Mapping</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/shopee/allocation.php"
-                        class="<?= $current_page === 'allocation.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-sliders"></i> <span class="nav-text">Stock Allocation</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/shopee/logs.php"
-                        class="<?= $current_page === 'logs.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Sync Logs</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= BASE_URL ?>views/shopee/settings.php"
-                        class="<?= $current_page === 'settings.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span>
-                    </a>
-                </li>
-            </div>
-        <?php endif; ?>
-
-        <!-- SALES & FINANCE -->
-        <?php if (hasPermission('view_sales') || hasPermission('view_finance') || hasPermission('view_receivables') || hasPermission('view_payables') || hasPermission('view_expenses') || hasPermission('view_buyers') || hasPermission('view_wallet_ledger') || hasPermission('view_product_history') || hasPermission('manage_service_fees')): ?>
+        <!-- SALES -->
+        <?php if ($canViewSales): ?>
             <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
                 style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#salesCollapse">
-                <span class="nav-text">Sales & Finance</span>
+                <span class="nav-text">Sales</span>
                 <i class="fa-solid fa-chevron-down small transition-transform" id="salesChevron"></i>
             </div>
             <div class="collapse show" id="salesCollapse">
+                <?php if (hasPermission('make_sales')): ?>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/pos/simple_checkout.php"
+                            class="<?= $current_page === 'simple_checkout.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-cash-register"></i> <span class="nav-text">POS Terminal</span>
+                        </a>
+                    </li>
+                <?php endif; ?>
+
                 <?php if (hasPermission('view_sales')): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/pos/receipts.php"
@@ -208,21 +97,165 @@ try {
                         </a>
                     </li>
                 <?php endif; ?>
+            </div>
+        <?php endif; ?>
 
-                <?php if (hasPermission('view_receivables')): ?>
+        <!-- INVENTORY -->
+        <?php if ($canViewInventory): ?>
+            <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
+                style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#inventoryCollapse">
+                <span class="nav-text">Inventory</span>
+                <i class="fa-solid fa-chevron-down small transition-transform" id="inventoryChevron"></i>
+            </div>
+            <div class="collapse show" id="inventoryCollapse">
+                <?php if ($canManageInventory): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/receivables/index.php"
-                            class="<?= strpos($_SERVER['REQUEST_URI'], 'receivables') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-file-invoice-dollar"></i> <span class="nav-text">Receivables</span>
+                        <a href="<?= BASE_URL ?>views/inventory/index.php"
+                            class="<?= strpos($_SERVER['REQUEST_URI'], 'inventory') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-boxes-stacked"></i> <span class="nav-text">Inventory</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/categories/index.php"
+                            class="<?= strpos($_SERVER['REQUEST_URI'], 'categories') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-tags"></i> <span class="nav-text">Categories</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/unit_types.php"
+                            class="<?= $current_page === 'unit_types.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-boxes-packing"></i> <span class="nav-text">Unit Types</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/restock.php"
+                            class="<?= $current_page === 'restock.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-truck-ramp-box"></i> <span class="nav-text">Stocks</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/adjustment.php"
+                            class="<?= $current_page === 'adjustment.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-sliders"></i> <span class="nav-text">Adjustment</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/movements.php"
+                            class="<?= $current_page === 'movements.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-arrow-right-arrow-left"></i> <span class="nav-text">Stock Movements</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/stockin_records.php"
+                            class="<?= $current_page === 'stockin_records.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-file-invoice"></i> <span class="nav-text">Stock-In Records</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/price_history_records.php"
+                            class="<?= $current_page === 'price_history_records.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-chart-line"></i> <span class="nav-text">Price History</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/suppliers/index.php"
+                            class="<?= strpos($_SERVER['REQUEST_URI'], 'suppliers') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-person"></i> <span class="nav-text">Suppliers</span>
+                        </a>
+                    </li>
+                <?php endif; ?>
+                <?php if (hasPermission('view_product_history')): ?>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/product_history.php"
+                            class="<?= $current_page === 'product_history.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Product History</span>
+                        </a>
+                    </li>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- ONLINE STORE -->
+        <?php if ($canViewShopee || $canManageInventory): ?>
+            <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
+                style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#onlineStoreCollapse">
+                <span class="nav-text">Online Store</span>
+                <i class="fa-solid fa-chevron-down small transition-transform" id="onlineStoreChevron"></i>
+            </div>
+            <div class="collapse <?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false || $current_page === 'online_stock.php' ? 'show' : '' ?>"
+                id="onlineStoreCollapse">
+                <?php if ($canManageInventory): ?>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/online_stock.php"
+                            class="<?= $current_page === 'online_stock.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-globe"></i> <span class="nav-text">Online Stock</span>
                         </a>
                     </li>
                 <?php endif; ?>
 
-                <?php if (hasPermission('manage_service_fees')): ?>
+                <?php if ($canViewShopee): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/service_fees/index.php"
-                            class="<?= strpos($_SERVER['REQUEST_URI'], 'service_fees') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-truck-fast"></i> <span class="nav-text">Service Fees</span>
+                        <a href="<?= BASE_URL ?>views/shopee/index.php"
+                            class="<?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Shopee Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/shopee/products.php"
+                            class="<?= $current_page === 'products.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-bag-shopping"></i> <span class="nav-text">Shopee Products</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/shopee/mapping.php"
+                            class="<?= $current_page === 'mapping.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-link"></i> <span class="nav-text">Product Mapping</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/shopee/allocation.php"
+                            class="<?= $current_page === 'allocation.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-sliders"></i> <span class="nav-text">Stock Allocation</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/shopee/logs.php"
+                            class="<?= $current_page === 'logs.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Sync Logs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/shopee/settings.php"
+                            class="<?= $current_page === 'settings.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-gear"></i> <span class="nav-text">Shopee Settings</span>
+                        </a>
+                    </li>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- CUSTOMERS -->
+        <?php if ($canViewCustomers): ?>
+            <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
+                style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#customersCollapse">
+                <span class="nav-text">Customers</span>
+                <i class="fa-solid fa-chevron-down small transition-transform" id="customersChevron"></i>
+            </div>
+            <div class="collapse show" id="customersCollapse">
+                <?php if (hasPermission('view_buyers')): ?>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/buyers/index.php"
+                            class="<?= strpos($_SERVER['REQUEST_URI'], 'buyers') !== false && $current_page !== 'wallet_ledger.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-users"></i> <span class="nav-text">Buyers</span>
+                        </a>
+                    </li>
+                <?php endif; ?>
+
+                <?php if (hasPermission('view_receivables')): ?>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/receivables/index.php"
+                            class="<?= strpos($_SERVER['REQUEST_URI'], 'receivables') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> <span class="nav-text">Receivables</span>
                         </a>
                     </li>
                 <?php endif; ?>
@@ -236,6 +269,25 @@ try {
                     </li>
                 <?php endif; ?>
 
+                <?php if (hasPermission('view_wallet_ledger')): ?>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/buyers/wallet_ledger.php"
+                            class="<?= $current_page === 'wallet_ledger.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-wallet"></i> <span class="nav-text">Wallet Ledger</span>
+                        </a>
+                    </li>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- FINANCE -->
+        <?php if ($canViewFinance): ?>
+            <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
+                style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#financeCollapse">
+                <span class="nav-text">Finance</span>
+                <i class="fa-solid fa-chevron-down small transition-transform" id="financeChevron"></i>
+            </div>
+            <div class="collapse show" id="financeCollapse">
                 <?php if (hasPermission('view_finance')): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/financing/index.php"
@@ -263,29 +315,11 @@ try {
                     </li>
                 <?php endif; ?>
 
-                <?php if (hasPermission('view_buyers')): ?>
+                <?php if (hasPermission('manage_service_fees')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/buyers/index.php"
-                            class="<?= strpos($_SERVER['REQUEST_URI'], 'buyers') !== false && $current_page !== 'wallet_ledger.php' ? 'active' : '' ?>">
-                            <i class="fa-solid fa-users"></i> <span class="nav-text">Buyers</span>
-                        </a>
-                    </li>
-                <?php endif; ?>
-
-                <?php if (hasPermission('view_wallet_ledger')): ?>
-                    <li>
-                        <a href="<?= BASE_URL ?>views/buyers/wallet_ledger.php"
-                            class="<?= $current_page === 'wallet_ledger.php' ? 'active' : '' ?>">
-                            <i class="fa-solid fa-wallet"></i> <span class="nav-text">Wallet Ledger</span>
-                        </a>
-                    </li>
-                <?php endif; ?>
-
-                <?php if (hasPermission('view_product_history')): ?>
-                    <li>
-                        <a href="<?= BASE_URL ?>views/inventory/product_history.php"
-                            class="<?= $current_page === 'product_history.php' ? 'active' : '' ?>">
-                            <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Product History</span>
+                        <a href="<?= BASE_URL ?>views/service_fees/index.php"
+                            class="<?= strpos($_SERVER['REQUEST_URI'], 'service_fees') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-truck-fast"></i> <span class="nav-text">Service Fees</span>
                         </a>
                     </li>
                 <?php endif; ?>
@@ -303,7 +337,7 @@ try {
         </li>
 
         <!-- ADMINISTRATION -->
-        <?php if ($role === 'admin' || hasPermission('manage_users') || hasPermission('manage_settings')): ?>
+        <?php if ($canViewAdmin): ?>
             <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
                 style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#adminCollapse">
                 <span class="nav-text">Administration</span>

@@ -228,6 +228,28 @@ This uploads the `ella-pos` folder itself, not only the files inside it.
 
 If the Git repository already exists in the parent folder, skip `git init` and `git remote add origin ...`.
 
+## Ignore Files
+
+Add a file or folder to `.gitignore` when you want Git to ignore it:
+
+```bash
+echo path/to/file.php >> .gitignore
+```
+
+Example:
+
+```bash
+echo config/local.php >> .gitignore
+git status --short
+```
+
+If the file is already tracked by Git, stop tracking it but keep it on your computer:
+
+```bash
+git rm --cached config/local.php
+git commit -m "Ignore local config file"
+```
+
 ## Delete Commands
 
 Use delete commands carefully. Always check your branch and status first:
@@ -379,14 +401,20 @@ HIGHLIGHT: COPY BASH COMMANDS USED FOR LATEST PUSH
 ============================================================
 
 ```bash
+git init
 git status --short --branch --untracked-files=all
 git add ella-pos/views/shopee/allocation.php
 git commit -m "Fix Shopee allocation math for unit-mapped items"
 git push origin testing
 git pull --ff-only origin testing
 
+git checkout -b name of branch = delete branch
+git merge testing
 
 git add .
 git pull 
 git push
+
+
+git remote add origin https://github.com/ellamotorpartsrace-spec/ERP_SYSTEM.git
 ```
