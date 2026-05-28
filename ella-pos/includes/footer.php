@@ -1,5 +1,5 @@
 <footer class="text-center text-muted small py-3 mt-auto">
-    &copy; <?= date('Y') ?> Ella Motor Parts | Lester Bugac as Code Partner together with Benedict Ramirez, the Core Developer
+    &copy; <?= date('Y') ?> Ella Motor Parts | Developed by Benedict Ramirez
 </footer>
 </div>
 </div>
