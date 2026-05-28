@@ -4,6 +4,7 @@ header("Content-Type: application/json");
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
+require_once '../../includes/reference_attachment_storage.php';
 
 // Only accept POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -30,6 +31,7 @@ if (empty($items)) {
 try {
     $db = new Database();
     $conn = $db->getConnection();
+    ensureReferenceAttachmentBackupColumns($conn);
     $conn->beginTransaction();
 
     $user_id = $_SESSION['user_id'] ?? 1;
@@ -117,11 +119,6 @@ try {
 
     // Handle Multiple File Uploads
     if (!empty($_FILES['reference_images']['name'][0])) {
-        $uploadDir = '../../assets/uploads/references/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
         $files = $_FILES['reference_images'];
         $fileCount = count($files['name']);
 
@@ -129,15 +126,9 @@ try {
             if ($files['error'][$i] === UPLOAD_ERR_OK) {
                 $fileTmpPath = $files['tmp_name'][$i];
                 $fileName = $files['name'][$i];
+                $mimeType = $files['type'][$i] ?? null;
 
-                $newFileName = 'batch_' . time() . '_' . $i . '_' . preg_replace('/[^a-zA-Z0-9.]/', '', $fileName);
-                $destPath = $uploadDir . $newFileName;
-
-                if (move_uploaded_file($fileTmpPath, $destPath)) {
-                    $dbPath = 'assets/uploads/references/' . $newFileName;
-                    $conn->prepare("INSERT INTO reference_attachments (reference_number, image_path) VALUES (?, ?)")
-                        ->execute([$finalReference, $dbPath]);
-                }
+                saveReferenceAttachment($conn, $finalReference, $fileTmpPath, $fileName, $mimeType, 'batch');
             }
         }
     }

@@ -12,6 +12,7 @@ if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_arra
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 require_once '../../config/database.php';
+require_once '../../includes/reference_attachment_storage.php';
 
 $ref = $_GET['ref'] ?? null;
 $from = $_GET['from'] ?? 'movements';
@@ -33,7 +34,7 @@ $db = new Database();
 $conn = $db->getConnection();
 
 // 1. Fetch Reference Image
-$stmtImg = $conn->prepare("SELECT * FROM reference_attachments WHERE reference_number = ?");
+$stmtImg = $conn->prepare("SELECT * FROM reference_attachments WHERE reference_number = ? ORDER BY id ASC");
 $stmtImg->execute([$ref]);
 $attachments = $stmtImg->fetchAll(PDO::FETCH_ASSOC);
 
@@ -374,17 +375,18 @@ if (!empty($variationIds)) {
                                 <?php foreach ($attachments as $index => $att): ?>
                                     <div class="carousel-item h-100 <?= $index === 0 ? 'active' : '' ?>">
                                         <div class="d-flex flex-column align-items-center justify-content-center h-100 p-2">
-                                            <img src="<?= BASE_URL . $att['image_path'] ?>"
+                                            <?php $attachmentUrl = referenceAttachmentPublicPath($att); ?>
+                                            <img src="<?= htmlspecialchars($attachmentUrl) ?>"
                                                 class="d-block img-fluid rounded shadow-sm"
                                                 style="max-height: 550px; width: auto;" alt="Attachment <?= $index + 1 ?>">
                                             <div class="mt-3 d-flex gap-2" style="position: relative; z-index: 10;">
-                                                <a href="<?= BASE_URL . $att['image_path'] ?>" target="_blank"
+                                                <a href="<?= htmlspecialchars($attachmentUrl) ?>" target="_blank"
                                                     class="btn btn-sm btn-primary">
                                                     <i class="fa-solid fa-expand me-1"></i> View Full Size
                                                 </a>
                                                 <?php if (in_array($_SESSION['role'], ['admin', 'manager'])): ?>
                                                     <button type="button" class="btn btn-sm btn-outline-danger"
-                                                        onclick="deleteAttachment(<?= $att['id'] ?>, '<?= $att['image_path'] ?>', this)">
+                                                        onclick="deleteAttachment(<?= $att['id'] ?>, '<?= htmlspecialchars($att['image_path'] ?? '', ENT_QUOTES) ?>', this)">
                                                         <i class="fa-solid fa-trash me-1"></i> Delete
                                                     </button>
                                                 <?php endif; ?>

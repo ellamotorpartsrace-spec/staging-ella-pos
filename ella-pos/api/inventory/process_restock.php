@@ -6,6 +6,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 require_once '../../includes/logger.php';
+require_once '../../includes/reference_attachment_storage.php';
 
 // 1. Security
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -31,6 +32,7 @@ if ($qty_added <= 0) {
 try {
     $db = new Database();
     $conn = $db->getConnection();
+    ensureReferenceAttachmentBackupColumns($conn);
 
     $conn->beginTransaction();
 
@@ -117,11 +119,6 @@ try {
 
     // D. Handle Reference Image Upload (Multiple)
     if (!empty($_FILES['reference_images']['name'][0])) {
-        $uploadDir = '../../assets/uploads/references/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
         $files = $_FILES['reference_images'];
         $fileCount = count($files['name']);
 
@@ -129,16 +126,11 @@ try {
             if ($files['error'][$i] === UPLOAD_ERR_OK) {
                 $fileTmpPath = $files['tmp_name'][$i];
                 $fileName = $files['name'][$i];
+                $mimeType = $files['type'][$i] ?? null;
 
                 // Use the $ref we established above (either user input or generated)
                 $finalRef = $ref ?: 'REF-NOS-' . time();
-                $newFileName = 'ref_' . time() . '_' . $i . '_' . preg_replace('/[^a-zA-Z0-9.]/', '', $fileName);
-                $destPath = $uploadDir . $newFileName;
-
-                if (move_uploaded_file($fileTmpPath, $destPath)) {
-                    $dbPath = 'assets/uploads/references/' . $newFileName;
-                    $stmtAtt = $conn->prepare("INSERT INTO reference_attachments (reference_number, image_path) VALUES (?, ?)");
-                    $stmtAtt->execute([$finalRef, $dbPath]);
+                if (saveReferenceAttachment($conn, $finalRef, $fileTmpPath, $fileName, $mimeType, 'ref')) {
 
                     // If ref was empty when movement was inserted, update the movement now
                     if (empty($ref)) {

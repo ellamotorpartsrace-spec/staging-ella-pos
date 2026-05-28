@@ -47,7 +47,7 @@ try {
         exit;
     }
 
-    $actual_path = $attachment['image_path'];
+    $actual_path = (string) ($attachment['image_path'] ?? '');
     $id_to_delete = $attachment['id'];
 
     // 2. Delete from database
@@ -60,7 +60,7 @@ try {
     $fullPath = '../../' . $file_path_on_disk;
 
     $file_deleted = false;
-    if (file_exists($fullPath)) {
+    if ($file_path_on_disk !== '' && file_exists($fullPath)) {
         if (unlink($fullPath)) {
             $file_deleted = true;
         }

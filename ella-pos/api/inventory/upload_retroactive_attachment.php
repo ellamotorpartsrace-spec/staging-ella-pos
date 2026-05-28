@@ -3,6 +3,7 @@
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 require_once '../../config/database.php';
+require_once '../../includes/reference_attachment_storage.php';
 
 header('Content-Type: application/json');
 
@@ -66,28 +67,22 @@ try {
         exit;
     }
 
-    // 4. Upload the files
-    $uploadDir = '../../assets/uploads/references/';
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
-    }
-
-    $uploadedPaths = [];
+    // 4. Upload the files. Each attachment is also stored in the DB as fallback.
+    $uploadedCount = 0;
     foreach ($_FILES['reference_images']['tmp_name'] as $key => $tmpName) {
         if ($_FILES['reference_images']['error'][$key] !== UPLOAD_ERR_OK) {
             continue;
         }
 
         $fileName = $_FILES['reference_images']['name'][$key];
-        $newFileName = 'ref_retro_' . time() . '_' . $key . '_' . preg_replace('/[^a-zA-Z0-9.]/', '', $fileName);
-        $destPath = $uploadDir . $newFileName;
+        $mimeType = $_FILES['reference_images']['type'][$key] ?? null;
 
-        if (move_uploaded_file($tmpName, $destPath)) {
-            $uploadedPaths[] = 'assets/uploads/references/' . $newFileName;
+        if (saveReferenceAttachment($conn, $ref, $tmpName, $fileName, $mimeType, 'ref_retro')) {
+            $uploadedCount++;
         }
     }
 
-    if (empty($uploadedPaths)) {
+    if ($uploadedCount === 0) {
         echo json_encode(['success' => false, 'error' => 'Failed to upload any files.']);
         exit;
     }
@@ -100,17 +95,11 @@ try {
         $conn->prepare("UPDATE stock_movements SET reference = ? WHERE movement_id = ?")->execute([$ref, $movement_id]);
     }
 
-    // Insert attachments
-    $stmtInsert = $conn->prepare("INSERT INTO reference_attachments (reference_number, image_path) VALUES (?, ?)");
-    foreach ($uploadedPaths as $path) {
-        $stmtInsert->execute([$ref, $path]);
-    }
-
     $conn->commit();
 
     echo json_encode([
         'success' => true,
-        'message' => count($uploadedPaths) . ' image(s) attached successfully',
+        'message' => $uploadedCount . ' image(s) attached successfully',
         'reference' => $ref,
         'was_empty' => $wasEmptyRef
     ]);

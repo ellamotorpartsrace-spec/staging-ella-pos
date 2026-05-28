@@ -12,9 +12,11 @@ if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_arra
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 require_once '../../config/database.php';
+require_once '../../includes/reference_attachment_storage.php';
 
 $db = new Database();
 $conn = $db->getConnection();
+ensureReferenceAttachmentBackupColumns($conn);
 
 // Filters
 $search = $_GET['search'] ?? '';
@@ -47,7 +49,7 @@ $sql = "
     LEFT JOIN users u ON sm.created_by = u.id
     LEFT JOIN (
         SELECT reference_number, 
-               GROUP_CONCAT(CONCAT(id, ':', image_path) ORDER BY id ASC) as all_images_data,
+               GROUP_CONCAT(CONCAT(id, ':', COALESCE(NULLIF(image_path, ''), CONCAT('api/inventory/reference_attachment_image.php?id=', id))) ORDER BY id ASC) as all_images_data,
                COUNT(*) as attachment_count 
         FROM reference_attachments 
         GROUP BY reference_number

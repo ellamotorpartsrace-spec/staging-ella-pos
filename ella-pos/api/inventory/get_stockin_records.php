@@ -4,6 +4,7 @@ header("Content-Type: application/json");
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
+require_once '../../includes/reference_attachment_storage.php';
 
 requireLogin();
 
@@ -22,6 +23,7 @@ if (!$supplier_id) {
 try {
     $db = new Database();
     $conn = $db->getConnection();
+    ensureReferenceAttachmentBackupColumns($conn);
 
     // Get supplier name
     $stmtSupp = $conn->prepare("SELECT supplier_name FROM suppliers WHERE supplier_id = ?");
@@ -63,7 +65,7 @@ try {
         LEFT JOIN users u ON sm.created_by = u.id
         LEFT JOIN (
             SELECT reference_number, 
-                   GROUP_CONCAT(CONCAT(id, ':', image_path) ORDER BY id ASC) as all_images_data,
+                   GROUP_CONCAT(CONCAT(id, ':', COALESCE(NULLIF(image_path, ''), CONCAT('api/inventory/reference_attachment_image.php?id=', id))) ORDER BY id ASC) as all_images_data,
                    COUNT(*) as attachment_count 
             FROM reference_attachments 
             GROUP BY reference_number

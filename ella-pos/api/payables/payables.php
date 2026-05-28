@@ -5,6 +5,7 @@
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
+require_once '../../includes/reference_attachment_storage.php';
 
 // Ensure user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -18,6 +19,7 @@ header('Content-Type: application/json');
 try {
     $database = new Database();
     $conn = $database->getConnection();
+    ensureReferenceAttachmentBackupColumns($conn);
 
     // =====================================================
     // GET Request: List Payables or Get History
@@ -80,7 +82,8 @@ try {
 
             // Also get reference images (from restock)
             $refStmt = $conn->prepare("
-                SELECT image_path FROM reference_attachments 
+                SELECT COALESCE(NULLIF(image_path, ''), CONCAT('api/inventory/reference_attachment_image.php?id=', id)) as image_path
+                FROM reference_attachments 
                 WHERE reference_number = ?
                 ORDER BY created_at DESC
             ");
