@@ -85,6 +85,23 @@ try {
         background: rgba(var(--bs-primary-rgb), 0.05);
     }
 
+    .set-candidate-thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 0.5rem;
+        border: 1px solid var(--bs-border-color);
+        background: var(--bs-gray-100);
+        object-fit: cover;
+        flex: 0 0 auto;
+    }
+
+    .set-candidate-thumb-placeholder {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--bs-secondary);
+    }
+
     .set-component-pill {
         font-size: 0.68rem;
         border: 1px solid rgba(var(--bs-secondary-rgb), 0.25);
@@ -411,6 +428,7 @@ try {
                 component_unit_id: row.component_unit_id !== null ? parseInt(row.component_unit_id, 10) : null,
                 component_qty: parseFloat(row.component_qty || 0),
                 product_name: row.product_name || '',
+                brand_name: row.brand_name || '',
                 variation_name: row.variation_name || '',
                 sku: row.sku || '',
                 base_unit_type: row.base_unit_type || 'pc',
@@ -450,11 +468,26 @@ try {
                 const unitBadge = isUnit
                     ? `<span class="set-component-pill">${escHtml(r.unit_name || 'Unit')} x${parseInt(r.multiplier || 1, 10)}</span>`
                     : `<span class="set-component-pill">Base (${escHtml(r.base_unit_type || 'pc')})</span>`;
+                const imagePath = String(r.image_path || '').trim();
+                const imgHtml = imagePath
+                    ? `<img src="${escHtml(window.BASE_URL + imagePath)}" class="set-candidate-thumb" alt="">`
+                    : `<span class="set-candidate-thumb set-candidate-thumb-placeholder"><i class="fa-solid fa-box"></i></span>`;
+                const brandHtml = r.brand_name
+                    ? `<span class="badge bg-light text-secondary border">${escHtml(r.brand_name)}</span>`
+                    : '';
+                const variationHtml = r.variation_name
+                    ? `<span class="badge bg-primary-subtle text-primary border">${escHtml(r.variation_name)}</span>`
+                    : `<span class="badge bg-light text-secondary border">No variation</span>`;
                 return `
                     <div class="set-candidate-item" onclick="addSetComponentByIndex(${idx})">
-                        <div class="fw-semibold">${escHtml(r.product_name)} ${r.variation_name ? `(${escHtml(r.variation_name)})` : ''}</div>
-                        <div class="small text-muted">${escHtml(r.sku || '')}</div>
-                        <div class="mt-1">${unitBadge}</div>
+                        <div class="d-flex align-items-start gap-2">
+                            ${imgHtml}
+                            <div class="flex-grow-1" style="min-width:0;">
+                                <div class="fw-semibold text-truncate">${escHtml(r.product_name)}</div>
+                                <div class="d-flex flex-wrap gap-1 mt-1">${brandHtml}${variationHtml}${unitBadge}</div>
+                                <div class="small text-muted mt-1"><i class="fa-solid fa-barcode me-1"></i>${escHtml(r.sku || 'No SKU')}</div>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -481,6 +514,7 @@ try {
             component_variation_id: parseInt(row.variation_id, 10),
             component_unit_id: row.unit_id !== null ? parseInt(row.unit_id, 10) : null,
             product_name: row.product_name,
+            brand_name: row.brand_name,
             variation_name: row.variation_name,
             sku: row.sku,
             base_unit_type: row.base_unit_type,
@@ -513,9 +547,10 @@ try {
 
         body.innerHTML = setItems.map(row => {
             const key = itemKey(row);
+            const brandPrefix = row.brand_name ? `${escHtml(row.brand_name)} - ` : '';
             const label = row.unit_name
-                ? `${escHtml(row.product_name)} (${escHtml(row.variation_name || '')}) - ${escHtml(row.unit_name)} x${parseInt(row.multiplier || 1, 10)}`
-                : `${escHtml(row.product_name)} (${escHtml(row.variation_name || '')}) - Base ${escHtml(row.base_unit_type || 'pc')}`;
+                ? `${brandPrefix}${escHtml(row.product_name)} (${escHtml(row.variation_name || '')}) - ${escHtml(row.unit_name)} x${parseInt(row.multiplier || 1, 10)}`
+                : `${brandPrefix}${escHtml(row.product_name)} (${escHtml(row.variation_name || '')}) - Base ${escHtml(row.base_unit_type || 'pc')}`;
             return `
                 <tr>
                     <td>
@@ -614,4 +649,3 @@ try {
 </script>
 
 <?php require_once '../../includes/footer.php'; ?>
-

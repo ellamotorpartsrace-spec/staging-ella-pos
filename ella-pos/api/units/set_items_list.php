@@ -54,6 +54,7 @@ try {
             v.variation_name,
             v.unit_type AS base_unit_type,
             p.product_name,
+            COALESCE(p.brand_name, '') AS brand_name,
             pu.unit_name AS component_unit_name,
             pu.multiplier AS component_unit_multiplier
         FROM product_unit_set_items si
@@ -87,6 +88,7 @@ try {
                     'component_qty' => (float) $row['component_qty'],
                     'sku' => $row['sku'] ?? '',
                     'product_name' => $row['product_name'] ?? '',
+                    'brand_name' => $row['brand_name'] ?? '',
                     'variation_name' => $row['variation_name'] ?? '',
                     'base_unit_type' => $row['base_unit_type'] ?? 'pc',
                     'component_unit_name' => $row['component_unit_name'] ?? null,
@@ -99,4 +101,3 @@ try {
 } catch (Throwable $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
-
