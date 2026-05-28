@@ -30,6 +30,7 @@ $baseSql = "
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
     LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+    LEFT JOIN (SELECT DISTINCT pos_product_id FROM shopee_product_mappings) spm ON spm.pos_product_id = v.variation_id
     WHERE v.status = 'active'
 ";
 
@@ -93,7 +94,7 @@ $sqlProducts = "
            COALESCE(i_phys.quantity, 0) as physical_stock,
            COALESCE(i_online.quantity, 0) as online_stock,
            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
-           (SELECT 1 FROM shopee_product_mappings spm WHERE spm.pos_product_id = v.variation_id LIMIT 1) as is_shopee_mapped
+           CASE WHEN spm.pos_product_id IS NULL THEN 0 ELSE 1 END as is_shopee_mapped
     " . $baseSql . "
     ORDER BY p.product_name ASC
     LIMIT $limit OFFSET $offset
@@ -344,7 +345,8 @@ $products = $stmt->fetchAll();
                                                 style="width: 40px; height: 40px; background: var(--bg-surface); border-color: var(--border-color) !important;">
                                                 <?php if (!empty($row['image_path'])): ?>
                                                     <img src="<?= BASE_URL . $row['image_path'] ?>"
-                                                        style="width:100%; height:100%; object-fit:cover;">
+                                                        style="width:100%; height:100%; object-fit:cover;" loading="lazy"
+                                                        decoding="async">
                                                 <?php else: ?>
                                                     <i class="fa-solid fa-cube text-secondary fa-lg"></i>
                                                 <?php endif; ?>
@@ -471,7 +473,8 @@ $products = $stmt->fetchAll();
                                         style="width: 60px; height: 60px; background: var(--bg-surface);">
                                         <?php if (!empty($row['image_path'])): ?>
                                             <img src="<?= BASE_URL . $row['image_path'] ?>"
-                                                style="width:100%; height:100%; object-fit:cover;">
+                                                style="width:100%; height:100%; object-fit:cover;" loading="lazy"
+                                                decoding="async">
                                         <?php else: ?>
                                             <i class="fa-solid fa-cube text-secondary fa-lg"></i>
                                         <?php endif; ?>
@@ -830,7 +833,7 @@ $products = $stmt->fetchAll();
                 : '<span class="text-secondary small"><i class="fa-solid fa-ban fa-xs"></i> Inactive</span>';
 
             const imgHtml = row.image_path
-                ? `<img src="${baseUrl}${row.image_path}" style="width:100%; height:100%; object-fit:cover;">`
+                ? `<img src="${baseUrl}${row.image_path}" style="width:100%; height:100%; object-fit:cover;" loading="lazy" decoding="async">`
                 : '<i class="fa-solid fa-cube text-secondary fa-lg"></i>';
 
             const escapedName = this.escapeHtml(row.product_name || '').replace(/'/g, "\\'");
@@ -913,7 +916,7 @@ $products = $stmt->fetchAll();
             else if (qty <= thresh) statusClass = 'stock-low';
 
             const imgHtml = row.image_path
-                ? `<img src="${baseUrl}${row.image_path}" style="width:100%; height:100%; object-fit:cover;">`
+                ? `<img src="${baseUrl}${row.image_path}" style="width:100%; height:100%; object-fit:cover;" loading="lazy" decoding="async">`
                 : '<i class="fa-solid fa-cube text-secondary fa-lg"></i>';
 
             let stockBadge = '';
