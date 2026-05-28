@@ -151,6 +151,14 @@ try {
                             <i class="fa-solid fa-file-invoice"></i> <span class="nav-text">Stock-In Records</span>
                         </a>
                     </li>
+                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                        <li>
+                            <a href="<?= BASE_URL ?>views/inventory/reference_image_sync.php"
+                                class="<?= $current_page === 'reference_image_sync.php' ? 'active' : '' ?>">
+                                <i class="fa-solid fa-database"></i> <span class="nav-text">Image DB Sync</span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/inventory/price_history_records.php"
                             class="<?= $current_page === 'price_history_records.php' ? 'active' : '' ?>">
