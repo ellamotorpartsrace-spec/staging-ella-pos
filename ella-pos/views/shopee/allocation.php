@@ -177,6 +177,12 @@ foreach ($mappedRows as $r) {
     }
     
     if ($key !== null) {
+        $multiplier = max(1, (int)($r['multiplier'] ?? 1));
+        $bundleSetId = (int)($r['pos_bundle_set_id'] ?? 0);
+        $isBundle = $bundleSetId > 0;
+        $baseQty = $isBundle ? (int)($bundleStockMap[(int)$r['id']] ?? 0) : (int)$r['pos_qty'];
+        $unitQty = floor($baseQty / $multiplier);
+
         $dupMap[$key][] = [
             'id' => (int)$r['id'],
             'name' => $r['shopee_product_name'],
@@ -185,8 +191,11 @@ foreach ($mappedRows as $r) {
             'ratio' => (int)($r['stock_allocation_ratio'] ?? 100),
             'online' => (int)$r['shopee_stock'],
             'imageUrl' => $r['shopee_image_url'] ?? '',
-            'unitName' => $r['unit_name'] ?? null,
-            'multiplier' => max(1, (int)($r['multiplier'] ?? 1))
+            'unitName' => $isBundle ? 'Bundle Set' : ($r['unit_name'] ?? null),
+            'multiplier' => $multiplier,
+            'isBundle' => $isBundle,
+            'total' => $baseQty,
+            'unitTotal' => $unitQty
         ];
     }
 }
