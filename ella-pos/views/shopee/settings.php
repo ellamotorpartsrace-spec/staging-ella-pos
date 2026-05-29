@@ -261,6 +261,13 @@ $authShopId  = $_GET['shop_id'] ?? '';
                     <button class="btn btn-shopee w-100" onclick="startSmartSync()" id="btnImport">
                         <i class="fa-solid fa-play me-2"></i>Start Sync
                     </button>
+
+                    <hr class="text-secondary opacity-25 my-4">
+                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-broom text-shopee me-2"></i>Ghost Product Cleanup</h6>
+                    <p class="small text-secondary mb-3">Detect and completely remove any products or variations from your POS that have been deleted in the Shopee Seller Centre.</p>
+                    <button class="btn btn-outline-danger w-100" onclick="startCleanupSync()" id="btnCleanup">
+                        <i class="fa-solid fa-trash-can me-2"></i>Run Cleanup
+                    </button>
                 </div>
             </div>
 
@@ -728,6 +735,58 @@ async function resetIntegrationData() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Reset & Start Fresh';
+    }
+}
+
+async function startCleanupSync() {
+    if (!confirm('Are you sure you want to run the Ghost Product Cleanup? This will permanently delete any products and variations from the POS that have been removed from your Shopee Seller Centre.')) {
+        return;
+    }
+    
+    const btn = document.getElementById('btnCleanup');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Cleaning up...';
+    
+    const logText = document.getElementById('syncLogText');
+    const status = document.getElementById('importStatus');
+    const progBar = document.getElementById('syncProgressBar');
+    const progLbl = document.getElementById('syncProgressLabel');
+    
+    status.style.display = 'block';
+    progBar.style.width = '50%';
+    progBar.style.background = 'var(--shopee-primary)';
+    progLbl.textContent = 'Detecting Ghost Products...';
+    logText.className = 'alert alert-info py-2 small mb-0';
+    logText.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Cross-referencing database with Shopee API...';
+    
+    try {
+        const res = await fetch(`${window.BASE_URL}api/shopee/cleanup_deleted.php`);
+        const data = await res.json();
+        if (data.success) {
+            progBar.style.width = '100%';
+            progBar.style.background = 'var(--bs-success)';
+            progLbl.textContent = 'Cleanup Complete!';
+            logText.className = 'alert alert-success py-2 small mb-0 fw-bold';
+            logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i>${data.message}`;
+            EllaToast.success(data.message);
+        } else {
+            progBar.style.width = '100%';
+            progBar.style.background = 'var(--bs-danger)';
+            progLbl.textContent = 'Cleanup Failed';
+            logText.className = 'alert alert-danger py-2 small mb-0';
+            logText.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i>${data.error}`;
+            EllaToast.error(data.error || 'Cleanup failed');
+        }
+    } catch (e) {
+        progBar.style.width = '100%';
+        progBar.style.background = 'var(--bs-danger)';
+        progLbl.textContent = 'Network Error';
+        logText.className = 'alert alert-danger py-2 small mb-0';
+        logText.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i>${e.message}`;
+        EllaToast.error('Network error: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Run Cleanup';
     }
 }
 
