@@ -331,6 +331,9 @@ async function fetchMappingData() {
                     reRunBtn.disabled = false;
                     reRunBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles me-1"></i>Re-run Auto-Match';
                 }
+                
+                // Re-render table now that POS items are loaded (enables popovers)
+                renderTable();
             })
             .catch(e => console.error('Failed to fetch POS items asynchronously', e));
 
