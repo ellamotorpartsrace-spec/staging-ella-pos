@@ -621,12 +621,12 @@ function renderTable(){
 
                 html += `<tr class="sp-group-start">
                     <td>
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-3" style="min-width:0;">
                             ${imgHtml}
-                            <div>
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <i class="fa-brands fa-shopee" style="color:var(--shopee-primary);font-size:.85rem;flex-shrink:0"></i>
-                                    <span class="fw-bold" style="font-size:.9rem">${escHtml(g.name)}</span>
+                            <div style="min-width:0;">
+                                <div class="d-flex align-items-start gap-2 mb-1" style="min-width:0;">
+                                    <i class="fa-brands fa-shopee mt-1" style="color:var(--shopee-primary);font-size:.85rem;flex-shrink:0"></i>
+                                    <span class="fw-bold text-wrap text-break" style="font-size:.9rem; line-height:1.2;">${escHtml(g.name)}</span>
                                 </div>
                             </div>
                         </div>
@@ -654,12 +654,12 @@ function renderTable(){
             // Parent Row
             html += `<tr class="sp-group-start">
                 <td>
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3" style="min-width:0;">
                         ${imgHtml}
-                        <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="fa-brands fa-shopee" style="color:var(--shopee-primary);font-size:.85rem;flex-shrink:0"></i>
-                                <span class="fw-bold" style="font-size:.9rem">${escHtml(g.name)}</span>
+                        <div style="min-width:0;">
+                            <div class="d-flex align-items-start gap-2 mb-1" style="min-width:0;">
+                                <i class="fa-brands fa-shopee mt-1" style="color:var(--shopee-primary);font-size:.85rem;flex-shrink:0"></i>
+                                <span class="fw-bold text-wrap text-break" style="font-size:.9rem; line-height:1.2;">${escHtml(g.name)}</span>
                             </div>
                         </div>
                     </div>
