@@ -209,24 +209,12 @@ try {
              ->execute([$newSku, $mapping['id']]);
     }
     
-    // 5. Attempt automatic mapping on SKU update
+    // 5. Do not do automatic mapping on SKU update as per user instructions.
+    // The mapping will be marked as unmapped (pos_product_id = NULL, matched_pos_sku = NULL, mapping_status = 'unmapped')
+    // unless manually mapped or auto-matched on the mapping page.
     $posVarId = null;
-    $posSku = null;
-    $mappingStatus = 'unmapped';
-
-    if (!empty($newSku)) {
-        $lookupStmt = $conn->prepare("SELECT variation_id, sku FROM product_variations WHERE sku = ? AND sku != '' LIMIT 1");
-        $lookupStmt->execute([$newSku]);
-        $posVar = $lookupStmt->fetch(PDO::FETCH_ASSOC);
-        if ($posVar) {
-            $posVarId = $posVar['variation_id'];
-            $posSku = $posVar['sku'];
-            $mappingStatus = 'auto';
-        }
-    }
-
-    $conn->prepare("UPDATE shopee_product_mappings SET pos_product_id = ?, matched_pos_sku = ?, mapping_status = ?, updated_at = NOW() WHERE id = ?")
-         ->execute([$posVarId, $posSku, $mappingStatus, $mapping['id']]);
+    $conn->prepare("UPDATE shopee_product_mappings SET pos_product_id = NULL, matched_pos_sku = NULL, mapping_status = 'unmapped', updated_at = NOW() WHERE id = ?")
+         ->execute([$mapping['id']]);
     
     // 6. Log success sync log
     $prodName = $mapping['shopee_product_name'];
