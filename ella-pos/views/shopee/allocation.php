@@ -787,16 +787,33 @@ function bundleFormulaHtml(item) {
     const rows = item.bundleDetails.map(d => {
         const required = Number(d.required || 0);
         const requiredLabel = Number.isInteger(required) ? required : required.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
-        return `<div class="small text-secondary" style="line-height:1.35;">
-            <span class="fw-semibold text-dark">${escHtml(d.name || 'Component')}</span>:
-            ${parseInt(d.stock || 0, 10).toLocaleString()} stock
-            - ${parseInt(d.reserved || 0, 10).toLocaleString()} reserved
-            = <strong>${parseInt(d.free || 0, 10).toLocaleString()} free</strong>
-            / ${requiredLabel} per bundle
-            = <strong>${parseInt(d.possible || 0, 10).toLocaleString()}</strong>
+        return `<div style="font-size:0.75rem; color:#475569; margin-bottom: 8px; text-align: left;">
+            <div style="font-weight:600; color:#1e293b; margin-bottom: 3px;"><i class="fa-solid fa-caret-right text-secondary me-1"></i>${escHtml(d.name || 'Component')}</div>
+            <div style="display:flex; justify-content:space-between;"><span>Stock:</span> <span class="fw-semibold">${parseInt(d.stock || 0, 10).toLocaleString()}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>Reserved:</span> <span class="text-danger">-${parseInt(d.reserved || 0, 10).toLocaleString()}</span></div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed #cbd5e1; margin-top:2px; padding-top:2px;">
+                <span class="fw-semibold text-success">Free:</span> <span class="fw-bold text-success">${parseInt(d.free || 0, 10).toLocaleString()}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; color:#64748b; font-size:0.7rem; margin-top:2px;">
+                <span>Per bundle:</span> <span>&divide; ${requiredLabel}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-top:1px solid #cbd5e1; margin-top:2px; padding-top:2px; font-weight:700;">
+                <span class="text-dark">Pairable sets:</span> <span class="text-shopee">${parseInt(d.possible || 0, 10).toLocaleString()}</span>
+            </div>
         </div>`;
     }).join('');
-    return `<div class="mt-1">${rows}<div class="small fw-bold text-success mt-1">Bundle sellable stock = lowest component result (${parseInt(item.total || 0, 10).toLocaleString()})</div></div>`;
+    
+    let popContent = `<div style="text-align:left;word-break:break-word;line-height:1.3;min-width:220px;max-width:280px;">
+        <div style="font-weight:700;color:#1e293b;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(0,0,0,0.1);"><i class="fa-solid fa-calculator text-shopee me-1"></i> Component Breakdown</div>
+        ${rows}
+        <div class="small fw-bold text-success mt-2 text-center" style="border-top:1px solid rgba(0,0,0,0.15);padding:6px;background:rgba(25,135,84,0.06);border-radius:4px;">
+            Total Sellable = ${parseInt(item.total || 0, 10).toLocaleString()} sets
+        </div>
+    </div>`;
+    popContent = popContent.replace(/"/g, '&quot;');
+    
+    const popAttr = `tabindex="0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="right" data-bs-trigger="hover focus" data-bs-custom-class="shopee-popover" title="" data-bs-content="${popContent}"`;
+    return `<button type="button" class="btn btn-link text-info text-decoration-none shadow-none p-0 ms-2 align-baseline" style="font-size:0.75rem;" ${popAttr}><i class="fa-solid fa-circle-info"></i> Details</button>`;
 }
 function sharedItemById(id) {
     if (!currentEdit || !currentEdit.dupDetails) return null;
@@ -863,6 +880,16 @@ function debouncedRender() {
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+    // Use Popover event delegation globally
+    if (typeof bootstrap !== 'undefined') {
+        new bootstrap.Popover(document.body, {
+            selector: '[data-bs-toggle="popover"]',
+            html: true,
+            trigger: 'hover',
+            placement: 'top'
+        });
+    }
+
     editModal=new bootstrap.Modal(document.getElementById('editModal'));
     fixOverallocatedModal = new bootstrap.Modal(document.getElementById('fixOverallocatedModal'));
     
