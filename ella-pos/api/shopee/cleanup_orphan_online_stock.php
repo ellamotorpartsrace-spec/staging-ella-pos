@@ -64,7 +64,7 @@ try {
         $conn->prepare("
             INSERT INTO stock_movements
             (variation_id, store_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
-            VALUES (?, 2, 'allocation_adjustment', ?, ?, 0, ?, 'Cleanup: removed orphan online allocation (no active Shopee link)', ?, 0)
+            VALUES (?, 2, 'allocation_to_physical', ?, ?, 0, ?, 'Cleanup: removed orphan online allocation (no active Shopee link)', ?, 0)
         ")->execute([
             $varId,
             -$onlineQty,

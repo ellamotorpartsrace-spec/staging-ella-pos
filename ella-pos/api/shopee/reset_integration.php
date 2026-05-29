@@ -56,7 +56,7 @@ try {
         $conn->prepare("
             INSERT INTO stock_movements
             (variation_id, store_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
-            VALUES (?, 2, 'allocation_adjustment', ?, ?, 0, ?, 'System Reset: restored online allocation back to physical store', ?, 0)
+            VALUES (?, 2, 'allocation_to_physical', ?, ?, 0, ?, 'System Reset: restored online allocation back to physical store', ?, 0)
         ")->execute([
             $varId,
             -$onlineQty,

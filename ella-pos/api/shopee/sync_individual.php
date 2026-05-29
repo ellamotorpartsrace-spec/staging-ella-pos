@@ -100,7 +100,7 @@ try {
         $movementStmt = $conn->prepare("
             INSERT INTO stock_movements 
             (variation_id, store_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
-            VALUES (?, ?, 'allocation_adjustment', ?, ?, ?, ?, 'Shopee Stock Allocation Sync (Individual)', ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Shopee Stock Allocation Sync (Individual)', ?, ?)
         ");
 
         $ref = 'SHP-ALLOC-IND-' . date('YmdHis');
@@ -109,9 +109,11 @@ try {
         // Log Physical Store changes
         $physicalDiff = $newPhysicalStock - $posPhysicalQty;
         if ($physicalDiff != 0) {
+            $physicalType = $physicalDiff < 0 ? 'allocation_to_online' : 'allocation_to_physical';
             $movementStmt->execute([
                 $item['pos_product_id'],
                 1,
+                $physicalType,
                 $physicalDiff,
                 $posPhysicalQty,
                 $newPhysicalStock,
@@ -124,9 +126,11 @@ try {
         // Log Online Shop changes
         $onlineDiff = $newOnlineStock - $posOnlineQty;
         if ($onlineDiff != 0) {
+            $onlineType = $onlineDiff > 0 ? 'allocation_to_online' : 'allocation_to_physical';
             $movementStmt->execute([
                 $item['pos_product_id'],
                 2,
+                $onlineType,
                 $onlineDiff,
                 $posOnlineQty,
                 $newOnlineStock,
