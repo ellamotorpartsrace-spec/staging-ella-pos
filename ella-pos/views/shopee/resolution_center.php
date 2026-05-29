@@ -352,7 +352,11 @@ require_once '../../includes/sidebar.php';
                                                 <div class="small text-secondary mb-1">Shopee SKU:</div>
                                                 <span class="sp-sku-code text-dark" style="width: fit-content;"><i class="fa-solid fa-barcode me-1"></i><?= htmlspecialchars($e['sku']) ?></span>
                                                 <?php if (!empty($e['shopee_variation_name'])): ?>
-                                                    <div class="text-muted small mt-2"><i class="fa-solid fa-tags me-1"></i><?= htmlspecialchars($e['shopee_variation_name']) ?></div>
+                                                    <div class="small text-secondary mt-2">Variation Name:</div>
+                                                    <div class="fw-bold text-dark"><i class="fa-solid fa-tags text-shopee me-1"></i><?= htmlspecialchars($e['shopee_variation_name']) ?></div>
+                                                <?php else: ?>
+                                                    <div class="small text-secondary mt-2">Product Type:</div>
+                                                    <div class="text-muted small"><i class="fa-solid fa-box text-secondary me-1"></i>Standalone Product</div>
                                                 <?php endif; ?>
                                             <?php else: ?>
                                                 <?php if (!empty($e['shopee_variation_name'])): ?>
