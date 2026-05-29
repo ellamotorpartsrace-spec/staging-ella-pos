@@ -31,7 +31,7 @@ $sqlProd = "
         COALESCE(i.quantity, 0) as current_stock
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
-    LEFT JOIN inventory i ON v.variation_id = i.variation_id
+    LEFT JOIN inventory i ON v.variation_id = i.variation_id AND i.store_id = 1
     WHERE v.variation_id = :id
 ";
 $stmt = $conn->prepare($sqlProd);
@@ -45,12 +45,13 @@ if (!$product) {
 }
 
 // 3. Fetch History (Stock Movements)
-// We JOIN with 'users' to see WHO did the action
+// We JOIN with 'users' to see WHO did the action. 
+// IMPORTANT: Filter by store_id = 1 to ONLY show POS physical stock history!
 $sqlHist = "
     SELECT m.*, u.username, u.full_name
     FROM stock_movements m
     LEFT JOIN users u ON m.created_by = u.id
-    WHERE m.variation_id = :id
+    WHERE m.variation_id = :id AND m.store_id = 1
     ORDER BY m.created_at DESC
     LIMIT 100
 ";
