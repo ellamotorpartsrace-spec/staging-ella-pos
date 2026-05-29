@@ -740,7 +740,7 @@ function renderTable(){
 
     // Initialize Popovers for newly rendered elements
     if (typeof bootstrap !== 'undefined') {
-        const popoverTriggerList = document.querySelectorAll('#mapBody [data-bs-toggle="popover"]');
+        const popoverTriggerList = document.querySelectorAll('#mapTableBody [data-bs-toggle="popover"]');
         [...popoverTriggerList].forEach(el => {
             new bootstrap.Popover(el, { html: true, trigger: 'hover', placement: 'top' });
         });
