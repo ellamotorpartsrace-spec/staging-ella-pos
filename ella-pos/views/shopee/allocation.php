@@ -1219,72 +1219,7 @@ function renderMapped(){
             ? `<img src="${escHtml(g.imageUrl)}" class="sp-product-img" alt="Product Image">`
             : `<div class="sp-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        const isSimple = g.vars.length === 1 && (!g.vars[0].varName || g.vars[0].varName.toLowerCase() === 'main item');
-
-        if (isSimple) {
-            const v = vars[0];
-            if (v) {
-                const available = v.online;
-                let totalAllocated = getExistingAllocatedBase(v);
-                const rem = v.total - totalAllocated;
-                const availCls = available <= 0 ? 'text-danger fw-bold' : (available <= 5 ? 'text-warning fw-bold' : 'text-success fw-bold');
-                let badge = '';
-                if (totalAllocated > v.total) badge = `<span class="sp-badge sp-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
-                else if (v.online === 0) badge = `<span class="sp-badge sp-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
-                else if (available <= 0) badge = `<span class="sp-badge sp-badge-danger"><i class="fa-solid fa-ban"></i> Sold Out</span>`;
-                else if (available <= 5) badge = `<span class="sp-badge sp-badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Low</span>`;
-                else badge = `<span class="sp-badge sp-badge-success"><i class="fa-solid fa-check"></i> OK</span>`;
-
-
-                const actualPct = v.total > 0 ? Math.floor((toBaseQty(v.online, v) / v.total) * 100) : 0;
-                const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
-
-                const unitBadge = v.unitName 
-                    ? `<span class="badge bg-light text-secondary border font-normal ms-1" style="font-size:0.68rem;" title="${v.isBundle ? 'Bundle stock is computed from component pairable stock' : 'Mapped to custom unit type'}"><i class="fa-solid fa-box me-1"></i>${escHtml(v.unitName)} (x${v.multiplier})</span>` 
-                    : '';
-                const bundleBreakdown = bundleFormulaHtml(v);
-
-                html += `<tr class="sp-group-start">
-                    <td>
-                        <div class="d-flex align-items-center gap-3">
-                            ${imgHtml}
-                            <div>
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <i class="fa-brands fa-shopee" style="color:var(--shopee-primary);font-size:.85rem;flex-shrink:0"></i>
-                                    <span class="fw-bold" style="font-size:.9rem">${escHtml(g.name)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="d-flex flex-column">
-                            ${parentSkuHtml}
-                            <span class="small text-secondary" style="font-size:0.72rem;margin-top:2px">ID: ${escHtml(g.itemId)}</span>
-                        </div>
-                    </td>
-                    <td>
-                        ${v.sku?`<span class="sp-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">—</span>`}
-                        ${unitBadge}
-                        ${v.isDuplicate?`<span class="badge bg-danger-light text-danger ms-1" style="font-size:0.68rem; border:1px solid rgba(220,53,69,0.25); cursor:pointer;" onclick="openEdit(${v.id})" title="Click to view shared allocation details"><i class="fa-solid fa-clone me-1"></i>Shared (${actualSharedPct}% Allocated)</span>`:''}
-                        ${v.mappingStatus==='manual'?`<span class="sp-badge sp-badge-info ms-1" style="padding:0.2rem 0.5rem; font-size:0.68rem;" title="Manually mapped in mapping page"><i class="fa-solid fa-hand-pointer me-1"></i>Manual</span>`:''}
-                        ${bundleBreakdown}
-                    </td>
-                    <td class="text-center fw-bold">${v.total.toLocaleString()}</td>
-                    <td class="text-center">
-                        <span class="fw-bold text-shopee d-block">${v.online.toLocaleString()}</span>
-                        <span class="text-secondary small font-normal" style="font-size:0.72rem;">${unitMultiplier(v) > 1 ? `${toBaseQty(v.online, v).toLocaleString()} pcs - ` : ''}${actualPct}%</span>
-                    </td>
-                    <td class="text-center fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</td>
-                    <td>${badge}</td>
-                    <td class="text-end">
-                        <div class="d-flex align-items-center justify-content-end gap-2">
-                            <button class="btn btn-sm btn-outline-shopee px-3" onclick="openEdit(${v.id})"><i class="fa-solid fa-pen-to-square me-1"></i>Edit</button>
-                        </div>
-                    </td>
-                </tr>`;
-            }
-        } else {
-            // Parent Row
+        // Parent Row
             html += `<tr class="sp-group-start">
                 <td>
                     <div class="d-flex align-items-center gap-3">
@@ -1367,7 +1302,6 @@ function renderMapped(){
                     </td>
                 </tr>`;
             });
-        }
     });
 
     if(!totalItems){
@@ -1405,39 +1339,11 @@ function renderUnmapped(){
 
     let html='';
     slice.forEach(g=>{
-        const isSimple = g.vars.length === 1 && (!g.vars[0].varName || g.vars[0].varName.toLowerCase() === 'main item');
-
         const imgHtml = g.imageUrl
             ? `<img src="${escHtml(g.imageUrl)}" class="sp-product-img" alt="Product Image">`
             : `<div class="sp-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        if (isSimple) {
-            const v = g.vars[0];
-            if (v) {
-                html += `<tr class="sp-group-start">
-                    <td>
-                        <div class="d-flex align-items-center gap-3">
-                            ${imgHtml}
-                            <div>
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <i class="fa-brands fa-shopee" style="color:var(--shopee-primary);font-size:.85rem;flex-shrink:0"></i>
-                                    <span class="fw-bold" style="font-size:.9rem">${escHtml(g.name)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="d-flex flex-column">
-                            <span class="small text-secondary" style="font-size:0.72rem">ID: ${escHtml(g.itemId)}</span>
-                        </div>
-                    </td>
-                    <td>${v.sku?`<span class="sp-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">—</span>`}</td>
-                    <td class="text-center">${stockPill(v.online)}</td>
-                    <td class="text-end"><a href="${window.BASE_URL}views/shopee/mapping.php" class="btn btn-sm btn-outline-shopee px-3"><i class="fa-solid fa-link me-1"></i>Map Now</a></td>
-                </tr>`;
-            }
-        } else {
-            // Parent Row
+        // Parent Row
             html += `<tr class="sp-group-start">
                 <td>
                     <div class="d-flex align-items-center gap-3">
@@ -1478,7 +1384,6 @@ function renderUnmapped(){
                     <td class="text-end"><a href="${window.BASE_URL}views/shopee/mapping.php" class="btn btn-sm btn-outline-shopee px-3"><i class="fa-solid fa-link me-1"></i>Map Now</a></td>
                 </tr>`;
             });
-        }
     });
 
     body.innerHTML=html;
