@@ -148,6 +148,12 @@ try {
         ]
     ]);
 
+    // Insert Log Record
+    $userId = $_SESSION['user_id'] ?? 0;
+    $logValue = "Checked: " . count($localItemIds) . " items. Removed: {$deletedItemsCount} ghost items, {$deletedVariationsCount} ghost variations.";
+    $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (event_type, product_name, source, status, new_value, created_by, created_at) VALUES ('product_import', 'Ghost Product Cleanup', 'Manual Cleanup', 'success', ?, ?, NOW())");
+    $logStmt->execute([$logValue, $userId]);
+
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

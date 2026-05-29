@@ -327,104 +327,56 @@ require_once '../../includes/sidebar.php';
         </div>
     </div>
 
-    <div class="row g-3">
-        <!-- LEFT SIDEBAR -->
-        <div class="col-lg-3">
-            <div class="sp-card sticky-top" style="top: 100px; z-index: 10;">
-                <div class="sp-card-header">
-                    <h5><i class="fa-solid fa-broom text-shopee me-2"></i>Ghost Product Cleanup</h5>
+    <!-- Filters -->
+    <div class="sp-card mb-4">
+        <form method="GET" action="" id="filterForm" class="w-100 m-0">
+            <div class="sp-card-body filter-row">
+                
+                <!-- Search Box -->
+                <div class="premium-search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="logSearch" autocomplete="off" placeholder="Search product, SKU..." oninput="renderLogs()">
                 </div>
-                <div class="sp-card-body">
-                    <p class="small text-secondary mb-3">Detect and remove any products or variations from your POS that have been deleted in the Shopee Seller Centre.</p>
-                    
-                    <div id="cleanupStatus" class="mb-3" style="display:none">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold small" id="cleanupProgressLabel">Initializing...</span>
-                        </div>
-                        <div class="sp-progress-wrap mb-2" style="height:4px; background:var(--sp-neutral-bg); border-radius:2px; overflow:hidden;">
-                            <div class="sp-progress-fill" id="cleanupProgressBar" style="width:0%; height:100%; background:var(--shopee-primary); transition:width 0.4s ease;"></div>
-                        </div>
-                        <div class="alert alert-info py-2 small mb-0" id="cleanupLogText"><i class="fa-solid fa-spinner fa-spin me-2"></i>Starting cleanup...</div>
-                        
-                        <div class="sp-stat-card bg-light border p-2 mt-2 rounded" style="display:none;" id="cleanupDetails">
-                            <div class="row g-2 text-center w-100 m-0">
-                                <div class="col-4 border-end px-1">
-                                    <div class="text-secondary" style="font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em">Checked</div>
-                                    <div class="fw-bold text-dark" id="cTotalChecked" style="font-size:1rem;">0</div>
-                                </div>
-                                <div class="col-4 border-end px-1">
-                                    <div class="text-secondary" style="font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em">Items</div>
-                                    <div class="fw-bold text-danger" id="cGhostItems" style="font-size:1rem;">0</div>
-                                </div>
-                                <div class="col-4 px-1">
-                                    <div class="text-secondary" style="font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em">Vars</div>
-                                    <div class="fw-bold text-danger" id="cGhostVars" style="font-size:1rem;">0</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                
+                <!-- Date Frame Selection -->
+                <div class="d-flex align-items-center gap-2">
+                    <span class="premium-filter-label">Date:</span>
+                    <input type="date" class="premium-date-input" id="startDate" name="start_date" value="<?= htmlspecialchars($startDate) ?>" onchange="document.getElementById('filterForm').submit()">
+                    <span class="text-secondary fw-semibold mx-1">to</span>
+                    <input type="date" class="premium-date-input" id="endDate" name="end_date" value="<?= htmlspecialchars($endDate) ?>" onchange="document.getElementById('filterForm').submit()">
+                </div>
 
-                    <button class="btn btn-outline-danger w-100" onclick="startCleanupSync()" id="btnCleanup">
-                        <i class="fa-solid fa-trash-can me-2"></i>Run Cleanup
-                    </button>
+                <!-- Category Pills -->
+                <div class="sp-filter-pills ms-auto d-flex gap-2 flex-wrap">
+                    <button type="button" class="premium-pill sp-pill pill-all active" onclick="setLogFilter('all',this)">All Events</button>
+                    <button type="button" class="premium-pill sp-pill pill-stock" onclick="setLogFilter('stock_update',this)">Stock Updates</button>
+                    <button type="button" class="premium-pill sp-pill pill-map" onclick="setLogFilter('mapping',this)">Mapping</button>
+                    <button type="button" class="premium-pill sp-pill pill-sku" onclick="setLogFilter('shopee_sku',this)">Shopee SKU</button>
+                    <button type="button" class="premium-pill sp-pill pill-sync" onclick="setLogFilter('product_import',this)">Product Sync</button>
+                    <button type="button" class="premium-pill sp-pill pill-token" onclick="setLogFilter('token_refresh',this)">Token</button>
+                    <button type="button" class="premium-pill sp-pill pill-failed" onclick="setLogFilter('failed',this)">Failed</button>
                 </div>
             </div>
-        </div>
+        </form>
+    </div>
 
-        <!-- MAIN CONTENT -->
-        <div class="col-lg-9">
-            <!-- Filters -->
-            <div class="sp-card mb-4">
-                <form method="GET" action="" id="filterForm" class="w-100 m-0">
-                    <div class="sp-card-body filter-row">
-                        
-                        <!-- Search Box -->
-                        <div class="premium-search-box">
-                            <i class="fa-solid fa-search"></i>
-                            <input type="text" id="logSearch" autocomplete="off" placeholder="Search product, SKU..." oninput="renderLogs()">
-                        </div>
-                        
-                        <!-- Date Frame Selection -->
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="premium-filter-label">Date:</span>
-                            <input type="date" class="premium-date-input" id="startDate" name="start_date" value="<?= htmlspecialchars($startDate) ?>" onchange="document.getElementById('filterForm').submit()">
-                            <span class="text-secondary fw-semibold mx-1">to</span>
-                            <input type="date" class="premium-date-input" id="endDate" name="end_date" value="<?= htmlspecialchars($endDate) ?>" onchange="document.getElementById('filterForm').submit()">
-                        </div>
-
-                        <!-- Category Pills -->
-                        <div class="sp-filter-pills ms-auto d-flex gap-2 flex-wrap">
-                            <button type="button" class="premium-pill sp-pill pill-all active" onclick="setLogFilter('all',this)">All Events</button>
-                            <button type="button" class="premium-pill sp-pill pill-stock" onclick="setLogFilter('stock_update',this)">Stock Updates</button>
-                            <button type="button" class="premium-pill sp-pill pill-map" onclick="setLogFilter('mapping',this)">Mapping</button>
-                            <button type="button" class="premium-pill sp-pill pill-sku" onclick="setLogFilter('shopee_sku',this)">Shopee SKU</button>
-                            <button type="button" class="premium-pill sp-pill pill-sync" onclick="setLogFilter('product_import',this)">Product Sync</button>
-                            <button type="button" class="premium-pill sp-pill pill-token" onclick="setLogFilter('token_refresh',this)">Token</button>
-                            <button type="button" class="premium-pill sp-pill pill-failed" onclick="setLogFilter('failed',this)">Failed</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Logs Table -->
-            <div class="sp-card">
-                <div class="sp-card-body p-0 sp-table-wrap">
-                    <table class="sp-table">
-                        <thead>
-                            <tr>
-                                <th style="width:160px">Timestamp</th>
-                                <th style="width:380px">Scope / Product</th>
-                                <th style="width:140px">Event Type</th>
-                                <th>Details / Summary</th>
-                                <th style="width:120px">User</th>
-                                <th style="width:110px">Source</th>
-                                <th style="width:110px">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logBody"></tbody>
-                    </table>
-                </div>
-            </div>
+    <!-- Logs Table -->
+    <div class="sp-card">
+        <div class="sp-card-body p-0 sp-table-wrap">
+            <table class="sp-table">
+                <thead>
+                    <tr>
+                        <th style="width:160px">Timestamp</th>
+                        <th style="width:380px">Scope / Product</th>
+                        <th style="width:140px">Event Type</th>
+                        <th>Details / Summary</th>
+                        <th style="width:120px">User</th>
+                        <th style="width:110px">Source</th>
+                        <th style="width:110px">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="logBody"></tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -507,6 +459,8 @@ function renderLogs() {
                     eventBadge = '<span class="sp-badge" style="background:rgba(102,16,242,0.12);color:#6610f2"><i class="fa-solid fa-link me-1"></i>Mapping Sync</span>';
                 } else if (l.product.includes('Product Sync (Products Page)')) {
                     eventBadge = '<span class="sp-badge" style="background:rgba(99,102,241,0.12);color:#6366f1"><i class="fa-solid fa-bag-shopping me-1"></i>Product Sync</span>';
+                } else if (l.product.includes('Ghost Product Cleanup')) {
+                    eventBadge = '<span class="sp-badge" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-broom me-1"></i>Ghost Cleanup</span>';
                 } else {
                     eventBadge = '<span class="sp-badge sp-badge-info"><i class="fa-solid fa-cloud-arrow-down me-1"></i>Import</span>';
                 }
@@ -742,83 +696,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     renderLogs();
 });
-
-async function startCleanupSync() {
-    if (!confirm('Are you sure you want to run the Ghost Product Cleanup? This will permanently delete any products and variations from the POS that have been removed from your Shopee Seller Centre.')) {
-        return;
-    }
-    
-    const btn = document.getElementById('btnCleanup');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Initializing...';
-    
-    const status = document.getElementById('cleanupStatus');
-    const logText = document.getElementById('cleanupLogText');
-    const progBar = document.getElementById('cleanupProgressBar');
-    const progLbl = document.getElementById('cleanupProgressLabel');
-    const detailsDiv = document.getElementById('cleanupDetails');
-    
-    status.style.display = 'block';
-    if(detailsDiv) detailsDiv.style.display = 'none';
-    
-    progBar.style.width = '20%';
-    progBar.style.background = 'var(--shopee-primary)';
-    progLbl.textContent = 'Step 1/3: Connecting...';
-    logText.className = 'alert alert-info py-2 small mb-0';
-    logText.innerHTML = '<i class="fa-solid fa-satellite-dish me-2"></i>Establishing secure connection to Shopee API...';
-    
-    await new Promise(r => setTimeout(r, 800));
-    
-    progBar.style.width = '50%';
-    progLbl.textContent = 'Step 2/3: Fetching Data...';
-    logText.innerHTML = '<i class="fa-solid fa-cloud-arrow-down me-2"></i>Downloading latest active product lists from Shopee...';
-    
-    await new Promise(r => setTimeout(r, 1200));
-
-    progBar.style.width = '80%';
-    progLbl.textContent = 'Step 3/3: Cross-referencing...';
-    logText.innerHTML = '<i class="fa-solid fa-magnifying-glass me-2"></i>Comparing local database against live Shopee data...';
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Cleaning up...';
-
-    try {
-        const res = await fetch(`${window.BASE_URL}api/shopee/cleanup_deleted.php`);
-        const data = await res.json();
-        if (data.success) {
-            progBar.style.width = '100%';
-            progBar.style.background = 'var(--bs-success)';
-            progLbl.textContent = 'Cleanup Complete!';
-            logText.className = 'alert alert-success py-2 small mb-0 fw-bold';
-            logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i>${data.message}`;
-            
-            if (detailsDiv && data.details) {
-                document.getElementById('cTotalChecked').textContent = data.details.totalChecked;
-                document.getElementById('cGhostItems').textContent = data.details.deletedItems;
-                document.getElementById('cGhostVars').textContent = data.details.deletedVariations;
-                detailsDiv.style.display = 'flex';
-            }
-            if(typeof EllaToast !== 'undefined') EllaToast.success(data.message);
-        } else {
-            progBar.style.width = '100%';
-            progBar.style.background = 'var(--bs-danger)';
-            progLbl.textContent = 'Cleanup Failed';
-            logText.className = 'alert alert-danger py-2 small mb-0';
-            logText.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i>${data.error}`;
-            if(typeof EllaToast !== 'undefined') EllaToast.error(data.error || 'Cleanup failed');
-        }
-    } catch (e) {
-        progBar.style.width = '100%';
-        progBar.style.background = 'var(--bs-danger)';
-        progLbl.textContent = 'Network Error';
-        logText.className = 'alert alert-danger py-2 small mb-0';
-        logText.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i>${e.message}`;
-        if(typeof EllaToast !== 'undefined') EllaToast.error('Network error: ' + e.message);
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Run Cleanup Again';
-        }
-    }
-}
 
 </script>
 
