@@ -141,7 +141,7 @@ function runConflictDetection($conn) {
     $stmt = $conn->query("
         SELECT m.id, m.shopee_item_id, m.shopee_model_id, m.shopee_product_name, m.shopee_variation_name, m.shopee_parent_sku
         FROM shopee_product_mappings m
-        LEFT JOIN product_variations pv ON m.shopee_parent_sku = pv.sku
+        LEFT JOIN product_variations pv ON m.shopee_parent_sku COLLATE utf8mb4_unicode_ci = pv.sku COLLATE utf8mb4_unicode_ci
         WHERE m.has_variation = 0 AND m.shopee_parent_sku != '' AND m.shopee_parent_sku IS NOT NULL
         AND m.pos_product_id IS NULL
         AND pv.sku IS NULL
@@ -151,7 +151,7 @@ function runConflictDetection($conn) {
     $stmt = $conn->query("
         SELECT m.id, m.shopee_item_id, m.shopee_model_id, m.shopee_product_name, m.shopee_variation_name, m.shopee_variation_sku
         FROM shopee_product_mappings m
-        LEFT JOIN product_variations pv ON m.shopee_variation_sku = pv.sku
+        LEFT JOIN product_variations pv ON m.shopee_variation_sku COLLATE utf8mb4_unicode_ci = pv.sku COLLATE utf8mb4_unicode_ci
         WHERE m.has_variation = 1 AND m.shopee_variation_sku != '' AND m.shopee_variation_sku IS NOT NULL
         AND m.pos_product_id IS NULL
         AND pv.sku IS NULL
