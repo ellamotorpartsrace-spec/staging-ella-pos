@@ -138,7 +138,15 @@ try {
         $msg .= "No ghost products found. Database is perfectly synced!";
     }
 
-    echo json_encode(['success' => true, 'message' => $msg]);
+    echo json_encode([
+        'success' => true, 
+        'message' => $msg,
+        'details' => [
+            'totalChecked' => count($localItemIds),
+            'deletedItems' => $deletedItemsCount,
+            'deletedVariations' => $deletedVariationsCount
+        ]
+    ]);
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

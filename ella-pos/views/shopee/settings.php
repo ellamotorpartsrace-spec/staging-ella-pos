@@ -197,6 +197,23 @@ $authShopId  = $_GET['shop_id'] ?? '';
                             <div class="sp-progress-fill" id="cleanupProgressBar" style="width:0%;background:var(--shopee-primary)"></div>
                         </div>
                         <div class="alert alert-info py-2 small mb-0" id="cleanupLogText"><i class="fa-solid fa-spinner fa-spin me-2"></i>Starting cleanup...</div>
+                        
+                        <div class="sp-stat-card bg-light border p-2 mt-2 rounded" style="display:none;" id="cleanupDetails">
+                            <div class="row g-2 text-center w-100 m-0">
+                                <div class="col-4 border-end">
+                                    <div class="text-secondary" style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em">Checked</div>
+                                    <div class="fw-bold text-dark" id="cTotalChecked" style="font-size:1.1rem;">0</div>
+                                </div>
+                                <div class="col-4 border-end">
+                                    <div class="text-secondary" style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em">Ghost Items</div>
+                                    <div class="fw-bold text-danger" id="cGhostItems" style="font-size:1.1rem;">0</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-secondary" style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em">Ghost Vars</div>
+                                    <div class="fw-bold text-danger" id="cGhostVars" style="font-size:1.1rem;">0</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <button class="btn btn-outline-danger w-100" onclick="startCleanupSync()" id="btnCleanup">
@@ -957,20 +974,36 @@ async function startCleanupSync() {
     
     const btn = document.getElementById('btnCleanup');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Cleaning up...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Initializing...';
     
-    const logText = document.getElementById('cleanupLogText');
     const status = document.getElementById('cleanupStatus');
+    const logText = document.getElementById('cleanupLogText');
     const progBar = document.getElementById('cleanupProgressBar');
     const progLbl = document.getElementById('cleanupProgressLabel');
+    const detailsDiv = document.getElementById('cleanupDetails');
     
     status.style.display = 'block';
-    progBar.style.width = '50%';
-    progBar.style.background = 'var(--shopee-primary)';
-    progLbl.textContent = 'Detecting Ghost Products...';
-    logText.className = 'alert alert-info py-2 small mb-0';
-    logText.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Cross-referencing database with Shopee API...';
+    if(detailsDiv) detailsDiv.style.display = 'none';
     
+    progBar.style.width = '20%';
+    progBar.style.background = 'var(--shopee-primary)';
+    progLbl.textContent = 'Step 1/3: Connecting...';
+    logText.className = 'alert alert-info py-2 small mb-0';
+    logText.innerHTML = '<i class="fa-solid fa-satellite-dish me-2"></i>Establishing secure connection to Shopee API...';
+    
+    await new Promise(r => setTimeout(r, 800));
+    
+    progBar.style.width = '50%';
+    progLbl.textContent = 'Step 2/3: Fetching Data...';
+    logText.innerHTML = '<i class="fa-solid fa-cloud-arrow-down me-2"></i>Downloading latest active product lists from Shopee...';
+    
+    await new Promise(r => setTimeout(r, 1200));
+
+    progBar.style.width = '80%';
+    progLbl.textContent = 'Step 3/3: Cross-referencing...';
+    logText.innerHTML = '<i class="fa-solid fa-magnifying-glass me-2"></i>Comparing local database against live Shopee data...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Cleaning up...';
+
     try {
         const res = await fetch(`${window.BASE_URL}api/shopee/cleanup_deleted.php`);
         const data = await res.json();
@@ -980,14 +1013,21 @@ async function startCleanupSync() {
             progLbl.textContent = 'Cleanup Complete!';
             logText.className = 'alert alert-success py-2 small mb-0 fw-bold';
             logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i>${data.message}`;
-            EllaToast.success(data.message);
+            
+            if (detailsDiv && data.details) {
+                document.getElementById('cTotalChecked').textContent = data.details.totalChecked;
+                document.getElementById('cGhostItems').textContent = data.details.deletedItems;
+                document.getElementById('cGhostVars').textContent = data.details.deletedVariations;
+                detailsDiv.style.display = 'flex';
+            }
+            if(typeof EllaToast !== 'undefined') EllaToast.success(data.message);
         } else {
             progBar.style.width = '100%';
             progBar.style.background = 'var(--bs-danger)';
             progLbl.textContent = 'Cleanup Failed';
             logText.className = 'alert alert-danger py-2 small mb-0';
             logText.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i>${data.error}`;
-            EllaToast.error(data.error || 'Cleanup failed');
+            if(typeof EllaToast !== 'undefined') EllaToast.error(data.error || 'Cleanup failed');
         }
     } catch (e) {
         progBar.style.width = '100%';
@@ -995,11 +1035,11 @@ async function startCleanupSync() {
         progLbl.textContent = 'Network Error';
         logText.className = 'alert alert-danger py-2 small mb-0';
         logText.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i>${e.message}`;
-        EllaToast.error('Network error: ' + e.message);
+        if(typeof EllaToast !== 'undefined') EllaToast.error('Network error: ' + e.message);
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Run Cleanup';
+            btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Run Cleanup Again';
         }
     }
 }
