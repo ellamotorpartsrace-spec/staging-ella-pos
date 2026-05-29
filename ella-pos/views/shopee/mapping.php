@@ -605,7 +605,7 @@ function renderTable(){
                     popContent = popContent.replace(/"/g, '&quot;');
                     linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                 }
-                const linkIcon=v.mapped?`<span role="button" class="text-shopee text-decoration-none" style="cursor:pointer;padding:6px;display:inline-block;" ${linkPopover}><i class="fa-solid fa-link"></i></span>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
+                const linkIcon=v.mapped?`<button type="button" class="btn btn-link text-shopee text-decoration-none shadow-none p-0" style="padding:6px!important;" ${linkPopover}><i class="fa-solid fa-link"></i></button>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-shopee" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
@@ -691,7 +691,7 @@ function renderTable(){
                     popContent = popContent.replace(/"/g, '&quot;');
                     linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                 }
-                const linkIcon=v.mapped?`<span role="button" class="text-shopee text-decoration-none" style="cursor:pointer;padding:6px;display:inline-block;" ${linkPopover}><i class="fa-solid fa-link"></i></span>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
+                const linkIcon=v.mapped?`<button type="button" class="btn btn-link text-shopee text-decoration-none shadow-none p-0" style="padding:6px!important;" ${linkPopover}><i class="fa-solid fa-link"></i></button>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-shopee" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
