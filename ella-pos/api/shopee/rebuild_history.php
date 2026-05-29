@@ -4,25 +4,17 @@ $db = new Database();
 $conn = $db->getConnection();
 
 echo "<pre>";
-echo "Starting perfect history rebuild on " . $_SERVER['HTTP_HOST'] . "...\n";
+echo "Starting Gap-Smoothing History Rebuild on " . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "...\n";
 
-$badTypes = "'shopee_sale', 'allocation_adjustment', 'shopee_sync'";
-
-// Find all pairs that have bad logs
-$stmt = $conn->query("
-    SELECT DISTINCT variation_id, store_id 
-    FROM stock_movements 
-    WHERE type IN ($badTypes)
-");
+// 1. Find all variation/store pairs
+$stmt = $conn->query("SELECT DISTINCT variation_id, store_id FROM stock_movements");
 $pairs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-echo "Found " . count($pairs) . " variation/store pairs with corrupted history.\n";
 
 $conn->beginTransaction();
 
 try {
+    $totalFixedPairs = 0;
     $totalFixedLogs = 0;
-    $totalDeletedLogs = 0;
 
     foreach($pairs as $pair) {
         $varId = $pair['variation_id'];
@@ -30,42 +22,59 @@ try {
 
         $movements = $conn->query("SELECT * FROM stock_movements WHERE variation_id = $varId AND store_id = $storeId ORDER BY created_at ASC, movement_id ASC")->fetchAll(PDO::FETCH_ASSOC);
 
-        $runningBadEffect = 0;
-        $badIds = [];
+        if (count($movements) === 0) continue;
+
+        $runningGap = 0;
+        $unfixedPrevNew = null;
+        $pairFixed = false;
+        $finalNewStock = 0;
 
         foreach($movements as $m) {
-            if (in_array($m['type'], ['shopee_sale', 'allocation_adjustment', 'shopee_sync'])) {
-                $runningBadEffect += (int)$m['quantity'];
-                $badIds[] = $m['movement_id'];
-            } else {
-                if ($runningBadEffect != 0) {
-                    $fixedPrev = (int)$m['previous_stock'] - $runningBadEffect;
-                    $fixedNew = (int)$m['new_stock'] - $runningBadEffect;
+            $actualPrev = (int)$m['previous_stock'];
+            $quantity = (int)$m['quantity'];
+            $actualNew = (int)$m['new_stock'];
 
-                    $conn->prepare("UPDATE stock_movements SET previous_stock = ?, new_stock = ? WHERE movement_id = ?")
-                         ->execute([$fixedPrev, $fixedNew, $m['movement_id']]);
-                    $totalFixedLogs++;
-                }
+            // Detect gaps using the UNFIXED (database) values
+            if ($unfixedPrevNew !== null && $actualPrev !== $unfixedPrevNew) {
+                // There is a gap between the last row's new_stock and this row's previous_stock
+                $gap = $actualPrev - $unfixedPrevNew;
+                $runningGap += $gap;
             }
+
+            if ($runningGap !== 0) {
+                // Correct this log by removing the accumulated running gap
+                $fixedPrev = $actualPrev - $runningGap;
+                $fixedNew = $actualNew - $runningGap;
+
+                $conn->prepare("UPDATE stock_movements SET previous_stock = ?, new_stock = ? WHERE movement_id = ?")
+                     ->execute([$fixedPrev, $fixedNew, $m['movement_id']]);
+                
+                $totalFixedLogs++;
+                $pairFixed = true;
+                $finalNewStock = $fixedNew;
+            } else {
+                $finalNewStock = $actualNew;
+            }
+
+            // Save the unfixed actualNew for the next row's gap detection
+            $unfixedPrevNew = $actualNew;
         }
 
-        if ($runningBadEffect != 0) {
-            $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = ?")
-                 ->execute([$runningBadEffect, $varId, $storeId]);
-            echo "VarID: $varId, Store: $storeId | Reversed $runningBadEffect from inventory.\n";
-        }
-
-        if (!empty($badIds)) {
-            $placeholders = str_repeat('?,', count($badIds) - 1) . '?';
-            $conn->prepare("DELETE FROM stock_movements WHERE movement_id IN ($placeholders)")->execute($badIds);
-            $totalDeletedLogs += count($badIds);
+        if ($pairFixed) {
+            $totalFixedPairs++;
+            
+            // Sync the inventory table to match the final mathematically correct stock
+            $conn->prepare("UPDATE inventory SET quantity = ? WHERE variation_id = ? AND store_id = ?")
+                 ->execute([$finalNewStock, $varId, $storeId]);
+                 
+            echo "VarID: $varId, Store: $storeId | Smoothed gaps. Final stock set to $finalNewStock\n";
         }
     }
 
     $conn->commit();
-    echo "\nPerfect rebuild completed successfully!\n";
-    echo "Deleted $totalDeletedLogs corrupted logs.\n";
-    echo "Fixed balances for $totalFixedLogs valid logs.\n";
+    echo "\nGap-Smoothing Rebuild completed successfully!\n";
+    echo "Fixed history gaps for $totalFixedPairs products.\n";
+    echo "Corrected balances for $totalFixedLogs individual logs.\n";
 
 } catch (Exception $e) {
     $conn->rollBack();
