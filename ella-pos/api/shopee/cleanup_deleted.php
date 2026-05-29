@@ -41,7 +41,7 @@ try {
     }
 
     // 3. Get all distinct Shopee Item IDs in our database
-    $stmt = $conn->prepare("SELECT DISTINCT shopee_item_id FROM shopee_products");
+    $stmt = $conn->prepare("SELECT DISTINCT shopee_item_id FROM shopee_product_mappings");
     $stmt->execute();
     $localItemIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
@@ -80,8 +80,6 @@ try {
             
             if (!isset($activeItems[$itemIdStr])) {
                 // Item has been completely deleted from Shopee!
-                $conn->prepare("DELETE FROM shopee_products WHERE shopee_item_id = ?")->execute([$itemIdStr]);
-                $conn->prepare("DELETE FROM shopee_product_variations WHERE shopee_item_id = ?")->execute([$itemIdStr]);
                 $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_item_id = ?")->execute([$itemIdStr]);
                 $deletedItemsCount++;
             } else {
@@ -117,7 +115,7 @@ try {
                 }
                 
                 // Fetch local models for this item
-                $varStmt = $conn->prepare("SELECT shopee_model_id FROM shopee_product_variations WHERE shopee_item_id = ? AND shopee_model_id > 0");
+                $varStmt = $conn->prepare("SELECT shopee_model_id FROM shopee_product_mappings WHERE shopee_item_id = ? AND shopee_model_id > 0");
                 $varStmt->execute([$iid]);
                 $localModels = $varStmt->fetchAll(PDO::FETCH_COLUMN);
                 
@@ -125,7 +123,6 @@ try {
                     $localModelIdStr = (string)$localModelId;
                     if (!in_array($localModelIdStr, $activeModelIds)) {
                         // Variation was deleted on Shopee!
-                        $conn->prepare("DELETE FROM shopee_product_variations WHERE shopee_model_id = ?")->execute([$localModelIdStr]);
                         $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_model_id = ?")->execute([$localModelIdStr]);
                         $deletedVariationsCount++;
                     }

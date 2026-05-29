@@ -180,6 +180,30 @@ $authShopId  = $_GET['shop_id'] ?? '';
                     </div>
                 </div>
             </div>
+
+            <!-- Ghost Product Cleanup -->
+            <div class="sp-card mt-4">
+                <div class="sp-card-header">
+                    <h5><i class="fa-solid fa-broom text-shopee me-2"></i>Ghost Product Cleanup</h5>
+                </div>
+                <div class="sp-card-body">
+                    <p class="small text-secondary mb-3">Detect and completely remove any products or variations from your POS that have been deleted in the Shopee Seller Centre.</p>
+                    
+                    <div id="cleanupStatus" class="mb-3" style="display:none">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold small" id="cleanupProgressLabel">Initializing...</span>
+                        </div>
+                        <div class="sp-progress-wrap mb-2">
+                            <div class="sp-progress-fill" id="cleanupProgressBar" style="width:0%;background:var(--shopee-primary)"></div>
+                        </div>
+                        <div class="alert alert-info py-2 small mb-0" id="cleanupLogText"><i class="fa-solid fa-spinner fa-spin me-2"></i>Starting cleanup...</div>
+                    </div>
+
+                    <button class="btn btn-outline-danger w-100" onclick="startCleanupSync()" id="btnCleanup">
+                        <i class="fa-solid fa-trash-can me-2"></i>Run Cleanup
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- RIGHT: Connection & Authorization -->
@@ -260,13 +284,6 @@ $authShopId  = $_GET['shop_id'] ?? '';
 
                     <button class="btn btn-shopee w-100" onclick="startSmartSync()" id="btnImport">
                         <i class="fa-solid fa-play me-2"></i>Start Sync
-                    </button>
-
-                    <hr class="text-secondary opacity-25 my-4">
-                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-broom text-shopee me-2"></i>Ghost Product Cleanup</h6>
-                    <p class="small text-secondary mb-3">Detect and completely remove any products or variations from your POS that have been deleted in the Shopee Seller Centre.</p>
-                    <button class="btn btn-outline-danger w-100" onclick="startCleanupSync()" id="btnCleanup">
-                        <i class="fa-solid fa-trash-can me-2"></i>Run Cleanup
                     </button>
                 </div>
             </div>
@@ -722,6 +739,201 @@ async function resetIntegrationData() {
             method: 'POST'
         });
         const data = await res.json();
+        const authSection = document.getElementById('authSection');
+        const tokenCard = document.getElementById('tokenCard');
+        const importCard = document.getElementById('importCard');
+
+        if (!data.success || !data.configured) {
+            banner.style.display = 'block';
+            document.getElementById('statusIcon').style.background = 'var(--sp-warning-bg)';
+            document.getElementById('statusIcon').style.color = 'var(--sp-warning)';
+            document.getElementById('statusIcon').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            document.getElementById('statusTitle').textContent = 'Not Configured';
+            document.getElementById('statusSub').textContent = 'Enter your Shopee Partner credentials to get started.';
+            document.getElementById('statusBadge').className = 'sp-badge sp-badge-warning';
+            document.getElementById('statusBadge').innerHTML = '<i class="fa-solid fa-gear"></i> Setup Required';
+
+            authSection.innerHTML = '<div class="sp-empty"><i class="fa-solid fa-plug d-block"></i><h5>No Credentials</h5><p>Save your Partner ID and Key first.</p></div>';
+            return;
+        }
+
+        // Configured — show status
+        banner.style.display = 'block';
+        document.getElementById('partnerId').value = data.partner_id;
+        if (data.partner_key) {
+            document.getElementById('partnerKey').value = data.partner_key;
+        }
+        if (data.shop_region) {
+            document.getElementById('shopRegion').value = data.shop_region;
+        }
+        if (document.getElementById('lowStockThreshold')) {
+            document.getElementById('lowStockThreshold').value = data.low_stock_threshold || 5;
+        }
+        if (document.getElementById('oosAlerts')) {
+            document.getElementById('oosAlerts').checked = data.out_of_stock_alerts == 1;
+        }
+        if (document.getElementById('bufferStock')) {
+            document.getElementById('bufferStock').value = data.buffer_stock || 0;
+        }
+        setEnv(data.environment);
+
+        if (data.authorized) {
+            document.getElementById('statusIcon').style.background = 'var(--sp-success-bg)';
+            document.getElementById('statusIcon').style.color = 'var(--sp-success)';
+            document.getElementById('statusIcon').innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            document.getElementById('statusTitle').textContent = 'Connected & Authorized';
+            document.getElementById('statusSub').textContent = `Shop ID: ${data.shop_id} · ${data.environment.toUpperCase()} mode · ${data.products_total} products imported`;
+            document.getElementById('statusBadge').className = 'sp-badge sp-badge-success';
+            document.getElementById('statusBadge').innerHTML = '<i class="fa-solid fa-circle" style="font-size:6px"></i> Connected';
+
+            authSection.innerHTML = `
+                <div class="d-flex align-items-center gap-3 p-3 rounded mb-3" style="background:var(--bg-body);border:1px solid var(--border-color)">
+                    <div class="sp-stat-icon" style="background:var(--shopee-light);color:var(--shopee-primary)"><i class="fa-solid fa-shop"></i></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">Shop ID: ${data.shop_id}</div>
+                        <div class="small text-success"><i class="fa-solid fa-circle me-1" style="font-size:6px"></i>Authorized</div>
+                    </div>
+                    <span class="sp-badge sp-badge-${data.environment === 'test' ? 'info' : 'success'}">${data.environment.toUpperCase()}</span>
+                </div>
+                <div class="small text-secondary">
+                    <strong>Mapped:</strong> ${data.products_mapped} · <strong>Unmapped:</strong> ${data.products_unmapped} · <strong>Total:</strong> ${data.products_total}
+                </div>
+            `;
+
+            // Token card
+            tokenCard.style.display = 'block';
+            document.getElementById('tokenAccessBadge').className = 'sp-badge sp-badge-' + (data.token_status === 'valid' ? 'success' : 'danger');
+            document.getElementById('tokenAccessBadge').textContent = data.token_status === 'valid' ? 'Valid' : 'Expired';
+            
+            // Access Token
+            const tokenVal = data.access_token || '';
+            document.getElementById('tokenValue').value = tokenVal;
+            
+            const activeStatusEl = document.getElementById('tokenActiveStatus');
+            const copyBtn = document.getElementById('copyTokenHeaderBtn');
+            
+            if (data.token_status === 'valid' && tokenVal) {
+                activeStatusEl.className = 'sp-badge sp-badge-success';
+                activeStatusEl.textContent = 'Active';
+                if (copyBtn) copyBtn.style.display = 'inline-block';
+            } else {
+                activeStatusEl.className = 'sp-badge sp-badge-danger';
+                activeStatusEl.textContent = 'Inactive';
+                if (copyBtn) copyBtn.style.display = 'none';
+            }
+
+            // Live Countdown Timer for Expiry
+            if (data.token_expires) {
+                rawTokenExpiresStr = data.token_expires;
+                tokenExpiresTime = new Date(data.token_expires.replace(/-/g, "/")).getTime();
+                startExpiryCountdown();
+            } else {
+                tokenExpiresTime = null;
+                rawTokenExpiresStr = "";
+                startExpiryCountdown();
+            }
+
+            document.getElementById('tokenEnvBadge').className = 'sp-badge sp-badge-' + (data.environment === 'test' ? 'info' : 'success');
+            document.getElementById('tokenEnvBadge').textContent = data.environment.toUpperCase();
+
+            // Import card and Reset card
+            importCard.style.display = 'block';
+            const resetCard = document.getElementById('resetCard');
+            if (resetCard) resetCard.style.display = 'block';
+
+        } else {
+            document.getElementById('statusIcon').style.background = 'var(--sp-info-bg)';
+            document.getElementById('statusIcon').style.color = 'var(--sp-info)';
+            document.getElementById('statusIcon').innerHTML = '<i class="fa-solid fa-key"></i>';
+            document.getElementById('statusTitle').textContent = 'Credentials Saved — Authorization Needed';
+            document.getElementById('statusSub').textContent = 'Click "Authorize Shop" to connect your Shopee store.';
+            document.getElementById('statusBadge').className = 'sp-badge sp-badge-info';
+            document.getElementById('statusBadge').innerHTML = 'Awaiting Auth';
+
+            authSection.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fa-solid fa-shop-lock text-secondary mb-3 d-block" style="font-size:2.5rem;opacity:0.4"></i>
+                    <h5 class="fw-bold">Authorize Your Shop</h5>
+                    <p class="small text-secondary mb-3">You'll be redirected to Shopee to grant access. After authorizing, you'll be sent back here automatically.</p>
+                    <button class="btn btn-shopee" onclick="authorizeShop()">
+                        <i class="fa-solid fa-right-to-bracket me-2"></i>Authorize with Shopee (${data.environment.toUpperCase()})
+                    </button>
+                </div>
+            `;
+        }
+
+    } catch (e) {
+        console.error('Failed to load Shopee config:', e);
+    }
+}
+
+async function refreshTokens(btnElement = null, isAuto = false) {
+    const btn = btnElement || (typeof event !== 'undefined' && event ? event.currentTarget : null);
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Refreshing...';
+    }
+
+    try {
+        if (isAuto) {
+            EllaToast.warning('Shopee Access Token is expiring soon. Automatically refreshing in the background...');
+        }
+
+        const res = await fetch(`${window.BASE_URL}api/shopee/refresh_token.php`);
+        const data = await res.json();
+        
+        if (data.success) {
+            if (isAuto) {
+                EllaToast.success('Shopee Access Token has been automatically refreshed!');
+            } else {
+                EllaToast.success(data.message);
+            }
+            isAutoRefreshing = false;
+            loadStatus(); // Reload the status to show new expiration
+        } else {
+            EllaToast.error(data.error || 'Failed to refresh tokens');
+            if (isAuto) {
+                // If auto-refresh fails, allow another attempt after 2 minutes to prevent rapid looping
+                setTimeout(() => { isAutoRefreshing = false; }, 120000);
+            }
+        }
+    } catch (e) {
+        EllaToast.error('Network error: ' + e.message);
+        if (isAuto) {
+            setTimeout(() => { isAutoRefreshing = false; }, 120000);
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate me-2"></i>Refresh Tokens';
+        }
+    }
+}
+
+function copyAccessToken() {
+    const val = document.getElementById('tokenValue').value;
+    if (!val) {
+        EllaToast.error('No access token available to copy.');
+        return;
+    }
+    navigator.clipboard.writeText(val);
+    EllaToast.success('Access token copied to clipboard!');
+}
+
+async function resetIntegrationData() {
+    if (!confirm('WARNING: Are you absolutely sure you want to delete all cached Shopee products, variants, mapping history, allocations, error logs, and sync logs? This action is permanent and cannot be undone.')) {
+        return;
+    }
+    
+    const btn = document.getElementById('btnResetData');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Wiping Data...';
+    
+    try {
+        const res = await fetch(`${window.BASE_URL}api/shopee/reset_integration.php`, {
+            method: 'POST'
+        });
+        const data = await res.json();
         if (data.success) {
             EllaToast.success(data.message);
             setTimeout(() => {
@@ -747,10 +959,10 @@ async function startCleanupSync() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Cleaning up...';
     
-    const logText = document.getElementById('syncLogText');
-    const status = document.getElementById('importStatus');
-    const progBar = document.getElementById('syncProgressBar');
-    const progLbl = document.getElementById('syncProgressLabel');
+    const logText = document.getElementById('cleanupLogText');
+    const status = document.getElementById('cleanupStatus');
+    const progBar = document.getElementById('cleanupProgressBar');
+    const progLbl = document.getElementById('cleanupProgressLabel');
     
     status.style.display = 'block';
     progBar.style.width = '50%';
@@ -785,8 +997,10 @@ async function startCleanupSync() {
         logText.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i>${e.message}`;
         EllaToast.error('Network error: ' + e.message);
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Run Cleanup';
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-trash-can me-2"></i>Run Cleanup';
+        }
     }
 }
 
