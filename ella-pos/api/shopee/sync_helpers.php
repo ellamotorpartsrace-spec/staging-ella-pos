@@ -48,23 +48,18 @@ if (!function_exists('propagateStockToPos')) {
             $skuStmt->execute([$posProductId]);
             $posSku = $skuStmt->fetchColumn();
             
-            if (!empty(trim((string)$posSku))) {
-                $stmtSum = $conn->prepare("
-                    SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
-                    FROM shopee_product_mappings m
-                    LEFT JOIN product_units u ON m.pos_unit_id = u.id
-                    WHERE m.matched_pos_sku = ? AND m.mapping_status IN ('auto','manual')
-                ");
-                $stmtSum->execute([$posSku]);
-            } else {
-                $stmtSum = $conn->prepare("
-                    SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
-                    FROM shopee_product_mappings m
-                    LEFT JOIN product_units u ON m.pos_unit_id = u.id
-                    WHERE m.pos_product_id = ? AND (m.matched_pos_sku IS NULL OR m.matched_pos_sku = '') AND m.mapping_status IN ('auto','manual')
-                ");
-                $stmtSum->execute([$posProductId]);
+            if (empty($posSku)) {
+                $posSku = '';
             }
+            
+            $stmtSum = $conn->prepare("
+                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
+                FROM shopee_product_mappings m
+                LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                WHERE (m.pos_product_id = ? OR (m.matched_pos_sku = ? AND m.matched_pos_sku != ''))
+                  AND m.mapping_status IN ('auto','manual')
+            ");
+            $stmtSum->execute([$posProductId, $posSku]);
             $totalShopeeStock = (int)$stmtSum->fetchColumn();
 
             // 1. Get previous stock in POS online store (store_id = 2)

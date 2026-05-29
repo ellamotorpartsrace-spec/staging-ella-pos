@@ -146,25 +146,21 @@ try {
     // 3. Compute POS online stock = SUM of all (shopee_stock * multiplier) sharing the same SKU (or same POS ID if SKU is empty)
     //    This converts all unit-based allocations back to base pieces for POS inventory deduction
     if (!empty($item['pos_product_id'])) {
-        $matchedSku = $item['matched_pos_sku'] ?? '';
-        if (!empty(trim((string)$matchedSku))) {
-            $posSku = trim((string)$matchedSku);
-            $sumStmt = $conn->prepare("
-                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
-                FROM shopee_product_mappings m
-                LEFT JOIN product_units u ON m.pos_unit_id = u.id
-                WHERE m.matched_pos_sku = ? AND m.mapping_status IN ('auto','manual')
-            ");
-            $sumStmt->execute([$posSku]);
-        } else {
-            $sumStmt = $conn->prepare("
-                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
-                FROM shopee_product_mappings m
-                LEFT JOIN product_units u ON m.pos_unit_id = u.id
-                WHERE m.pos_product_id = ? AND (m.matched_pos_sku IS NULL OR m.matched_pos_sku = '') AND m.mapping_status IN ('auto','manual')
-            ");
-            $sumStmt->execute([$item['pos_product_id']]);
+        $posSku = trim((string)($item['matched_pos_sku'] ?? ''));
+        if (empty($posSku)) {
+            $skuStmt = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
+            $skuStmt->execute([$item['pos_product_id']]);
+            $posSku = trim((string)$skuStmt->fetchColumn());
         }
+
+        $sumStmt = $conn->prepare("
+            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
+            FROM shopee_product_mappings m
+            LEFT JOIN product_units u ON m.pos_unit_id = u.id
+            WHERE (m.pos_product_id = ? OR (m.matched_pos_sku = ? AND m.matched_pos_sku != ''))
+              AND m.mapping_status IN ('auto','manual')
+        ");
+        $sumStmt->execute([$item['pos_product_id'], $posSku]);
         $newOnlineStock = (int)$sumStmt->fetchColumn();
         
         // Cap at total stock
