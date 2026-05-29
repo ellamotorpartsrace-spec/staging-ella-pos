@@ -47,12 +47,13 @@ if (!$product) {
 // 3. Fetch History (Stock Movements)
 // We JOIN with 'users' to see WHO did the action. 
 // IMPORTANT: Filter by store_id = 1 to ONLY show POS physical stock history!
+// ORDER BY movement_id DESC as secondary sort to fix same-second logs
 $sqlHist = "
     SELECT m.*, u.username, u.full_name
     FROM stock_movements m
     LEFT JOIN users u ON m.created_by = u.id
     WHERE m.variation_id = :id AND m.store_id = 1
-    ORDER BY m.created_at DESC
+    ORDER BY m.created_at DESC, m.movement_id DESC
     LIMIT 100
 ";
 $stmtHist = $conn->prepare($sqlHist);
