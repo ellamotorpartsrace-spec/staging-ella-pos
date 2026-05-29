@@ -46,11 +46,14 @@ $statsStmt = $conn->query("SELECT error_type, COUNT(*) as cnt FROM shopee_error_
 $statsRows = $statsStmt->fetchAll();
 
 $missingCount = 0;
+$unmatchedCount = 0;
 $otherOpenCount = 0;
 
 foreach ($statsRows as $row) {
     if ($row['error_type'] === 'missing_sku') {
         $missingCount += $row['cnt'];
+    } elseif ($row['error_type'] === 'unmapped') {
+        $unmatchedCount += $row['cnt'];
     } elseif ($row['error_type'] !== 'duplicate_sku') {
         $otherOpenCount += $row['cnt'];
     }
@@ -60,7 +63,7 @@ foreach ($statsRows as $row) {
 $dupStmt = $conn->query("SELECT COUNT(DISTINCT sku) FROM shopee_error_logs WHERE status = 'open' AND error_type = 'duplicate_sku'");
 $duplicateCount = (int)$dupStmt->fetchColumn();
 
-$totalOpen = $missingCount + $duplicateCount + $otherOpenCount;
+$totalOpen = $missingCount + $duplicateCount + $unmatchedCount + $otherOpenCount;
 
 // Get resolved issues count
 $resolvedStmt = $conn->query("SELECT COUNT(*) FROM shopee_error_logs WHERE status = 'resolved'");
@@ -151,7 +154,7 @@ require_once '../../includes/sidebar.php';
 
     <!-- Premium KPI Cards -->
     <div class="row g-3 mb-4">
-        <div class="col-md-3 col-sm-6">
+        <div class="col-xl col-md-4 col-sm-6">
             <div class="sp-stat-card">
                 <div class="sp-stat-icon" style="background: var(--sp-danger-bg); color: var(--sp-danger);">
                     <i class="fa-solid fa-triangle-exclamation"></i>
@@ -162,7 +165,7 @@ require_once '../../includes/sidebar.php';
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6">
+        <div class="col-xl col-md-4 col-sm-6">
             <div class="sp-stat-card">
                 <div class="sp-stat-icon" style="background: var(--sp-warning-bg); color: var(--sp-warning);">
                     <i class="fa-solid fa-xmark"></i>
@@ -173,7 +176,18 @@ require_once '../../includes/sidebar.php';
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6">
+        <div class="col-xl col-md-4 col-sm-6">
+            <div class="sp-stat-card">
+                <div class="sp-stat-icon" style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a;">
+                    <i class="fa-solid fa-link-slash"></i>
+                </div>
+                <div>
+                    <div class="sp-stat-value"><?= $unmatchedCount ?></div>
+                    <div class="sp-stat-label">Unmatched SKUs</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-6 col-sm-6">
             <div class="sp-stat-card">
                 <div class="sp-stat-icon" style="background: var(--sp-info-bg); color: var(--sp-info);">
                     <i class="fa-solid fa-clone"></i>
@@ -184,7 +198,7 @@ require_once '../../includes/sidebar.php';
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6">
+        <div class="col-xl col-md-6 col-sm-6">
             <div class="sp-stat-card">
                 <div class="sp-stat-icon" style="background: var(--sp-success-bg); color: var(--sp-success);">
                     <i class="fa-solid fa-circle-check"></i>
@@ -334,6 +348,12 @@ require_once '../../includes/sidebar.php';
                                                 <div class="fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Duplicated SKU</div>
                                                 <span class="sp-sku-code text-danger mt-1" style="width: fit-content;"><i class="fa-solid fa-clone me-1"></i><?= htmlspecialchars($e['sku']) ?></span>
                                                 <div class="text-muted small mt-1" style="font-size: 0.7rem; line-height: 1.3;">Shared by the <?= count($dupItems) ?> listings shown on the left. Click action to resolve.</div>
+                                            <?php elseif ($e['error_type'] === 'unmapped'): ?>
+                                                <div class="small text-secondary mb-1">Shopee SKU:</div>
+                                                <span class="sp-sku-code text-dark" style="width: fit-content;"><i class="fa-solid fa-barcode me-1"></i><?= htmlspecialchars($e['sku']) ?></span>
+                                                <?php if (!empty($e['shopee_variation_name'])): ?>
+                                                    <div class="text-muted small mt-2"><i class="fa-solid fa-tags me-1"></i><?= htmlspecialchars($e['shopee_variation_name']) ?></div>
+                                                <?php endif; ?>
                                             <?php else: ?>
                                                 <?php if (!empty($e['shopee_variation_name'])): ?>
                                                     <div class="small text-secondary">Variation Name:</div>
