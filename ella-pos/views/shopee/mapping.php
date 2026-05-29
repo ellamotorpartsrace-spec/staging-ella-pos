@@ -605,7 +605,7 @@ function renderTable(){
                     popContent = popContent.replace(/"/g, '&quot;');
                     linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                 }
-                const linkIcon=v.mapped?`<a href="javascript:void(0)" role="button" class="text-shopee text-decoration-none" style="cursor:pointer;padding:6px;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
+                const linkIcon=v.mapped?`<span role="button" class="text-shopee text-decoration-none" style="cursor:pointer;padding:6px;display:inline-block;" ${linkPopover}><i class="fa-solid fa-link"></i></span>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-shopee" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
@@ -691,7 +691,7 @@ function renderTable(){
                     popContent = popContent.replace(/"/g, '&quot;');
                     linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                 }
-                const linkIcon=v.mapped?`<a href="javascript:void(0)" role="button" class="text-shopee text-decoration-none" style="cursor:pointer;padding:6px;" ${linkPopover}><i class="fa-solid fa-link"></i></a>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
+                const linkIcon=v.mapped?`<span role="button" class="text-shopee text-decoration-none" style="cursor:pointer;padding:6px;display:inline-block;" ${linkPopover}><i class="fa-solid fa-link"></i></span>`:`<i class="fa-solid fa-link-slash text-secondary" style="opacity:.3"></i>`;
                 const actionBtn = v.mapped 
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-shopee" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
@@ -737,14 +737,6 @@ function renderTable(){
 
     document.getElementById('paginationStatus').textContent = `Page ${currentPage} of ${totalPages} (${totalItems} products)`;
     renderPaginationButtons(totalItems, totalPages);
-
-    // Initialize Popovers for newly rendered elements
-    if (typeof bootstrap !== 'undefined') {
-        const popoverTriggerList = document.querySelectorAll('#mapTableBody [data-bs-toggle="popover"]');
-        [...popoverTriggerList].forEach(el => {
-            new bootstrap.Popover(el, { html: true, trigger: 'hover', placement: 'top' });
-        });
-    }
 }
 
 function renderPaginationButtons(totalItems, totalPages) {
