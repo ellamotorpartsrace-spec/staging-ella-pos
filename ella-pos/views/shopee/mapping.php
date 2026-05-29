@@ -401,10 +401,16 @@ function formatPosChoiceBadge(p) {
     if (!p) return '';
     const sku = escHtml(p.sku || 'No SKU');
     if (p.item_type === 'bundle') {
-        return `<span class="sp-badge sp-badge-info">${sku}</span><span class="unit-result-badge ms-1"><i class="fa-solid fa-boxes-stacked"></i>Bundle Set${p.component_count ? ` (${p.component_count} items)` : ''}</span>`;
+        return `<div class="d-flex flex-column align-items-start gap-1">
+                    <span class="sp-badge sp-badge-info">${sku}</span>
+                    <span class="unit-result-badge" style="white-space:nowrap"><i class="fa-solid fa-boxes-stacked"></i>Bundle Set${p.component_count ? ` (${p.component_count} items)` : ''}</span>
+                </div>`;
     }
     if (p.item_type === 'unit') {
-        return `<span class="sp-badge sp-badge-success">${sku}</span><span class="unit-result-badge ms-1"><i class="fa-solid fa-boxes-stacked"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1}</span>`;
+        return `<div class="d-flex flex-column align-items-start gap-1">
+                    <span class="sp-badge sp-badge-success">${sku}</span>
+                    <span class="unit-result-badge" style="white-space:nowrap"><i class="fa-solid fa-boxes-stacked"></i>${escHtml(p.unit_name || 'Unit')} x${p.multiplier || 1}</span>
+                </div>`;
     }
     return `<span class="sp-badge sp-badge-success">${sku}</span>`;
 }
