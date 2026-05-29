@@ -136,20 +136,25 @@ function runConflictDetection($conn) {
         $markActiveOrInsert('duplicate_sku', null, null, $row['match_sku'], $msg);
     }
 
-    // 3. Detect Unmapped SKUs (Has SKU, but not matched to POS)
+    // 3. Detect Unmapped SKUs (Has SKU, but not matched to POS AND SKU does not exist in POS)
+    // We use a LEFT JOIN to product_variations to exclude "Suggested Matches" (where SKU exists in POS but isn't linked yet)
     $stmt = $conn->query("
-        SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_parent_sku
-        FROM shopee_product_mappings 
-        WHERE has_variation = 0 AND shopee_parent_sku != '' AND shopee_parent_sku IS NOT NULL
-        AND pos_product_id IS NULL
+        SELECT m.id, m.shopee_item_id, m.shopee_model_id, m.shopee_product_name, m.shopee_variation_name, m.shopee_parent_sku
+        FROM shopee_product_mappings m
+        LEFT JOIN product_variations pv ON m.shopee_parent_sku = pv.sku
+        WHERE m.has_variation = 0 AND m.shopee_parent_sku != '' AND m.shopee_parent_sku IS NOT NULL
+        AND m.pos_product_id IS NULL
+        AND pv.sku IS NULL
     ");
     $unmappedParents = $stmt->fetchAll();
 
     $stmt = $conn->query("
-        SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku
-        FROM shopee_product_mappings 
-        WHERE has_variation = 1 AND shopee_variation_sku != '' AND shopee_variation_sku IS NOT NULL
-        AND pos_product_id IS NULL
+        SELECT m.id, m.shopee_item_id, m.shopee_model_id, m.shopee_product_name, m.shopee_variation_name, m.shopee_variation_sku
+        FROM shopee_product_mappings m
+        LEFT JOIN product_variations pv ON m.shopee_variation_sku = pv.sku
+        WHERE m.has_variation = 1 AND m.shopee_variation_sku != '' AND m.shopee_variation_sku IS NOT NULL
+        AND m.pos_product_id IS NULL
+        AND pv.sku IS NULL
     ");
     $unmappedVars = $stmt->fetchAll();
 
