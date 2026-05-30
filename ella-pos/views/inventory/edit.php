@@ -29,7 +29,13 @@ $sql = "
         p.product_id, p.product_name, p.brand_name, p.category_id, p.description, p.image_path, p.created_at,
         v.variation_id, v.variation_name, v.sku, v.barcode, v.unit_type,
         v.price_capital, v.price_retail, v.price_wholesale, v.price_dealer, v.low_stock_threshold, v.status,
-        COALESCE(inv.total_qty, 0) as current_stock
+        COALESCE(inv.total_qty, 0) as current_stock,
+        (
+            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+            FROM shopee_product_mappings m
+            LEFT JOIN product_units u ON m.pos_unit_id = u.id
+            WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
+        ) as shopee_allocated
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN (
@@ -50,6 +56,9 @@ if (!$product) {
     require_once '../../includes/footer.php';
     exit;
 }
+
+$physical_stock = max(0, $product['current_stock'] - $product['shopee_allocated']);
+
 
 // 3. Fetch Categories
 $cats = $conn->query("SELECT * FROM categories ORDER BY category_name ASC")->fetchAll();
@@ -313,7 +322,7 @@ if (!$creatorInfo) {
                                             </div>
                                             <div class="flex-grow-1">
                                                 <label class="form-label fw-bold mb-0 small text-uppercase text-muted">Current Inventory</label>
-                                                <div class="h4 mb-0 fw-bold text-dark"><?= $product['current_stock'] ?> <small class="text-muted fw-normal"><?= $product['unit_type'] ?></small></div>
+                                                <div class="h4 mb-0 fw-bold text-dark" title="Total: <?= $product['current_stock'] ?> | Online: <?= $product['shopee_allocated'] ?>"><?= $physical_stock ?> <small class="text-muted fw-normal"><?= $product['unit_type'] ?></small></div>
                                             </div>
                                         </div>
                                         

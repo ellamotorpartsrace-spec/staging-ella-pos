@@ -26,7 +26,13 @@ if (!empty($search)) {
     $sqlSearch = "
         SELECT v.variation_id, v.variation_name, v.sku, v.barcode, 
                p.product_name, p.brand_name, p.image_path,
-               COALESCE(inv.total_qty, 0) as current_stock
+               COALESCE(inv.total_qty, 0) as current_stock,
+               (
+                   SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+                   FROM shopee_product_mappings m
+                   LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                   WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
+               ) as shopee_allocated
         FROM product_variations v
         JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
@@ -47,7 +53,13 @@ if (!empty($search)) {
 if (isset($_GET['id'])) {
     $sqlSelect = "
         SELECT v.*, p.product_name, p.brand_name, p.image_path,
-               COALESCE(inv.total_qty, 0) as current_stock
+               COALESCE(inv.total_qty, 0) as current_stock,
+               (
+                   SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+                   FROM shopee_product_mappings m
+                   LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                   WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
+               ) as shopee_allocated
         FROM product_variations v
         JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
@@ -372,7 +384,10 @@ if (isset($_GET['id'])) {
                                     <?= htmlspecialchars($selected_product['brand_name']) ?> -
                                     <?= htmlspecialchars($selected_product['variation_name']) ?>
                                 </div>
-                                <div class="badge bg-primary mt-1">Current Stock: <?= $selected_product['current_stock'] ?>
+                                <?php
+                                $phys = max(0, $selected_product['current_stock'] - $selected_product['shopee_allocated']);
+                                ?>
+                                <div class="badge bg-primary mt-1" title="Total: <?= $selected_product['current_stock'] ?> | Online: <?= $selected_product['shopee_allocated'] ?>">Current Stock: <?= $phys ?>
                                 </div>
                             </div>
                         </div>
@@ -387,7 +402,7 @@ if (isset($_GET['id'])) {
                         <form action="../../api/inventory/process_adjustment.php" method="POST" id="adjustmentForm"
                             onsubmit="return validateForm()">
                             <input type="hidden" name="variation_id" value="<?= $selected_product['variation_id'] ?>">
-                            <input type="hidden" name="current_stock" value="<?= $selected_product['current_stock'] ?>">
+                            <input type="hidden" name="current_stock" value="<?= $phys ?>">
 
                             <!-- Hidden input for final signed quantity -->
                             <input type="hidden" name="quantity_adjustment" id="final_adjustment">
@@ -421,7 +436,7 @@ if (isset($_GET['id'])) {
                                     <div class="p-3 adjust-result-box d-flex justify-content-between align-items-center">
                                         <span class="text-muted">Resulting Stock:</span>
                                         <span class="h4 fw-bold mb-0"
-                                            id="preview_stock"><?= $selected_product['current_stock'] ?></span>
+                                            id="preview_stock"><?= $phys ?></span>
                                     </div>
                                 </div>
 
@@ -471,7 +486,7 @@ if (isset($_GET['id'])) {
     function updateUI() {
         const action = document.querySelector('input[name="action_type"]:checked').value;
         const qtyInput = document.getElementById('input_qty');
-        const currentStock = <?= $selected_product['current_stock'] ?? 0 ?>;
+        const currentStock = <?= $phys ?? 0 ?>;
         const qty = parseInt(qtyInput.value) || 0;
 
         let newStock = currentStock;
@@ -505,7 +520,7 @@ if (isset($_GET['id'])) {
     function validateForm() {
         const action = document.querySelector('input[name="action_type"]:checked').value;
         const qty = parseInt(document.getElementById('input_qty').value) || 0;
-        const currentStock = <?= $selected_product['current_stock'] ?? 0 ?>;
+        const currentStock = <?= $phys ?? 0 ?>;
 
         if (qty <= 0) {
             EllaToast.warning("Please enter a valid quantity greater than 0.");
@@ -626,7 +641,10 @@ if (isset($_GET['id'])) {
                             ${p.barcode ? `<span class="adjust-chip"><i class="fa-solid fa-barcode"></i>${highlight(p.barcode)}</span>` : ''}
                         </div>
                     </div>
-                    <span class="adjust-stock-badge">Stock: ${p.current_stock}</span>
+                    ${(() => {
+                        const phys = Math.max(0, p.current_stock - (p.shopee_allocated || 0));
+                        return `<span class="adjust-stock-badge" title="Total: ${p.current_stock} | Online: ${p.shopee_allocated || 0}">Stock: ${phys}</span>`;
+                    })()}
                 </a>`;
             }).join('');
             container.style.display = 'block';

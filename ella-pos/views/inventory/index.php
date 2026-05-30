@@ -399,12 +399,12 @@ $products = $stmt->fetchAll();
                                         $phys = max(0, $qty - $online);
                                         $thresh = $row['low_stock_threshold'];
 
-                                        if ($qty == 0) {
-                                            echo '<span class="badge bg-danger-subtle text-danger border border-danger"><i class="fa-solid fa-circle-xmark"></i> Out</span>';
+                                        if ($phys == 0) {
+                                            echo '<span class="badge bg-danger-subtle text-danger border border-danger" title="Total: ' . $qty . ' | Online: ' . $online . '"><i class="fa-solid fa-circle-xmark"></i> Out</span>';
                                         } elseif ($phys <= $thresh) {
-                                            echo '<span class="badge bg-warning-subtle text-dark border border-warning" title="Physical: ' . $phys . ' | Online: ' . $online . '"><i class="fa-solid fa-triangle-exclamation"></i> Low: ' . $qty . '</span>';
+                                            echo '<span class="badge bg-warning-subtle text-dark border border-warning" title="Total: ' . $qty . ' | Online: ' . $online . '"><i class="fa-solid fa-triangle-exclamation"></i> Low: ' . $phys . '</span>';
                                         } else {
-                                            echo '<span class="badge bg-success-subtle text-success border border-success" title="Physical: ' . $phys . ' | Online: ' . $online . '">' . $qty . ' ' . $row['unit_type'] . '</span>';
+                                            echo '<span class="badge bg-success-subtle text-success border border-success" title="Total: ' . $qty . ' | Online: ' . $online . '">' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
                                         <?php if ($online > 0 || !empty($row['is_shopee_mapped'])): ?>
@@ -508,15 +508,12 @@ $products = $stmt->fetchAll();
                                     class="d-flex justify-content-between align-items-center pt-2 border-top mobile-card-footer">
                                     <div class="flex-shrink-0">
                                         <?php
-                                        $online = !empty($row['is_shopee_mapped']) ? $row['shopee_allocated'] : ($row['online_stock'] ?? 0);
-                                        $phys = max(0, $qty - $online);
-
-                                        if ($qty == 0) {
-                                            echo '<span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Out of Stock</span>';
+                                        if ($phys == 0) {
+                                            echo '<span class="badge bg-danger-subtle text-danger" title="Total: ' . $qty . ' | Online: ' . $online . '"><i class="fa-solid fa-circle-xmark me-1"></i>Out of Stock</span>';
                                         } elseif ($phys <= $row['low_stock_threshold']) {
-                                            echo '<span class="badge bg-warning-subtle text-dark"><i class="fa-solid fa-triangle-exclamation me-1"></i>Low: ' . $qty . '</span>';
+                                            echo '<span class="badge bg-warning-subtle text-dark border border-warning" title="Total: ' . $qty . ' | Online: ' . $online . '"><i class="fa-solid fa-triangle-exclamation me-1"></i>Low: ' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         } else {
-                                            echo '<span class="badge bg-success-subtle text-success">' . $qty . ' ' . $row['unit_type'] . '</span>';
+                                            echo '<span class="badge bg-success-subtle text-success border border-success" title="Total: ' . $qty . ' | Online: ' . $online . '">' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
                                     </div>
@@ -819,14 +816,15 @@ $products = $stmt->fetchAll();
                 return hlText;
             };
 
-            let stockBadge = '';
+            let stockHtml = '';
             let onlineBadge = '';
-            if (qty === 0) {
-                stockBadge = '<span class="badge bg-danger-subtle text-danger border border-danger"><i class="fa-solid fa-circle-xmark"></i> Out</span>';
+            const unit = this.escapeHtml(row.unit_type || '');
+            if (phys === 0) {
+                stockHtml = `<span class="badge bg-danger-subtle text-danger border border-danger" title="Total: ${qty} | Online: ${online}"><i class="fa-solid fa-circle-xmark"></i> Out</span>`;
             } else if (phys <= thresh) {
-                stockBadge = `<span class="badge bg-warning-subtle text-dark border border-warning" title="Physical: ${phys} | Online: ${online}"><i class="fa-solid fa-triangle-exclamation"></i> Low: ${qty}</span>`;
+                stockHtml = `<span class="badge bg-warning-subtle text-dark border border-warning" title="Total: ${qty} | Online: ${online}"><i class="fa-solid fa-triangle-exclamation"></i> Low: ${phys}</span>`;
             } else {
-                stockBadge = `<span class="badge bg-success-subtle text-success border border-success" title="Physical: ${phys} | Online: ${online}">${qty} ${this.escapeHtml(row.unit_type || '')}</span>`;
+                stockHtml = `<span class="badge bg-success-subtle text-success border border-success" title="Total: ${qty} | Online: ${online}">${phys} ${unit}</span>`;
             }
 
             if (online > 0 || row.is_shopee_mapped == 1) {
