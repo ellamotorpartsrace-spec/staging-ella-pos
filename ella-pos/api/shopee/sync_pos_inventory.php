@@ -44,6 +44,12 @@ try {
         
         $physicalStock = $totalStock - $shopeeAllocated;
 
+        // Get current physical stock before updating to log movement
+        $currStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
+        $currStmt->execute([$varId]);
+        $currentPhysical = $currStmt->fetchColumn();
+        if ($currentPhysical === false) $currentPhysical = 0;
+
         // Force store_id = 1 to physicalStock
         $upd1 = $conn->prepare("
             INSERT INTO inventory (variation_id, store_id, quantity) 
@@ -60,6 +66,16 @@ try {
         ");
         $upd2->execute([$varId, $shopeeAllocated]);
         
+        // If physical stock changed, log it to fix history balance
+        if ($currentPhysical != $physicalStock) {
+            $diff = $physicalStock - $currentPhysical;
+            $logStmt = $conn->prepare("
+                INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by)
+                VALUES (1, ?, 'shopee_balance_sync', ?, ?, ?, 'SYNC-ADJ', 'Shopee Allocation Sync', 1)
+            ");
+            $logStmt->execute([$varId, $diff, $currentPhysical, $physicalStock]);
+        }
+
         $fixedCount++;
     }
 
