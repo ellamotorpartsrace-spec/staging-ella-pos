@@ -356,10 +356,10 @@ $products = $stmt->fetchAll();
                                                 <?php endif; ?>
                                             </div>
                                             <div>
-                                                <div class="fw-bold mb-0 text-wrap" style="color: var(--text-primary); line-height: 1.4;">
+                                                <div class="fw-bold mb-0 text-wrap" style="color: var(--text-primary); line-height: 1.4; max-width: 550px;">
                                                     <?= htmlspecialchars($row['product_name'] ?? '') ?>
                                                 </div>
-                                                <small class="text-muted text-wrap d-block">
+                                                <small class="text-muted text-wrap d-block" style="max-width: 550px;">
                                                     <?= htmlspecialchars($row['brand_name'] ?? '') ?> |
                                                     <span
                                                         class="text-primary"><?= htmlspecialchars($row['variation_name'] ?? '') ?></span>
@@ -857,9 +857,9 @@ $products = $stmt->fetchAll();
                                  ${imgHtml}
                              </div>
                              <div>
-                                 <div class="fw-bold mb-0 text-wrap" style="color: var(--text-primary); line-height: 1.4;">
+                                 <div class="fw-bold mb-0 text-wrap" style="color: var(--text-primary); line-height: 1.4; max-width: 550px;">
                                      ${highlight(row.product_name || '')}</div>
-                                 <small class="text-muted text-wrap d-block">
+                                 <small class="text-muted text-wrap d-block" style="max-width: 550px;">
                                      ${highlight(row.brand_name || '')} |
                                      <span class="text-primary">${highlight(row.variation_name || '')}</span>
                                  </small>
