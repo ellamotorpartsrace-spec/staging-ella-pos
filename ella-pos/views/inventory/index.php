@@ -1,6 +1,9 @@
 <?php
+$__start = microtime(true);
+file_put_contents('load_profile.log', "Start index.php\n", FILE_APPEND);
 // views/inventory/index.php
 require_once '../../config/config.php';
+file_put_contents('load_profile.log', "After config.php: " . round((microtime(true) - $__start)*1000, 2) . "ms\n", FILE_APPEND);
 require_once '../../includes/auth.php';
 
 // Auth Check
@@ -12,6 +15,7 @@ if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_arra
 
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
+file_put_contents('load_profile.log', "After sidebar.php: " . round((microtime(true) - $__start)*1000, 2) . "ms\n", FILE_APPEND);
 require_once '../../config/database.php';
 
 $db = new Database();
@@ -79,6 +83,7 @@ $sqlStats = "
 $stmtStats = $conn->prepare($sqlStats);
 $stmtStats->execute($params);
 $stats = $stmtStats->fetch(PDO::FETCH_ASSOC);
+file_put_contents('load_profile.log', "After sqlStats: " . round((microtime(true) - $__start)*1000, 2) . "ms\n", FILE_APPEND);
 
 $total_items = $stats['total_items'] ?? 0;
 $total_asset_value = $stats['total_asset_value'] ?? 0;
@@ -106,6 +111,7 @@ $sqlProducts = "
 $stmt = $conn->prepare($sqlProducts);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
+file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(true) - $__start)*1000, 2) . "ms\n", FILE_APPEND);
 ?>
 
 <style>
