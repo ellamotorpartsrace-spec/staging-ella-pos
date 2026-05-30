@@ -408,9 +408,8 @@ $products = $stmt->fetchAll();
                                         }
                                         ?>
                                         <?php if ($online > 0 || !empty($row['is_shopee_mapped'])): ?>
-                                            <div class="mt-1 d-flex flex-wrap gap-1">
-                                                <span class="badge bg-light text-secondary border px-2 py-1" style="font-weight: 600;"><i class="fa-solid fa-box me-1"></i>Total: <?= $qty ?></span>
-                                                <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-weight: 600;"><i class="fa-solid fa-globe me-1"></i>Online: <?= $online ?></span>
+                                            <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
+                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -517,9 +516,8 @@ $products = $stmt->fetchAll();
                                         }
                                         ?>
                                         <?php if ($online > 0 || !empty($row['is_shopee_mapped'])): ?>
-                                            <div class="mt-2 d-flex flex-wrap gap-1">
-                                                <span class="badge bg-light text-secondary border px-2 py-1" style="font-weight: 600;"><i class="fa-solid fa-box me-1"></i>Total: <?= $qty ?></span>
-                                                <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-weight: 600;"><i class="fa-solid fa-globe me-1"></i>Online: <?= $online ?></span>
+                                            <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
+                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -834,9 +832,8 @@ $products = $stmt->fetchAll();
 
             if (online > 0 || row.is_shopee_mapped == 1) {
                 stockHtml += `
-                    <div class="mt-1 d-flex flex-wrap gap-1">
-                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-weight: 600;"><i class="fa-solid fa-box me-1"></i>Total: ${qty}</span>
-                        <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-weight: 600;"><i class="fa-solid fa-globe me-1"></i>Online: ${online}</span>
+                    <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
+                        Total: ${qty} <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> ${online}</span>
                     </div>
                 `;
             }
@@ -945,9 +942,8 @@ $products = $stmt->fetchAll();
 
             if (online > 0 || row.is_shopee_mapped == 1) {
                 stockBadge += `
-                    <div class="mt-2 d-flex flex-wrap gap-1">
-                        <span class="badge bg-light text-secondary border px-2 py-1" style="font-weight: 600;"><i class="fa-solid fa-box me-1"></i>Total: ${qty}</span>
-                        <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-weight: 600;"><i class="fa-solid fa-globe me-1"></i>Online: ${online}</span>
+                    <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
+                        Total: ${qty} <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> ${online}</span>
                     </div>
                 `;
             }
