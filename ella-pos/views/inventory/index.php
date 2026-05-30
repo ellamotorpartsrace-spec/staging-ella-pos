@@ -329,7 +329,7 @@ $products = $stmt->fetchAll();
                 <table id="inventory-table" class="table table-hover align-middle mb-0">
                     <thead style="background: var(--bg-surface); border-bottom: 2px solid var(--border-color);">
                         <tr>
-                            <th class="ps-4" style="color: var(--text-primary);">Product Detail</th>
+                            <th class="ps-4" style="color: var(--text-primary); width: 45%; min-width: 350px;">Product Detail</th>
                             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                                 <th class="capital-col text-nowrap" style="color: var(--text-primary);">Cost (Capital)</th>
                             <?php endif; ?>
@@ -356,10 +356,10 @@ $products = $stmt->fetchAll();
                                                 <?php endif; ?>
                                             </div>
                                             <div>
-                                                <div class="fw-bold mb-0" style="color: var(--text-primary);">
+                                                <div class="fw-bold mb-0 text-wrap" style="color: var(--text-primary); line-height: 1.4;">
                                                     <?= htmlspecialchars($row['product_name'] ?? '') ?>
                                                 </div>
-                                                <small class="text-muted">
+                                                <small class="text-muted text-wrap d-block">
                                                     <?= htmlspecialchars($row['brand_name'] ?? '') ?> |
                                                     <span
                                                         class="text-primary"><?= htmlspecialchars($row['variation_name'] ?? '') ?></span>
@@ -857,9 +857,9 @@ $products = $stmt->fetchAll();
                                  ${imgHtml}
                              </div>
                              <div>
-                                 <div class="fw-bold mb-0" style="color: var(--text-primary);">
+                                 <div class="fw-bold mb-0 text-wrap" style="color: var(--text-primary); line-height: 1.4;">
                                      ${highlight(row.product_name || '')}</div>
-                                 <small class="text-muted">
+                                 <small class="text-muted text-wrap d-block">
                                      ${highlight(row.brand_name || '')} |
                                      <span class="text-primary">${highlight(row.variation_name || '')}</span>
                                  </small>
