@@ -557,17 +557,11 @@ $products = $stmt->fetchAll();
                 <?= $total_items ?> items
             </small>
 
-            <div class="d-flex align-items-center gap-2" id="inventory-pagination-container">
-                <!-- Dropdown Pagination -->
-                <label for="inventory-page-select" class="text-secondary small fw-bold text-nowrap">Go to Page:</label>
-                <select id="inventory-page-select" class="form-select form-select-sm"
-                    style="width: auto; min-width: 80px;">
-                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                        <option value="<?= $i ?>" <?= $i == $page ? 'selected' : '' ?>><?= $i ?></option>
-                    <?php endfor; ?>
-                </select>
-                <span class="text-muted small text-nowrap">of <span
-                        id="inventory-total-pages"><?= $total_pages ?></span></span>
+            <div id="infinite-scroll-trigger" class="d-flex justify-content-center w-100 py-2">
+                <!-- Spinner shown while loading next page -->
+                <div class="spinner-border text-primary spinner-border-sm d-none" id="infinite-scroll-spinner" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
             </div>
         </div>
     </div>
@@ -684,10 +678,16 @@ $products = $stmt->fetchAll();
         tbody: null,
         mobileContainer: null,
         footerShowingText: null,
-        pageSelect: null,
-        totalPagesSpan: null,
+        infiniteScrollTrigger: null,
+        infiniteSpinner: null,
         currentPage: <?= $page ?>,
         pageSize: 100,
+        
+        // Progressive Loading State
+        observer: null,
+        isFetching: false,
+        hasMore: true,
+        cache: {},
 
         init() {
             this.searchInput = document.getElementById('inventory-search');
@@ -695,8 +695,8 @@ $products = $stmt->fetchAll();
             this.tbody = document.querySelector('#inventory-table tbody');
             this.mobileContainer = document.getElementById('mobile-cards-container');
             this.footerShowingText = document.getElementById('inventory-showing-text');
-            this.pageSelect = document.getElementById('inventory-page-select');
-            this.totalPagesSpan = document.getElementById('inventory-total-pages');
+            this.infiniteScrollTrigger = document.getElementById('infinite-scroll-trigger');
+            this.infiniteSpinner = document.getElementById('infinite-scroll-spinner');
 
             if (!this.searchInput) return;
 
@@ -705,6 +705,7 @@ $products = $stmt->fetchAll();
                 clearTimeout(this.debounceTimer);
                 this.debounceTimer = setTimeout(() => {
                     this.currentPage = 1; // Reset to page 1 on new search
+                    this.hasMore = true;
                     this.performSearch(e.target.value.trim());
                 }, 300);
             });
@@ -714,21 +715,28 @@ $products = $stmt->fetchAll();
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     clearTimeout(this.debounceTimer);
-                    this.currentPage = 1; // Reset to page 1 on new search
+                    this.currentPage = 1;
+                    this.hasMore = true;
                     this.performSearch(this.searchInput.value.trim());
                 }
             });
 
-            // Handle Page Selection
-            if (this.pageSelect) {
-                this.pageSelect.addEventListener('change', (e) => {
-                    this.currentPage = parseInt(e.target.value);
-                    this.performSearch(this.searchInput.value.trim());
-                });
+            // Initialize Intersection Observer for Infinite Scroll
+            if (this.infiniteScrollTrigger) {
+                this.observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting && this.hasMore && !this.isFetching) {
+                        this.currentPage++;
+                        this.performSearch(this.searchInput.value.trim(), true);
+                    }
+                }, { rootMargin: '200px' }); // Trigger 200px before reaching the bottom
+                
+                this.observer.observe(this.infiniteScrollTrigger);
             }
         },
 
-        performSearch(query) {
+        performSearch(query, isAppending = false) {
+            if (this.isFetching) return;
+
             // Build search URL with parameters
             let url = `../../api/inventory/search_products.php?q=${encodeURIComponent(query)}`;
             url += `&page=${this.currentPage}&limit=${this.pageSize}`;
@@ -745,58 +753,87 @@ $products = $stmt->fetchAll();
                 exportBtn.href = exportUrl;
             }
 
-            // Sync browser URL to preserve state
-            let queryParams = new URLSearchParams();
-            if (query) queryParams.set('search', query);
-            if (this.currentPage > 1) queryParams.set('page', this.currentPage);
-            if (this.currentFilter) queryParams.set('filter', this.currentFilter);
+            // Sync browser URL to preserve state (only if not appending)
+            if (!isAppending) {
+                let queryParams = new URLSearchParams();
+                if (query) queryParams.set('search', query);
+                if (this.currentFilter) queryParams.set('filter', this.currentFilter);
 
-            let browserUrl = window.location.pathname;
-            if (queryParams.toString() !== '') browserUrl += '?' + queryParams.toString();
-            history.replaceState(null, '', browserUrl);
+                let browserUrl = window.location.pathname;
+                if (queryParams.toString() !== '') browserUrl += '?' + queryParams.toString();
+                history.replaceState(null, '', browserUrl);
+            }
 
-            // Show spinner
-            this.spinner?.classList.remove('d-none');
-            // Disable inputs while searching
-            if (this.pageSelect) this.pageSelect.disabled = true;
+            // Client-side Request Caching
+            const cacheKey = url;
+            if (this.cache[cacheKey]) {
+                this.handleResponse(this.cache[cacheKey], isAppending);
+                return;
+            }
+
+            // Show appropriate spinner
+            this.isFetching = true;
+            if (isAppending) {
+                this.infiniteSpinner?.classList.remove('d-none');
+            } else {
+                this.spinner?.classList.remove('d-none');
+            }
 
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
-                    this.renderResults(data.products || []);
-                    this.updatePagination(data.pagination || {});
+                    this.cache[cacheKey] = data; // Cache the result
+                    this.handleResponse(data, isAppending);
                 })
                 .catch(err => {
                     console.error('Search error:', err);
+                    this.isFetching = false;
                 })
                 .finally(() => {
                     this.spinner?.classList.add('d-none');
-                    if (this.pageSelect) this.pageSelect.disabled = false;
+                    this.infiniteSpinner?.classList.add('d-none');
                 });
         },
+        
+        handleResponse(data, isAppending) {
+            this.isFetching = false;
+            const products = data.products || [];
+            const pagination = data.pagination || {};
+            
+            this.hasMore = this.currentPage < (pagination.total_pages || 1);
+            
+            this.renderResults(products, isAppending);
+            this.updatePagination(pagination);
+        },
 
-        renderResults(products) {
+        renderResults(products, isAppending) {
             if (!this.tbody) return;
 
-            if (products.length === 0) {
+            if (products.length === 0 && !isAppending) {
                 this.tbody.innerHTML = `
                     <tr>
                         <td colspan="6" class="text-center py-5">
+                            <div class="mb-3"><i class="fa-solid fa-box-open text-muted fa-3x"></i></div>
                             <h5 class="text-secondary">No products found</h5>
                             <a href="create.php" class="btn btn-sm btn-primary mt-2">Add First Product</a>
                         </td>
                     </tr>`;
+                if (this.mobileContainer) this.mobileContainer.innerHTML = '';
                 return;
             }
 
             const baseUrl = '<?= BASE_URL ?>';
             const isHidden = localStorage.getItem('hide_cost') === 'true';
 
-            this.tbody.innerHTML = products.map(row => this.renderTableRow(row, baseUrl, isHidden)).join('');
+            const desktopHtml = products.map(row => this.renderTableRow(row, baseUrl, isHidden)).join('');
+            const mobileHtml = products.map(row => this.renderCard(row, baseUrl)).join('');
 
-            // Also render Mobile Cards
-            if (this.mobileContainer) {
-                this.mobileContainer.innerHTML = products.map(row => this.renderCard(row, baseUrl)).join('');
+            if (isAppending) {
+                this.tbody.insertAdjacentHTML('beforeend', desktopHtml);
+                if (this.mobileContainer) this.mobileContainer.insertAdjacentHTML('beforeend', mobileHtml);
+            } else {
+                this.tbody.innerHTML = desktopHtml;
+                if (this.mobileContainer) this.mobileContainer.innerHTML = mobileHtml;
             }
         },
 
@@ -993,36 +1030,15 @@ $products = $stmt->fetchAll();
         },
 
         updatePagination(pagination) {
-            const totalItems = parseInt(pagination.total_items) || 0;
-            const totalPages = parseInt(pagination.total_pages) || 1;
-            const currentPage = parseInt(pagination.current_page) || 1;
-            const limit = parseInt(pagination.limit) || 100;
+            const { current_page, total_items, limit } = pagination;
+            const currentPage = parseInt(current_page) || 1;
+            const totalItems = parseInt(total_items) || 0;
 
-            // 1. Update Showing Text
+            // Update Showing Text
             if (this.footerShowingText) {
-                const start = totalItems > 0 ? (currentPage - 1) * limit + 1 : 0;
+                const start = totalItems > 0 ? 1 : 0; // Infinite scroll always starts at 1
                 const end = Math.min(currentPage * limit, totalItems);
                 this.footerShowingText.textContent = `Showing ${start} to ${end} of ${totalItems} items`;
-            }
-
-            // 2. Update Dropdown Options (if total pages changed)
-            if (this.pageSelect && this.totalPagesSpan) {
-                this.totalPagesSpan.textContent = totalPages;
-
-                // Only rebuild options if the count changed significantly or if needed
-                // Ideally, we just check if the number of options matches totalPages.
-                if (this.pageSelect.options.length !== totalPages) {
-                    this.pageSelect.innerHTML = '';
-                    for (let i = 1; i <= totalPages; i++) {
-                        const option = document.createElement('option');
-                        option.value = i;
-                        option.text = i;
-                        this.pageSelect.appendChild(option);
-                    }
-                }
-
-                // Set current value
-                this.pageSelect.value = currentPage;
             }
         },
 
