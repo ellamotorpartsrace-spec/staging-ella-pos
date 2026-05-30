@@ -1190,7 +1190,7 @@ function renderMapped(){
             if(allocFilter==='low'&&v.status!=='low')return false;
             if(allocFilter==='unallocated'&&v.online!==0)return false;
             let totalAlloc = getExistingAllocatedBase(v);
-            if(allocFilter==='overallocated' && totalAlloc <= v.total) return false;
+            if(allocFilter==='overallocated' && (totalAlloc <= v.total || v.online === 0)) return false;
             return true;
         });
         if(vars.length > 0) {
@@ -1228,7 +1228,7 @@ function renderMapped(){
                 let totalAllocated = getExistingAllocatedBase(v);
                 const rem = v.total - totalAllocated;
                 let badge = '';
-                if (totalAllocated > v.total) badge = `<span class="sp-badge sp-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
+                if (totalAllocated > v.total && v.online > 0) badge = `<span class="sp-badge sp-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
                 else if (v.online === 0) badge = `<span class="sp-badge sp-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
                 else if (available <= 0) badge = `<span class="sp-badge sp-badge-danger"><i class="fa-solid fa-ban"></i> Sold Out</span>`;
                 else if (available <= 5) badge = `<span class="sp-badge sp-badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Low</span>`;
@@ -1315,7 +1315,7 @@ function renderMapped(){
                 let totalAllocated = getExistingAllocatedBase(v);
                 const rem = v.total - totalAllocated;
                 let badge = '';
-                if (totalAllocated > v.total) badge = `<span class="sp-badge sp-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
+                if (totalAllocated > v.total && v.online > 0) badge = `<span class="sp-badge sp-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
                 else if (v.online === 0) badge = `<span class="sp-badge sp-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
                 else if (available <= 0) badge = `<span class="sp-badge sp-badge-danger"><i class="fa-solid fa-ban"></i> Sold Out</span>`;
                 else if (available <= 5) badge = `<span class="sp-badge sp-badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Low</span>`;
@@ -1550,15 +1550,13 @@ function updateSummary(){
             unallocated++;
         } else {
             allocated++;
-        }
-        
-        let totalAlloc = getExistingAllocatedBase(v);
-        if (totalAlloc > v.total) {
-            overallocated++;
-        }
-        
-        if (v.status === 'low') {
-            lowStock++;
+            let totalAlloc = getExistingAllocatedBase(v);
+            if (totalAlloc > v.total) {
+                overallocated++;
+            }
+            if (v.status === 'low') {
+                lowStock++;
+            }
         }
     });
 
@@ -1850,7 +1848,7 @@ function showFixOverallocatedModal() {
 }
 
 async function executeFixOverallocated() {
-    const overallocatedItems = MAPPED_FLAT.filter(v => getExistingAllocatedBase(v) > v.total);
+    const overallocatedItems = MAPPED_FLAT.filter(v => getExistingAllocatedBase(v) > v.total && v.online > 0);
     if (overallocatedItems.length === 0) {
         fixOverallocatedModal.hide();
         return;
@@ -1910,6 +1908,18 @@ async function executeFixOverallocated() {
         }
 
         if (successCount > 0) {
+            MAPPED_FLAT.forEach(item => {
+                if (item.dupDetails) {
+                    item.dupDetails.forEach(d => {
+                        const flatMatch = MAPPED_FLAT.find(f => f.id === d.id);
+                        if (flatMatch) {
+                            d.online = flatMatch.online;
+                            d.ratio = flatMatch.ratio;
+                        }
+                    });
+                }
+            });
+
             renderMapped();
             updateSummary();
             if (typeof EllaToast !== 'undefined') EllaToast.success(`Successfully fixed ${successCount} overallocated products!`);
