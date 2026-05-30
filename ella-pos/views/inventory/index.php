@@ -30,7 +30,6 @@ $baseSql = "
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
     LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
-    LEFT JOIN (SELECT DISTINCT pos_product_id FROM shopee_product_mappings) spm ON spm.pos_product_id = v.variation_id
     WHERE v.status = 'active'
 ";
 
@@ -92,7 +91,7 @@ $sqlProducts = "
            v.price_capital, v.price_retail, v.status, v.low_stock_threshold,
            p.product_name, p.brand_name, p.image_path,
            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
-           CASE WHEN spm.pos_product_id IS NULL THEN 0 ELSE 1 END as is_shopee_mapped,
+           (SELECT 1 FROM shopee_product_mappings WHERE pos_product_id = v.variation_id LIMIT 1) as is_shopee_mapped,
            (
                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
                FROM shopee_product_mappings m
