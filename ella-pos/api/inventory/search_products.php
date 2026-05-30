@@ -9,7 +9,7 @@ $status = $_GET['status'] ?? 'active';
 $onlineOnly = !empty($_GET['online_only']) && $_GET['online_only'] == '1';
 $category = trim($_GET['category'] ?? '');
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
-$limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? (int) $_GET['limit'] : 100;
+$limit = 30;
 $offset = ($page - 1) * $limit;
 
 // For inventory list search, allow empty query to show all products

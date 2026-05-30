@@ -21,7 +21,7 @@ $conn = $db->getConnection();
 $search = $_GET['search'] ?? '';
 $filter = $_GET['filter'] ?? '';
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
-$limit = 100;
+$limit = 30;
 $offset = ($page - 1) * $limit;
 
 // Base Query
