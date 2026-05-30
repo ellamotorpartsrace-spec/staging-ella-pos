@@ -88,7 +88,7 @@ try {
                     $itemsWithModels[] = $itemId;
                     
                     // Cleanup orphaned "Main Item" rows for products that now have variations
-                    $delStmt = $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_item_id = ? AND shopee_model_id IS NULL");
+                    $delStmt = $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0)");
                     $delStmt->execute([$itemIdStr]);
                     $deletedVariationsCount += $delStmt->rowCount();
                 }
