@@ -190,16 +190,9 @@ try {
                 <span class="nav-text">Online Store</span>
                 <i class="fa-solid fa-chevron-down small transition-transform" id="onlineStoreChevron"></i>
             </div>
-            <div class="collapse <?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false || $current_page === 'online_stock.php' ? 'show' : '' ?>"
+            <div class="collapse <?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'show' : '' ?>"
                 id="onlineStoreCollapse">
-                <?php if ($canManageInventory): ?>
-                    <li>
-                        <a href="<?= BASE_URL ?>views/inventory/online_stock.php"
-                            class="<?= $current_page === 'online_stock.php' ? 'active' : '' ?>">
-                            <i class="fa-solid fa-globe"></i> <span class="nav-text">Online Stock</span>
-                        </a>
-                    </li>
-                <?php endif; ?>
+
 
                 <?php if ($canViewShopee): ?>
                     <li>
