@@ -356,10 +356,10 @@ $products = $stmt->fetchAll();
                                                 <?php endif; ?>
                                             </div>
                                             <div>
-                                                <div class="fw-bold mb-0 text-wrap" style="color: var(--text-primary); max-width: 350px; line-height: 1.4;">
+                                                <div class="fw-bold mb-0" style="color: var(--text-primary);">
                                                     <?= htmlspecialchars($row['product_name'] ?? '') ?>
                                                 </div>
-                                                <small class="text-muted d-block text-wrap" style="max-width: 350px;">
+                                                <small class="text-muted">
                                                     <?= htmlspecialchars($row['brand_name'] ?? '') ?> |
                                                     <span
                                                         class="text-primary"><?= htmlspecialchars($row['variation_name'] ?? '') ?></span>
@@ -857,9 +857,9 @@ $products = $stmt->fetchAll();
                                  ${imgHtml}
                              </div>
                              <div>
-                                 <div class="fw-bold mb-0 text-wrap" style="color: var(--text-primary); max-width: 350px; line-height: 1.4;">
+                                 <div class="fw-bold mb-0" style="color: var(--text-primary);">
                                      ${highlight(row.product_name || '')}</div>
-                                 <small class="text-muted d-block text-wrap" style="max-width: 350px;">
+                                 <small class="text-muted">
                                      ${highlight(row.brand_name || '')} |
                                      <span class="text-primary">${highlight(row.variation_name || '')}</span>
                                  </small>
