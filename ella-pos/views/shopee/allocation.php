@@ -2081,6 +2081,16 @@ async function refreshLiveRow(id, btn) {
                         const avail = v.online;
                         v.status = v.online === 0 ? 'unallocated' : (avail <= 5 ? 'low' : 'synced');
                     }
+                    if (v.isDuplicate && v.dupDetails) {
+                        v.dupDetails.forEach(d => {
+                            if (d.id === id) {
+                                d.online = upd.shopee_stock;
+                                d.total = d.isBundle ? (parseInt(upd.bundle_total_sets, 10) || 0) : (upd.pos_physical_stock + upd.pos_online_stock);
+                                d.unitTotal = Math.floor(d.total / unitMultiplier(d));
+                                d.ratio = upd.stock_allocation_ratio;
+                            }
+                        });
+                    }
                 });
             });
             
@@ -2148,6 +2158,16 @@ async function autoSyncOnLoad() {
                                 v.ratio = upd.stock_allocation_ratio;
                                 const avail = v.online;
                                 v.status = v.online === 0 ? 'unallocated' : (avail <= 5 ? 'low' : 'synced');
+                            }
+                            if (v.isDuplicate && v.dupDetails) {
+                                v.dupDetails.forEach(d => {
+                                    if (d.id === upd.id) {
+                                        d.online = upd.shopee_stock;
+                                        d.total = d.isBundle ? (parseInt(upd.bundle_total_sets, 10) || 0) : (upd.pos_physical_stock + upd.pos_online_stock);
+                                        d.unitTotal = Math.floor(d.total / unitMultiplier(d));
+                                        d.ratio = upd.stock_allocation_ratio;
+                                    }
+                                });
                             }
                         });
                     });
