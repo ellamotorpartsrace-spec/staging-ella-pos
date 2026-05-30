@@ -28,10 +28,16 @@ $sqlProd = "
     SELECT 
         p.product_name, p.brand_name, 
         v.variation_name, v.sku, v.barcode,
-        COALESCE(i.quantity, 0) as current_stock
+        GREATEST(0, 
+            (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = v.variation_id)
+            - 
+            (SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+             FROM shopee_product_mappings m
+             LEFT JOIN product_units u ON m.pos_unit_id = u.id
+             WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual'))
+        ) as current_stock
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
-    LEFT JOIN inventory i ON v.variation_id = i.variation_id AND i.store_id = 1
     WHERE v.variation_id = :id
 ";
 $stmt = $conn->prepare($sqlProd);
