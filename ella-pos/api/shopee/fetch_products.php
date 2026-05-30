@@ -267,19 +267,6 @@ try {
     $skipped  = 0;
     $autoMatched = 0;
 
-    // Clean up orphaned "Main Item" rows for products that now have variations
-    $itemsWithModelsArray = [];
-    foreach ($itemInfoList as $item) {
-        if (!empty($item['has_model'])) {
-            $itemsWithModelsArray[] = (string)$item['item_id'];
-        }
-    }
-    if (!empty($itemsWithModelsArray)) {
-        $placeholders = implode(',', array_fill(0, count($itemsWithModelsArray), '?'));
-        $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_model_id IS NULL AND shopee_item_id IN ($placeholders)")->execute($itemsWithModelsArray);
-    }
-
-
     // Optimize DB reads by loading all existing mappings for the current batch at once
     $existingMappings = [];
     if (!empty($itemIds)) {

@@ -86,6 +86,11 @@ try {
                 // Item exists. Check if it has models (variations)
                 if ($activeItems[$itemIdStr]['has_model']) {
                     $itemsWithModels[] = $itemId;
+                    
+                    // Cleanup orphaned "Main Item" rows for products that now have variations
+                    $delStmt = $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_item_id = ? AND shopee_model_id IS NULL");
+                    $delStmt->execute([$itemIdStr]);
+                    $deletedVariationsCount += $delStmt->rowCount();
                 }
             }
         }
