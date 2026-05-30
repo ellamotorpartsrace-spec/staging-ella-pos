@@ -1,0 +1,73 @@
+<?php
+require 'config/database.php';
+$db = new Database();
+$conn = $db->getConnection();
+
+echo "<pre>";
+echo "Starting synchronization of POS inventory with Shopee allocations...\n";
+
+// Get all products mapped to Shopee
+$stmt = $conn->query("
+    SELECT 
+        v.variation_id,
+        COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as total_stock,
+        (
+            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+            FROM shopee_product_mappings m
+            LEFT JOIN product_units u ON m.pos_unit_id = u.id
+            WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
+        ) as shopee_allocated
+    FROM product_variations v
+    LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
+    LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+    WHERE EXISTS (
+        SELECT 1 FROM shopee_product_mappings spm 
+        WHERE spm.pos_product_id = v.variation_id AND spm.mapping_status IN ('auto','manual')
+    )
+");
+
+$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$conn->beginTransaction();
+
+try {
+    $fixedCount = 0;
+    foreach ($products as $p) {
+        $varId = $p['variation_id'];
+        $totalStock = (int)$p['total_stock'];
+        $shopeeAllocated = (int)$p['shopee_allocated'];
+        
+        // Cap shopee allocation at total stock just in case
+        if ($shopeeAllocated > $totalStock) {
+            $shopeeAllocated = $totalStock;
+        }
+        if ($shopeeAllocated < 0) $shopeeAllocated = 0;
+        
+        $physicalStock = $totalStock - $shopeeAllocated;
+
+        // Force store_id = 1 to physicalStock
+        $upd1 = $conn->prepare("
+            INSERT INTO inventory (variation_id, store_id, quantity) 
+            VALUES (?, 1, ?)
+            ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
+        ");
+        $upd1->execute([$varId, $physicalStock]);
+
+        // Force store_id = 2 to shopeeAllocated
+        $upd2 = $conn->prepare("
+            INSERT INTO inventory (variation_id, store_id, quantity) 
+            VALUES (?, 2, ?)
+            ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
+        ");
+        $upd2->execute([$varId, $shopeeAllocated]);
+        
+        $fixedCount++;
+    }
+
+    $conn->commit();
+    echo "Successfully synced $fixedCount products.\n";
+
+} catch (Exception $e) {
+    $conn->rollBack();
+    echo "Error: " . $e->getMessage();
+}
+echo "</pre>";

@@ -91,10 +91,14 @@ $sqlProducts = "
     SELECT v.variation_id, v.variation_name, v.sku, v.unit_type,
            v.price_capital, v.price_retail, v.status, v.low_stock_threshold,
            p.product_name, p.brand_name, p.image_path,
-           COALESCE(i_phys.quantity, 0) as physical_stock,
-           COALESCE(i_online.quantity, 0) as online_stock,
            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
-           CASE WHEN spm.pos_product_id IS NULL THEN 0 ELSE 1 END as is_shopee_mapped
+           CASE WHEN spm.pos_product_id IS NULL THEN 0 ELSE 1 END as is_shopee_mapped,
+           (
+               SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+               FROM shopee_product_mappings m
+               LEFT JOIN product_units u ON m.pos_unit_id = u.id
+               WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
+           ) as shopee_allocated
     " . $baseSql . "
     ORDER BY p.product_name ASC
     LIMIT $limit OFFSET $offset
@@ -391,8 +395,8 @@ $products = $stmt->fetchAll();
                                     <td>
                                         <?php
                                         $qty = $row['current_stock'];
-                                        $phys = $row['physical_stock'] ?? $qty;
-                                        $online = $row['online_stock'] ?? 0;
+                                        $online = !empty($row['is_shopee_mapped']) ? $row['shopee_allocated'] : ($row['online_stock'] ?? 0);
+                                        $phys = max(0, $qty - $online);
                                         $thresh = $row['low_stock_threshold'];
 
                                         if ($qty == 0) {
@@ -504,8 +508,8 @@ $products = $stmt->fetchAll();
                                     class="d-flex justify-content-between align-items-center pt-2 border-top mobile-card-footer">
                                     <div class="flex-shrink-0">
                                         <?php
-                                        $phys = $row['physical_stock'] ?? $qty;
-                                        $online = $row['online_stock'] ?? 0;
+                                        $online = !empty($row['is_shopee_mapped']) ? $row['shopee_allocated'] : ($row['online_stock'] ?? 0);
+                                        $phys = max(0, $qty - $online);
 
                                         if ($qty == 0) {
                                             echo '<span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Out of Stock</span>';
@@ -797,8 +801,9 @@ $products = $stmt->fetchAll();
 
         renderTableRow(row, baseUrl, isHidden) {
             const qty = parseInt(row.current_stock) || 0;
-            const phys = parseInt(row.physical_stock) || qty;
-            const online = parseInt(row.online_stock) || 0;
+            const isMapped = parseInt(row.is_shopee_mapped) === 1;
+            const online = isMapped ? (parseInt(row.shopee_allocated) || 0) : (parseInt(row.online_stock) || 0);
+            const phys = Math.max(0, qty - online);
             const thresh = parseInt(row.low_stock_threshold) || 0;
 
             const query = this.searchInput ? this.searchInput.value.trim() : '';
@@ -893,8 +898,9 @@ $products = $stmt->fetchAll();
 
         renderCard(row, baseUrl) {
             const qty = parseInt(row.current_stock) || 0;
-            const phys = parseInt(row.physical_stock) || qty;
-            const online = parseInt(row.online_stock) || 0;
+            const isMapped = parseInt(row.is_shopee_mapped) === 1;
+            const online = isMapped ? (parseInt(row.shopee_allocated) || 0) : (parseInt(row.online_stock) || 0);
+            const phys = Math.max(0, qty - online);
             const thresh = parseInt(row.low_stock_threshold) || 0;
 
             const query = this.searchInput ? this.searchInput.value.trim() : '';
