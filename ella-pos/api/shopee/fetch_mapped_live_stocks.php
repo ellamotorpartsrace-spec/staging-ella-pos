@@ -83,10 +83,12 @@ try {
                      ->execute([$mapId, $alertMsg]);
             }
 
-            // If mapped to POS, propagate stock
-            if (($map['mapping_status'] === 'manual' || $map['mapping_status'] === 'auto') && !empty($posProductId)) {
-                propagateStockToPos($conn, (int)$posProductId, $allocatedStock, $prodName, $skuVal, $_SESSION['user_id'] ?? null, $mapId);
-            }
+            // NOTE: Do NOT call propagateStockToPos here.
+            // Live sync should only refresh the Shopee stock/price display.
+            // POS inventory (store_id 1 & 2) should only change when the user
+            // explicitly clicks "Save & Sync" in the allocation edit modal.
+            // Calling it here caused the overallocated filter to show random
+            // products because it rebalanced POS inventory on every page load.
 
             // Fetch the updated mapping row to return the fresh calculated ratio and stocks
             $freshStmt = $conn->prepare("SELECT shopee_stock, shopee_price, stock_allocation_ratio, mapping_status FROM shopee_product_mappings WHERE id = ?");
