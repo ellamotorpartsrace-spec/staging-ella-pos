@@ -135,13 +135,7 @@ try {
             p.brand_name,
             p.image_path,
             COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
-            (SELECT 1 FROM shopee_product_mappings WHERE pos_product_id = v.variation_id LIMIT 1) as is_shopee_mapped,
-            (
-                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
-                FROM shopee_product_mappings m
-                LEFT JOIN product_units u ON m.pos_unit_id = u.id
-                WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
-            ) as shopee_allocated
+            COALESCE(i_online.quantity, 0) as online_stock
             {$relevanceSelect}
         " . $baseSql . "
         {$orderClause}

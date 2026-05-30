@@ -96,13 +96,7 @@ $sqlProducts = "
            v.price_capital, v.price_retail, v.status, v.low_stock_threshold,
            p.product_name, p.brand_name, p.image_path,
            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
-           (SELECT 1 FROM shopee_product_mappings WHERE pos_product_id = v.variation_id LIMIT 1) as is_shopee_mapped,
-           (
-               SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
-               FROM shopee_product_mappings m
-               LEFT JOIN product_units u ON m.pos_unit_id = u.id
-               WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
-           ) as shopee_allocated
+           COALESCE(i_online.quantity, 0) as online_stock
     " . $baseSql . "
     ORDER BY p.product_name ASC
     LIMIT $limit OFFSET $offset
@@ -400,7 +394,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                     <td class="text-nowrap">
                                         <?php
                                         $qty = $row['current_stock'];
-                                        $online = !empty($row['is_shopee_mapped']) ? $row['shopee_allocated'] : ($row['online_stock'] ?? 0);
+                                        $online = $row['online_stock'] ?? 0;
                                         $phys = max(0, $qty - $online);
                                         $thresh = $row['low_stock_threshold'];
 
@@ -412,7 +406,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                             echo '<span class="badge bg-success-subtle text-success border border-success">' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
-                                        <?php if ($online > 0 || !empty($row['is_shopee_mapped'])): ?>
+                                        <?php if ($online > 0): ?>
                                             <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
                                                 Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
                                             </div>
@@ -516,7 +510,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                             echo '<span class="badge bg-success-subtle text-success border border-success">' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
-                                        <?php if ($online > 0 || !empty($row['is_shopee_mapped'])): ?>
+                                        <?php if ($online > 0): ?>
                                             <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
                                                 Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
                                             </div>
@@ -869,8 +863,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
 
         renderTableRow(row, baseUrl, isHidden) {
             const qty = parseInt(row.current_stock) || 0;
-            const isMapped = parseInt(row.is_shopee_mapped) === 1;
-            const online = isMapped ? (parseInt(row.shopee_allocated) || 0) : (parseInt(row.online_stock) || 0);
+            const online = parseInt(row.online_stock) || 0;
             const phys = Math.max(0, qty - online);
             const thresh = parseInt(row.low_stock_threshold) || 0;
 
@@ -897,7 +890,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 stockHtml = `<span class="badge bg-success-subtle text-success border border-success">${phys} ${unit}</span>`;
             }
 
-            if (online > 0 || row.is_shopee_mapped == 1) {
+            if (online > 0) {
                 stockHtml += `
                     <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
                         Total: ${qty} <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> ${online}</span>
@@ -968,8 +961,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
 
         renderCard(row, baseUrl) {
             const qty = parseInt(row.current_stock) || 0;
-            const isMapped = parseInt(row.is_shopee_mapped) === 1;
-            const online = isMapped ? (parseInt(row.shopee_allocated) || 0) : (parseInt(row.online_stock) || 0);
+            const online = parseInt(row.online_stock) || 0;
             const phys = Math.max(0, qty - online);
             const thresh = parseInt(row.low_stock_threshold) || 0;
 
@@ -1005,7 +997,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 stockBadge = `<span class="badge bg-success-subtle text-success border border-success">${phys} ${unit}</span>`;
             }
 
-            if (online > 0 || row.is_shopee_mapped == 1) {
+            if (online > 0) {
                 stockBadge += `
                     <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
                         Total: ${qty} <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> ${online}</span>
