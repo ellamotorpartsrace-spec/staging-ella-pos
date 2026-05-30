@@ -1591,7 +1591,7 @@ function openEdit(id){
     
     document.getElementById('mTotal').textContent=currentEdit.total;
     document.getElementById('mTotalSub').textContent = currentEdit.isBundle ? 'Pairable bundle sets' : 'Physical POS';
-    document.getElementById('mOnlineStock').max = unitLimit(currentEdit);
+    document.getElementById('mOnlineStock').removeAttribute('max');
     document.getElementById('mOnlineStock').value =currentEdit.online !== undefined ? currentEdit.online : unitLimit(currentEdit);
     calcModal();
     renderModalSharedDetails(currentEdit);
@@ -1600,7 +1600,7 @@ function openEdit(id){
 
 function adjStock(d){
     const inp=document.getElementById('mOnlineStock');
-    const newVal = Math.max(0, Math.min(unitLimit(currentEdit), (parseInt(inp.value)||0)+d));
+    const newVal = Math.max(0, (parseInt(inp.value)||0)+d);
     inp.value=newVal;
     calcModal();
 }
@@ -1644,7 +1644,7 @@ function presetStock(pct){
 function calcModal(){
     const mainInput = document.getElementById('mOnlineStock');
     let onlineVal=parseInt(mainInput.value)||0;
-    onlineVal = Math.max(0, Math.min(onlineVal, unitLimit(currentEdit)));
+    onlineVal = Math.max(0, onlineVal);
     mainInput.value = onlineVal;
     
     let totalOnlineStock = onlineVal;
