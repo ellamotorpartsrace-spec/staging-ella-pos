@@ -331,12 +331,12 @@ $products = $stmt->fetchAll();
                         <tr>
                             <th class="ps-4" style="color: var(--text-primary);">Product Detail</th>
                             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                                <th class="capital-col" style="color: var(--text-primary);">Cost (Capital)</th>
+                                <th class="capital-col text-nowrap" style="color: var(--text-primary);">Cost (Capital)</th>
                             <?php endif; ?>
-                            <th style="color: var(--text-primary);">SRP (Retail)</th>
-                            <th style="color: var(--text-primary);">Stock Level</th>
-                            <th style="color: var(--text-primary);">Status</th>
-                            <th class="text-end pe-4" style="color: var(--text-primary);">Manage</th>
+                            <th class="text-nowrap" style="color: var(--text-primary);">SRP (Retail)</th>
+                            <th class="text-nowrap" style="color: var(--text-primary);">Stock Level</th>
+                            <th class="text-nowrap" style="color: var(--text-primary);">Status</th>
+                            <th class="text-end pe-4 text-nowrap" style="color: var(--text-primary);">Manage</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -375,7 +375,7 @@ $products = $stmt->fetchAll();
                                     </td>
 
                                     <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                                        <td class="capital-col">
+                                        <td class="capital-col text-nowrap">
                                             <div class="d-inline-flex align-items-center gap-2">
                                                 <span><span class="text-muted small">&#8369;</span> <?= number_format($row['price_capital'], 2) ?></span>
                                                 <button type="button" class="btn btn-outline-secondary btn-sm capital-copy-btn"
@@ -387,12 +387,12 @@ $products = $stmt->fetchAll();
                                         </td>
                                     <?php endif; ?>
 
-                                    <td>
+                                    <td class="text-nowrap">
                                         <span class="text-success fw-bold small">₱</span> <span class="fw-bold"
                                             style="color: var(--text-primary);"><?= number_format($row['price_retail'], 2) ?></span>
                                     </td>
 
-                                    <td>
+                                    <td class="text-nowrap">
                                         <?php
                                         $qty = $row['current_stock'];
                                         $online = !empty($row['is_shopee_mapped']) ? $row['shopee_allocated'] : ($row['online_stock'] ?? 0);
@@ -414,7 +414,7 @@ $products = $stmt->fetchAll();
                                         <?php endif; ?>
                                     </td>
 
-                                    <td>
+                                    <td class="text-nowrap">
                                         <?php if (($row['status'] ?? '') === 'active'): ?>
                                             <span class="text-success small"><i class="fa-solid fa-circle fa-xs"></i> Active</span>
                                         <?php else: ?>
@@ -867,7 +867,7 @@ $products = $stmt->fetchAll();
                              </div>
                          </div>
                      </td>
-                     ${!<?= json_encode(isset($_SESSION['role']) && $_SESSION['role'] === 'admin') ?> ? '' : `<td class="capital-col ${isHidden ? 'd-none' : ''}">
+                     ${!<?= json_encode(isset($_SESSION['role']) && $_SESSION['role'] === 'admin') ?> ? '' : `<td class="capital-col text-nowrap ${isHidden ? 'd-none' : ''}">
                          <div class="d-inline-flex align-items-center gap-2">
                              <span><span class="text-muted small">&#8369;</span> ${parseFloat(row.price_capital || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                              <button type="button" class="btn btn-outline-secondary btn-sm capital-copy-btn"
@@ -877,12 +877,12 @@ $products = $stmt->fetchAll();
                              </button>
                          </div>
                      </td>`}
-                     <td>
+                     <td class="text-nowrap">
                          <span class="text-success fw-bold small">₱</span> <span class="fw-bold" style="color: var(--text-primary);">${parseFloat(row.price_retail || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                      </td>
-                     <td>${stockHtml}</td>
-                     <td>${statusHtml}</td>
-                     <td class="text-end pe-4">
+                     <td class="text-nowrap">${stockHtml}</td>
+                     <td class="text-nowrap">${statusHtml}</td>
+                     <td class="text-end pe-4 text-nowrap">
                          <div class="d-flex justify-content-end gap-2">
                              <a href="edit.php?id=${row.variation_id}" class="btn btn-sm btn-outline-primary" title="Update">
                                  <i class="fa-solid fa-pen-to-square"></i>
