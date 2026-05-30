@@ -437,11 +437,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                                 class="btn btn-sm btn-outline-info" title="History">
                                                 <i class="fa-solid fa-clock-rotate-left"></i>
                                             </a>
-                                            <button
-                                                onclick="openAllocateModal(<?= $row['variation_id'] ?>, '<?= htmlspecialchars(addslashes($row['product_name'])) ?>', <?= $phys ?>, <?= $online ?>)"
-                                                class="btn btn-sm btn-outline-success" title="Allocate">
-                                                <i class="fa-solid fa-right-left"></i>
-                                            </button>
+
                                             <button onclick="confirmDelete(<?= $row['variation_id'] ?>)"
                                                 class="btn btn-sm btn-outline-danger" title="Delete">
                                                 <i class="fa-solid fa-trash"></i>
@@ -535,11 +531,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                             title="History">
                                             <i class="fa-solid fa-clock-rotate-left"></i>
                                         </a>
-                                        <button
-                                            onclick="openAllocateModal(<?= $row['variation_id'] ?>, '<?= htmlspecialchars(addslashes($row['product_name'])) ?>', <?= $phys ?>, <?= $online ?>)"
-                                            class="btn btn-sm btn-outline-success" title="Allocate">
-                                            <i class="fa-solid fa-right-left"></i>
-                                        </button>
+
                                         <button onclick="confirmDelete(<?= $row['variation_id'] ?>)"
                                             class="btn btn-sm btn-outline-danger" title="Delete">
                                             <i class="fa-solid fa-trash"></i>
@@ -965,9 +957,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                              <a href="history.php?id=${row.variation_id}" class="btn btn-sm btn-outline-info" title="History">
                                  <i class="fa-solid fa-clock-rotate-left"></i>
                              </a>
-                             <button onclick="openAllocateModal(${row.variation_id}, '${escapedName}', ${phys}, ${online})" class="btn btn-sm btn-outline-success" title="Allocate">
-                                 <i class="fa-solid fa-right-left"></i>
-                             </button>
+
                              <button onclick="confirmDelete(${row.variation_id})" class="btn btn-sm btn-outline-danger" title="Delete">
                                  <i class="fa-solid fa-trash"></i>
                              </button>
@@ -1054,9 +1044,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                 <a href="history.php?id=${row.variation_id}" class="btn btn-sm btn-outline-info" title="History">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                 </a>
-                                <button onclick="openAllocateModal(${row.variation_id}, '${escapedName}', ${phys}, ${online})" class="btn btn-sm btn-outline-success" title="Allocate">
-                                    <i class="fa-solid fa-right-left"></i>
-                                </button>
+
                                 <button onclick="confirmDelete(${row.variation_id})" class="btn btn-sm btn-outline-danger" title="Delete">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
@@ -1106,137 +1094,5 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
     });
 </script>
 
-<!-- Allocation Modal -->
-<div class="modal fade" id="allocateModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fa-solid fa-right-left text-success me-2"></i> Allocate Stock</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="allocate_variation_id">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Product</label>
-                    <div id="allocate_product_name" class="form-control-plaintext fw-bold text-primary"></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-6">
-                        <div class="card border-primary">
-                            <div class="card-body text-center">
-                                <div class="text-muted small">Physical Store</div>
-                                <div id="allocate_physical_stock" class="h3 mb-0 text-primary fw-bold">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="card border-info">
-                            <div class="card-body text-center">
-                                <div class="text-muted small">Online Shop</div>
-                                <div id="allocate_online_stock" class="h3 mb-0 text-info fw-bold">0</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="allocate_quantity" class="form-label">Quantity to Transfer</label>
-                    <input type="number" id="allocate_quantity" class="form-control form-control-lg text-center" min="1"
-                        value="1">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Direction</label>
-                    <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="allocate_direction" id="dir_to_online"
-                            value="to_online" checked>
-                        <label class="btn btn-outline-info" for="dir_to_online">
-                            <i class="fa-solid fa-store me-1"></i> → <i class="fa-solid fa-globe ms-1"></i> To Online
-                        </label>
-                        <input type="radio" class="btn-check" name="allocate_direction" id="dir_to_physical"
-                            value="to_physical">
-                        <label class="btn btn-outline-primary" for="dir_to_physical">
-                            <i class="fa-solid fa-globe me-1"></i> → <i class="fa-solid fa-store ms-1"></i> To Physical
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="submitAllocation()">
-                    <i class="fa-solid fa-check me-1"></i> Confirm Allocation
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Allocation Modal Functions
-    function openAllocateModal(variationId, productName, physicalStock, onlineStock) {
-        document.getElementById('allocate_variation_id').value = variationId;
-        document.getElementById('allocate_product_name').textContent = productName;
-        document.getElementById('allocate_physical_stock').textContent = physicalStock;
-        document.getElementById('allocate_online_stock').textContent = onlineStock;
-        document.getElementById('allocate_quantity').value = 1;
-        document.getElementById('allocate_quantity').max = Math.max(physicalStock, onlineStock);
-        document.getElementById('dir_to_online').checked = true;
-
-        new bootstrap.Modal(document.getElementById('allocateModal')).show();
-    }
-
-    function submitAllocation() {
-        const variationId = document.getElementById('allocate_variation_id').value;
-        const quantity = parseInt(document.getElementById('allocate_quantity').value);
-        const direction = document.querySelector('input[name="allocate_direction"]:checked').value;
-
-        const physStock = parseInt(document.getElementById('allocate_physical_stock').textContent);
-        const onlineStock = parseInt(document.getElementById('allocate_online_stock').textContent);
-
-        // Validate quantity
-        const maxQty = (direction === 'to_online') ? physStock : onlineStock;
-        if (quantity <= 0 || quantity > maxQty) {
-            EllaToast.warning(`Invalid quantity. Maximum available: ${maxQty}`);
-            return;
-        }
-
-        // Show loading
-        const btn = event.target;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Processing...';
-        btn.disabled = true;
-
-        fetch('<?= BASE_URL ?>api/inventory/allocate_stock.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                variation_id: variationId,
-                quantity: quantity,
-                direction: direction
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    // Update displayed values in modal
-                    document.getElementById('allocate_physical_stock').textContent = data.physical_stock;
-                    document.getElementById('allocate_online_stock').textContent = data.online_stock;
-
-                    // Close modal and refresh page
-                    bootstrap.Modal.getInstance(document.getElementById('allocateModal')).hide();
-
-                    // Reload page to reflect changes
-                    window.location.reload();
-                } else {
-                    EllaToast.error('Allocation failed: ' + data.message);
-                }
-            })
-            .catch(err => {
-                EllaToast.error('Error: ' + err.message);
-            })
-            .finally(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            });
-    }
-</script>
 
 <?php require_once '../../includes/footer.php'; ?>
