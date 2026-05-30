@@ -154,6 +154,9 @@ foreach ($mappedRows as $r) {
     $posId = (int)($r['pos_product_id'] ?? 0);
     $sku = trim($r['sku'] ?? '');
     
+    $bundleId = (int)($r['pos_bundle_set_id'] ?? 0);
+    if ($bundleId > 0) continue;
+
     if ($posId > 0) {
         $key = 'pos_' . $posId;
         $dupCounts[$key] = ($dupCounts[$key] ?? 0) + 1;
@@ -169,11 +172,15 @@ foreach ($mappedRows as $r) {
     $posId = (int)($r['pos_product_id'] ?? 0);
     $sku = trim($r['sku'] ?? '');
     
+    $bundleId = (int)($r['pos_bundle_set_id'] ?? 0);
     $key = null;
-    if ($posId > 0) {
-        $key = 'pos_' . $posId;
-    } elseif ($sku !== '') {
-        $key = 'sku_' . $sku;
+    
+    if ($bundleId === 0) {
+        if ($posId > 0) {
+            $key = 'pos_' . $posId;
+        } elseif ($sku !== '') {
+            $key = 'sku_' . $sku;
+        }
     }
     
     if ($key !== null) {
@@ -209,11 +216,14 @@ foreach ($mappedRows as $r) {
     $posId = (int)($r['pos_product_id'] ?? 0);
     $sku = trim($r['sku'] ?? '');
     
+    $bundleId = (int)($r['pos_bundle_set_id'] ?? 0);
     $key = null;
-    if ($posId > 0) {
-        $key = 'pos_' . $posId;
-    } elseif ($sku !== '') {
-        $key = 'sku_' . $sku;
+    if ($bundleId === 0) {
+        if ($posId > 0) {
+            $key = 'pos_' . $posId;
+        } elseif ($sku !== '') {
+            $key = 'sku_' . $sku;
+        }
     }
     
     $isDup = ($key !== null && ($dupCounts[$key] ?? 0) > 1);
