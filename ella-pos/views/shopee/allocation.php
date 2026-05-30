@@ -1550,13 +1550,15 @@ function updateSummary(){
             unallocated++;
         } else {
             allocated++;
-            let totalAlloc = getExistingAllocatedBase(v);
-            if (totalAlloc > v.total) {
-                overallocated++;
-            }
-            if (v.status === 'low') {
-                lowStock++;
-            }
+        }
+        
+        let totalAlloc = getExistingAllocatedBase(v);
+        if (totalAlloc > v.total) {
+            overallocated++;
+        }
+        
+        if (v.status === 'low') {
+            lowStock++;
         }
     });
 
@@ -1872,8 +1874,14 @@ async function executeFixOverallocated() {
             
             await Promise.all(batch.map(async (item) => {
                 // calculate new stock
-                const targetBase = Math.floor(item.total * (selectedFixPct / 100));
-                const newVal = Math.min(unitLimit(item), Math.floor(targetBase / unitMultiplier(item)));
+                let newVal = 0;
+                const totalAlloc = getExistingAllocatedBase(item);
+                if (totalAlloc > 0) {
+                    const groupTargetBase = Math.floor(item.total * (selectedFixPct / 100));
+                    const currentBase = toBaseQty(item.online, item);
+                    const myTargetBase = Math.floor(groupTargetBase * (currentBase / totalAlloc));
+                    newVal = Math.min(unitLimit(item), Math.floor(myTargetBase / unitMultiplier(item)));
+                }
                 
                 try {
                     const res = await fetch(`${window.BASE_URL}api/shopee/update_allocation.php`,{
