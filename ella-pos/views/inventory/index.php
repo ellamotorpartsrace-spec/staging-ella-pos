@@ -273,7 +273,7 @@ $products = $stmt->fetchAll();
                     </span>
                     <input type="text" id="inventory-search" class="form-control"
                         placeholder="Search products, brand, SKU, barcode..."
-                        value="<?= htmlspecialchars($search ?? '') ?>" autofocus>
+                        value="<?= htmlspecialchars($search ?? '') ?>" autocomplete="off" autofocus>
                     <span class="input-group-text d-none" id="search-spinner"
                         style="background: var(--bg-surface); border-color: var(--border-color);">
                         <i class="fa-solid fa-spinner fa-spin text-primary"></i>
@@ -740,7 +740,9 @@ $products = $stmt->fetchAll();
         },
 
         performSearch(query, isAppending = false) {
-            if (this.isFetching) return;
+            // Only block overlapping requests if we are trying to infinite scroll (append)
+            // If it's a new search, we want to immediately abort the old one and proceed!
+            if (this.isFetching && isAppending) return;
 
             // Build search URL with parameters
             let url = `../../api/inventory/search_products.php?q=${encodeURIComponent(query)}`;
