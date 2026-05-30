@@ -199,18 +199,71 @@ if (!function_exists('fetchLiveShopeeStockAndPrice')) {
                 throw new Exception("Model ID {$modelId} not found on Shopee for Item ID {$itemId}");
             }
         } else {
-            $item = $shopeeApiCache[$cacheKey]['base'];
-            if (empty($item)) {
-                throw new Exception("Item ID {$itemId} not found on Shopee");
-            }
-            if (isset($item['stock_info_v2']['summary_info']['total_available_stock'])) {
-                $liveStock = (int) $item['stock_info_v2']['summary_info']['total_available_stock'];
-            } elseif (isset($item['stock_info'][0]['current_stock'])) {
-                $liveStock = (int) $item['stock_info'][0]['current_stock'];
-            }
+            $models = $shopeeApiCache[$cacheKey]['models'] ?? [];
+            if (!empty($models)) {
+                // Self-healing fallback: mapping has empty modelId, but Shopee has variations.
+                // Try to find a variation that matches the mapping's SKU if possible.
+                $matchedModel = null;
+                
+                // Get the mapping's SKU to match
+                $skuStmt = $conn->prepare("SELECT COALESCE(shopee_variation_sku, shopee_parent_sku, matched_pos_sku) FROM shopee_product_mappings WHERE shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0) LIMIT 1");
+                $skuStmt->execute([$itemId]);
+                $mapSku = trim((string)$skuStmt->fetchColumn());
+                
+                if ($mapSku !== '') {
+                    foreach ($models as $model) {
+                        $modelSku = trim((string)($model['model_sku'] ?? ''));
+                        if ($modelSku !== '' && strcasecmp($modelSku, $mapSku) === 0) {
+                            $matchedModel = $model;
+                            break;
+                        }
+                    }
+                }
+                
+                // If no SKU match, fall back to the first variation
+                if (!$matchedModel) {
+                    $matchedModel = $models[0];
+                }
+                
+                if (isset($matchedModel['stock_info_v2']['summary_info']['total_available_stock'])) {
+                    $liveStock = (int)$matchedModel['stock_info_v2']['summary_info']['total_available_stock'];
+                } elseif (isset($matchedModel['stock_info'][0]['current_stock'])) {
+                    $liveStock = (int)$matchedModel['stock_info'][0]['current_stock'];
+                }
 
-            $livePrice = isset($item['price_info'][0]['current_price'])
-                ? (float) $item['price_info'][0]['current_price'] : 0.0;
+                if (isset($matchedModel['price_info'][0]['current_price'])) {
+                    $livePrice = (float)$matchedModel['price_info'][0]['current_price'];
+                }
+                
+                // Smart auto-correction: update the database mapping row with the correct model ID and has_variation!
+                $conn->prepare("UPDATE shopee_product_mappings SET shopee_model_id = ?, has_variation = 1, updated_at = NOW() WHERE shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0)")
+                     ->execute([$matchedModel['model_id'], $itemId]);
+                     
+            } else {
+                $item = $shopeeApiCache[$cacheKey]['base'];
+                if (empty($item)) {
+                    // Try to fetch base item if not prewarmed
+                    $infoResult = $shopee->get('/api/v2/product/get_item_base_info', [
+                        'item_id_list' => (string)$itemId,
+                    ], $accessToken, $shopId);
+
+                    if (isset($infoResult['response']['item_list']) && !empty($infoResult['response']['item_list'])) {
+                        $shopeeApiCache[$cacheKey]['base'] = $infoResult['response']['item_list'][0];
+                        $item = $shopeeApiCache[$cacheKey]['base'];
+                    } else {
+                        throw new Exception("Item ID {$itemId} not found on Shopee");
+                    }
+                }
+                
+                if (isset($item['stock_info_v2']['summary_info']['total_available_stock'])) {
+                    $liveStock = (int)$item['stock_info_v2']['summary_info']['total_available_stock'];
+                } elseif (isset($item['stock_info'][0]['current_stock'])) {
+                    $liveStock = (int)$item['stock_info'][0]['current_stock'];
+                }
+
+                $livePrice = isset($item['price_info'][0]['current_price'])
+                    ? (float)$item['price_info'][0]['current_price'] : 0.0;
+            }
         }
 
         return ['stock' => $liveStock, 'price' => $livePrice];
