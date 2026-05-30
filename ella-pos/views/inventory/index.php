@@ -331,12 +331,12 @@ $products = $stmt->fetchAll();
                         <tr>
                             <th class="ps-4" style="color: var(--text-primary); width: 45%; min-width: 350px;">Product Detail</th>
                             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                                <th class="capital-col text-nowrap" style="color: var(--text-primary);">Cost (Capital)</th>
+                                <th class="capital-col text-nowrap" style="color: var(--text-primary); width: 13%;">Cost (Capital)</th>
                             <?php endif; ?>
-                            <th class="text-nowrap" style="color: var(--text-primary);">SRP (Retail)</th>
-                            <th class="text-nowrap" style="color: var(--text-primary);">Stock Level</th>
-                            <th class="text-nowrap" style="color: var(--text-primary);">Status</th>
-                            <th class="text-end pe-4 text-nowrap" style="color: var(--text-primary);">Manage</th>
+                            <th class="text-nowrap" style="color: var(--text-primary); width: 12%;">SRP (Retail)</th>
+                            <th class="text-nowrap" style="color: var(--text-primary); width: 12%;">Stock Level</th>
+                            <th class="text-nowrap" style="color: var(--text-primary); width: 8%;">Status</th>
+                            <th class="text-end pe-4 text-nowrap" style="color: var(--text-primary); width: 10%;">Manage</th>
                         </tr>
                     </thead>
                     <tbody>
