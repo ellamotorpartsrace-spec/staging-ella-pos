@@ -29,10 +29,14 @@ $sql = "
         p.product_id, p.product_name, p.brand_name, p.category_id, p.description, p.image_path, p.created_at,
         v.variation_id, v.variation_name, v.sku, v.barcode, v.unit_type,
         v.price_capital, v.price_retail, v.price_wholesale, v.price_dealer, v.low_stock_threshold, v.status,
-        COALESCE(i.quantity, 0) as current_stock
+        COALESCE(inv.total_qty, 0) as current_stock
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
-    LEFT JOIN inventory i ON v.variation_id = i.variation_id
+    LEFT JOIN (
+        SELECT variation_id, SUM(quantity) as total_qty 
+        FROM inventory 
+        GROUP BY variation_id
+    ) inv ON v.variation_id = inv.variation_id
     WHERE v.variation_id = :id
     LIMIT 1
 ";

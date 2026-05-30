@@ -26,10 +26,14 @@ if (!empty($search)) {
     $sqlSearch = "
         SELECT v.variation_id, v.variation_name, v.sku, v.barcode, 
                p.product_name, p.brand_name, p.image_path,
-               COALESCE(i.quantity, 0) as current_stock
+               COALESCE(inv.total_qty, 0) as current_stock
         FROM product_variations v
         JOIN products p ON v.product_id = p.product_id
-        LEFT JOIN inventory i ON v.variation_id = i.variation_id
+        LEFT JOIN (
+            SELECT variation_id, SUM(quantity) as total_qty 
+            FROM inventory 
+            GROUP BY variation_id
+        ) inv ON v.variation_id = inv.variation_id
         WHERE v.status = 'active' 
         AND (p.product_name LIKE ? OR v.sku LIKE ? OR v.barcode LIKE ? OR p.brand_name LIKE ?)
         LIMIT 10
@@ -43,10 +47,14 @@ if (!empty($search)) {
 if (isset($_GET['id'])) {
     $sqlSelect = "
         SELECT v.*, p.product_name, p.brand_name, p.image_path,
-               COALESCE(i.quantity, 0) as current_stock
+               COALESCE(inv.total_qty, 0) as current_stock
         FROM product_variations v
         JOIN products p ON v.product_id = p.product_id
-        LEFT JOIN inventory i ON v.variation_id = i.variation_id
+        LEFT JOIN (
+            SELECT variation_id, SUM(quantity) as total_qty 
+            FROM inventory 
+            GROUP BY variation_id
+        ) inv ON v.variation_id = inv.variation_id
         WHERE v.variation_id = ?
     ";
     $stmt = $conn->prepare($sqlSelect);
