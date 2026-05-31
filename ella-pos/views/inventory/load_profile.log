@@ -43,3 +43,8 @@ After config.php: 2.43ms
 After sidebar.php: 77.24ms
 After sqlStats: 125.21ms
 After sqlProducts: 191.06ms
+Start index.php
+After config.php: 1.05ms
+After sidebar.php: 30.1ms
+After sqlStats: 66.6ms
+After sqlProducts: 80.12ms
