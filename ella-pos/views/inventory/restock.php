@@ -33,7 +33,7 @@ if (!empty($search) && $mode === 'single') {
                COALESCE(i.quantity, 0) as current_stock
         FROM product_variations v
         JOIN products p ON v.product_id = p.product_id
-        LEFT JOIN inventory i ON v.variation_id = i.variation_id
+        LEFT JOIN inventory i ON v.variation_id = i.variation_id AND i.store_id = 1
         WHERE v.status = 'active' 
         AND (p.product_name LIKE ? OR v.sku LIKE ? OR v.barcode LIKE ? OR p.brand_name LIKE ?)
         LIMIT 10
@@ -50,7 +50,7 @@ if (isset($_GET['id'])) {
                COALESCE(i.quantity, 0) as current_stock
         FROM product_variations v
         JOIN products p ON v.product_id = p.product_id
-        LEFT JOIN inventory i ON v.variation_id = i.variation_id
+        LEFT JOIN inventory i ON v.variation_id = i.variation_id AND i.store_id = 1
         WHERE v.variation_id = ?
     ";
     $stmt = $conn->prepare($sqlSelect);

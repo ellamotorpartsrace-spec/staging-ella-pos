@@ -94,8 +94,13 @@ try {
         $stmtPrice->execute([$new_capital, $var_id]);
     }
 
+    // Fetch actual updated stock from DB for the history log to prevent race conditions and stale POST data
+    $stmtActualStock = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
+    $stmtActualStock->execute([$var_id]);
+    $actual_new_total = (int) $stmtActualStock->fetchColumn();
+    $actual_previous_qty = $actual_new_total - $qty_added;
+
     // C. Create Audit Log (Stock Movement)
-    $new_total = $current_qty + $qty_added;
     $remarks = "Restock: " . ($supplier ?: 'Manual Entry');
 
     // Ensure we have a reference if an image is uploaded but ref is empty
@@ -114,7 +119,7 @@ try {
 
     $stmtLog = $conn->prepare($sqlLog);
     // Use the $new_capital variable which was just posted (and possibly updated above) to lock in the price.
-    $stmtLog->execute([$var_id, $qty_added, $current_qty, $new_total, $ref, $remarks, $_SESSION['user_id'], (float) $new_capital]);
+    $stmtLog->execute([$var_id, $qty_added, $actual_previous_qty, $actual_new_total, $ref, $remarks, $_SESSION['user_id'], (float) $new_capital]);
     $last_movement_id = $conn->lastInsertId();
 
     // D. Handle Reference Image Upload (Multiple)
