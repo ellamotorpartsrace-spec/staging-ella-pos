@@ -35,20 +35,9 @@ $sqlProd = "
             SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
             FROM shopee_product_mappings m
             LEFT JOIN product_units u ON m.pos_unit_id = u.id
-            WHERE (m.pos_product_id = v.variation_id OR (v.sku != '' AND m.matched_pos_sku = v.sku))
+            WHERE (m.pos_product_id = v.variation_id OR (v.sku != '' AND m.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
               AND m.mapping_status IN ('auto','manual')
               AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
-        ) + (
-            SELECT COALESCE(SUM(
-                m2.shopee_stock * si.component_qty * COALESCE(cu.multiplier, 1)
-            ), 0)
-            FROM shopee_product_mappings m2
-            INNER JOIN product_unit_set_items si ON si.product_set_id = m2.pos_bundle_set_id
-            LEFT JOIN product_units cu ON cu.id = si.component_unit_id
-            WHERE si.component_variation_id = v.variation_id
-              AND m2.mapping_status IN ('auto','manual')
-              AND m2.pos_bundle_set_id IS NOT NULL
-              AND m2.pos_bundle_set_id > 0
         ) AS SIGNED) as shopee_allocated
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
