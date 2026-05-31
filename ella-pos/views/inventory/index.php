@@ -101,7 +101,7 @@ $sqlProducts = "
                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
                FROM shopee_product_mappings m
                LEFT JOIN product_units u ON m.pos_unit_id = u.id
-               WHERE m.pos_product_id = v.variation_id
+               WHERE (m.pos_product_id = v.variation_id OR (v.sku != '' AND m.matched_pos_sku = v.sku))
                  AND m.mapping_status IN ('auto','manual')
                  AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
            ) + (
