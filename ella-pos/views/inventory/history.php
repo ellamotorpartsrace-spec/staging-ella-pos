@@ -27,17 +27,32 @@ $conn = $db->getConnection();
 $sqlProd = "
     SELECT 
         p.product_name, p.brand_name, 
-        v.variation_name, v.sku, v.barcode,
-        GREATEST(0, 
-            (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = v.variation_id)
-            - 
-            (SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
-             FROM shopee_product_mappings m
-             LEFT JOIN product_units u ON m.pos_unit_id = u.id
-             WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual'))
-        ) as current_stock
+        v.variation_name, v.sku, v.barcode, v.unit_type,
+        COALESCE(i_phys.quantity, 0) as physical_stock,
+        COALESCE(i_online.quantity, 0) as online_stock,
+        COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as total_stock,
+        CAST((
+            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+            FROM shopee_product_mappings m
+            LEFT JOIN product_units u ON m.pos_unit_id = u.id
+            WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
+              AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+        ) + (
+            SELECT COALESCE(SUM(
+                m2.shopee_stock * si.component_qty * COALESCE(cu.multiplier, 1)
+            ), 0)
+            FROM shopee_product_mappings m2
+            INNER JOIN product_unit_set_items si ON si.product_set_id = m2.pos_bundle_set_id
+            LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+            WHERE si.component_variation_id = v.variation_id
+              AND m2.mapping_status IN ('auto','manual')
+              AND m2.pos_bundle_set_id IS NOT NULL
+              AND m2.pos_bundle_set_id > 0
+        ) AS SIGNED) as shopee_allocated
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
+    LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
+    LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
     WHERE v.variation_id = :id
 ";
 $stmt = $conn->prepare($sqlProd);
@@ -50,22 +65,82 @@ if (!$product) {
     exit;
 }
 
+$totalStock = (int)$product['total_stock'];
+$shopeeAllocated = (int)$product['shopee_allocated'];
+$physicalAvailable = max(0, $totalStock - $shopeeAllocated);
+
 // 3. Fetch History (Stock Movements)
-// We JOIN with 'users' to see WHO did the action. 
-// IMPORTANT: Filter by store_id = 1 to ONLY show POS physical stock history!
+// Include BOTH store_id 1 (physical) movements
 // ORDER BY movement_id DESC as secondary sort to fix same-second logs
 $sqlHist = "
     SELECT m.*, u.username, u.full_name
     FROM stock_movements m
     LEFT JOIN users u ON m.created_by = u.id
-    WHERE m.variation_id = :id AND m.store_id = 1
+    WHERE m.variation_id = :id AND m.store_id = 1 
+    AND m.type NOT IN ('online_sale', 'online_adjustment', 'shopee_balance_sync')
     ORDER BY m.created_at DESC, m.movement_id DESC
     LIMIT 100
 ";
 $stmtHist = $conn->prepare($sqlHist);
 $stmtHist->execute([':id' => $variation_id]);
 $history = $stmtHist->fetchAll();
+
+// Movement type configuration
+$type_config = [
+    'stock_in'               => ['label' => 'Stock In',              'icon' => 'fa-solid fa-arrow-down',           'badge' => 'bg-success',              'desc' => 'New stock added to inventory'],
+    'stock_out'              => ['label' => 'Stock Out',             'icon' => 'fa-solid fa-arrow-up',             'badge' => 'bg-warning text-dark',    'desc' => 'Stock removed from inventory'],
+    'sales'                  => ['label' => 'POS Sale',              'icon' => 'fa-solid fa-cart-shopping',         'badge' => 'bg-primary',              'desc' => 'Sold to walk-in customer'],
+    'adjustment'             => ['label' => 'Adjustment',            'icon' => 'fa-solid fa-wrench',               'badge' => 'bg-info text-dark',       'desc' => 'Manual stock correction'],
+    'return'                 => ['label' => 'Return',                'icon' => 'fa-solid fa-rotate-left',          'badge' => 'bg-danger',               'desc' => 'Customer return'],
+    'allocation_to_online'   => ['label' => 'Allocated to Shopee',   'icon' => 'fa-solid fa-globe',                'badge' => 'shopee-badge',            'desc' => 'Stock allocated to Shopee store'],
+    'allocation_to_physical' => ['label' => 'Returned to POS',       'icon' => 'fa-solid fa-store',                'badge' => 'bg-dark',                 'desc' => 'Stock returned from Shopee to POS'],
+];
 ?>
+
+<style>
+    .shopee-badge {
+        background: linear-gradient(135deg, #ee4d2d 0%, #ff6f47 100%) !important;
+        color: #fff !important;
+    }
+    .history-card {
+        transition: all 0.2s ease;
+    }
+    .history-card:hover {
+        background-color: var(--bg-surface, #f8f9fa);
+    }
+    .movement-desc {
+        font-size: 0.72rem;
+        color: var(--text-secondary, #6c757d);
+        margin-top: 2px;
+    }
+    .stock-flow {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+    .stock-flow .prev { color: var(--text-secondary, #6c757d); }
+    .stock-flow .arrow { color: var(--text-secondary, #adb5bd); font-size: 0.7rem; }
+    .stock-flow .new { color: var(--text-primary, #212529); }
+    .summary-stat {
+        text-align: center;
+        padding: 12px 8px;
+    }
+    .summary-stat .stat-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+    .summary-stat .stat-label {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: var(--text-secondary, #6c757d);
+        margin-top: 2px;
+    }
+</style>
 
 <div class="container-fluid p-4">
 
@@ -85,13 +160,41 @@ $history = $stmtHist->fetchAll();
     <div class="row g-4">
 
         <div class="col-md-3">
+            <!-- Stock Summary Cards -->
             <div class="card shadow-sm border-0 mb-3">
-                <div class="card-body">
-                    <small class="text-uppercase text-muted fw-bold">Current Stock</small>
-                    <div class="h2 fw-bold text-primary mb-0"><?= $product['current_stock'] ?></div>
-                    <small class="text-muted">units available</small>
+                <div class="card-body p-0">
+                    <div class="row g-0">
+                        <div class="col-4 summary-stat border-end">
+                            <div class="stat-value text-primary"><?= $totalStock ?></div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="col-4 summary-stat border-end">
+                            <div class="stat-value text-success"><?= $physicalAvailable ?></div>
+                            <div class="stat-label">POS</div>
+                        </div>
+                        <div class="col-4 summary-stat">
+                            <div class="stat-value" style="color: #ee4d2d;"><?= $shopeeAllocated ?></div>
+                            <div class="stat-label"><i class="fa-solid fa-globe" style="font-size: 0.6rem;"></i> Shopee</div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <?php if ($shopeeAllocated > 0): ?>
+            <div class="card shadow-sm border-0 mb-3" style="border-left: 3px solid #ee4d2d !important;">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-globe" style="color: #ee4d2d;"></i>
+                        <div>
+                            <div class="small fw-bold" style="color: #ee4d2d;">Shopee Allocated</div>
+                            <div class="small text-muted">
+                                <?= $shopeeAllocated ?> of <?= $totalStock ?> <?= htmlspecialchars($product['unit_type'] ?? 'units') ?> reserved for Shopee
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <div class="card shadow-sm border-0">
                 <div class="card-body">
@@ -134,56 +237,94 @@ $history = $stmtHist->fetchAll();
                         <tbody>
                             <?php if (count($history) > 0): ?>
                                 <?php foreach ($history as $row): ?>
-                                    <tr>
+                                    <?php
+                                    $type = $row['type'] ?? '';
+                                    $cfg = $type_config[$type] ?? [
+                                        'label' => ucwords(str_replace('_', ' ', $type ?: 'Unknown')),
+                                        'icon'  => 'fa-solid fa-circle',
+                                        'badge' => 'bg-secondary',
+                                        'desc'  => ''
+                                    ];
+
+                                    // Determine the sign from the actual quantity value
+                                    $qty = (int)$row['quantity'];
+                                    $isPositive = $qty >= 0;
+
+                                    // Special handling: 'sales' stores positive qty but means deduction
+                                    if ($type === 'sales') {
+                                        $isPositive = false;
+                                    }
+
+                                    $qtySign = $isPositive ? '+' : '';
+                                    $qtyColor = $isPositive ? 'success' : 'danger';
+                                    $displayQty = $qty;
+
+                                    // For sales, show as negative
+                                    if ($type === 'sales' && $qty > 0) {
+                                        $displayQty = -$qty;
+                                    }
+
+                                    // Build a clear human-readable description
+                                    $humanDesc = '';
+                                    $absQty = abs($displayQty);
+                                    switch ($type) {
+                                        case 'allocation_to_online':
+                                            $humanDesc = $absQty . ' moved to Shopee';
+                                            break;
+                                        case 'allocation_to_physical':
+                                            $humanDesc = $absQty . ' returned from Shopee';
+                                            break;
+                                        case 'sales':
+                                            $humanDesc = $absQty . ' sold (walk-in)';
+                                            break;
+                                        case 'stock_in':
+                                            $humanDesc = $absQty . ' added to stock';
+                                            break;
+                                        case 'stock_out':
+                                            $humanDesc = $absQty . ' removed from stock';
+                                            break;
+                                        case 'return':
+                                            $humanDesc = $absQty . ' returned';
+                                            break;
+                                        case 'adjustment':
+                                            $humanDesc = 'Adjusted by ' . ($displayQty >= 0 ? '+' : '') . $displayQty;
+                                            break;
+                                        default:
+                                            $humanDesc = $cfg['desc'] ?? '';
+                                    }
+
+                                    // Detect if this is a Shopee-related movement
+                                    $isShopeeRelated = in_array($type, [
+                                        'allocation_to_online', 'allocation_to_physical'
+                                    ]) || strpos($row['reference'] ?? '', 'SHP-') === 0;
+                                    ?>
+                                    <tr class="history-card">
                                         <td class="ps-4 small text-secondary">
                                             <?= date('M d, Y h:i A', strtotime($row['created_at'])) ?>
                                         </td>
 
                                         <td>
-                                            <?php
-                                            $type = $row['type'];
-                                            $badgeClass = 'bg-secondary';
-                                            $icon = 'fa-circle';
-
-                                            switch ($type) {
-                                                case 'stock_in':
-                                                    $badgeClass = 'bg-success';
-                                                    $icon = 'fa-arrow-down';
-                                                    break;
-                                                case 'stock_out':
-                                                    $badgeClass = 'bg-warning text-dark';
-                                                    $icon = 'fa-arrow-up';
-                                                    break;
-                                                case 'sales':
-                                                    $badgeClass = 'bg-primary';
-                                                    $icon = 'fa-cart-shopping';
-                                                    break;
-                                                case 'adjustment':
-                                                    $badgeClass = 'bg-info text-dark';
-                                                    $icon = 'fa-wrench';
-                                                    break;
-                                                case 'return':
-                                                    $badgeClass = 'bg-danger';
-                                                    $icon = 'fa-rotate-left';
-                                                    break;
-                                            }
-                                            ?>
-                                            <span class="badge <?= $badgeClass ?> rounded-pill">
-                                                <i class="fa-solid <?= $icon ?> me-1"></i>
-                                                <?= strtoupper(str_replace('_', ' ', $type)) ?>
+                                            <span class="badge <?= $cfg['badge'] ?> rounded-pill">
+                                                <i class="<?= $cfg['icon'] ?> me-1"></i>
+                                                <?= $cfg['label'] ?>
                                             </span>
-                                        </td>
-
-                                        <td class="text-center fw-bold">
-                                            <?php if (in_array($type, ['stock_out', 'sales'])): ?>
-                                                <span class="text-danger">-<?= $row['quantity'] ?></span>
-                                            <?php else: ?>
-                                                <span class="text-success">+<?= $row['quantity'] ?></span>
+                                            <?php if ($humanDesc): ?>
+                                                <div class="movement-desc"><?= htmlspecialchars($humanDesc) ?></div>
                                             <?php endif; ?>
                                         </td>
 
-                                        <td class="text-center text-muted">
-                                            <?= $row['new_stock'] ?>
+                                        <td class="text-center fw-bold">
+                                            <span class="text-<?= $qtyColor ?>" style="font-size: 1rem;">
+                                                <?= $displayQty >= 0 ? '+' . $absQty : '-' . $absQty ?>
+                                            </span>
+                                        </td>
+
+                                        <td class="text-center">
+                                            <div class="stock-flow">
+                                                <span class="prev"><?= $row['previous_stock'] ?></span>
+                                                <i class="fa-solid fa-arrow-right arrow"></i>
+                                                <span class="new fw-bold"><?= $row['new_stock'] ?></span>
+                                            </div>
                                         </td>
 
                                         <td>
@@ -192,15 +333,15 @@ $history = $stmtHist->fetchAll();
                                                     Ref: <?= htmlspecialchars($row['reference']) ?>
                                                 </div><br>
                                             <?php endif; ?>
-                                            <small class="text-muted"><?= htmlspecialchars($row['remarks']) ?></small>
+                                            <small class="text-muted"><?= htmlspecialchars($row['remarks'] ?? '') ?></small>
                                         </td>
 
                                         <td class="text-end pe-4 small">
-                                            <?php if (strpos($row['reference'] ?? '', 'SHP-SYNC-') === 0): ?>
-                                                <i class="fa-solid fa-shopping-bag text-shopee me-1"></i>Shopee
+                                            <?php if ($isShopeeRelated): ?>
+                                                <span style="color: #ee4d2d;"><i class="fa-solid fa-shopping-bag me-1"></i>Shopee</span>
                                             <?php else: ?>
                                                 <i class="fa-solid fa-user-circle text-secondary"></i>
-                                                <?= htmlspecialchars($row['username'] ?? 'System') ?>
+                                                <?= htmlspecialchars($row['full_name'] ?? $row['username'] ?? 'System') ?>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
