@@ -238,21 +238,20 @@ $type_config = [
 
                                     // Determine the sign from the actual quantity value
                                     $qty = (int)$row['quantity'];
-                                    $isPositive = $qty >= 0;
-
-                                    // Special handling: 'sales' stores positive qty but means deduction
-                                    if ($type === 'sales') {
-                                        $isPositive = false;
+                                    
+                                    // Some movement types are inherently deductions from the physical stock,
+                                    // even if the database stores the absolute quantity.
+                                    $deduction_types = ['stock_out', 'sales', 'allocation_to_online'];
+                                    
+                                    if (in_array($type, $deduction_types)) {
+                                        $displayQty = -abs($qty);
+                                    } else {
+                                        $displayQty = $qty; // For adjustment, it could already be negative
                                     }
 
+                                    $isPositive = $displayQty >= 0;
                                     $qtySign = $isPositive ? '+' : '';
                                     $qtyColor = $isPositive ? 'success' : 'danger';
-                                    $displayQty = $qty;
-
-                                    // For sales, show as negative
-                                    if ($type === 'sales' && $qty > 0) {
-                                        $displayQty = -$qty;
-                                    }
 
                                     // Build a clear human-readable description
                                     $humanDesc = '';
