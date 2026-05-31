@@ -190,6 +190,7 @@ try {
 
         foreach ($results as &$p) {
             $p['online_stock'] = 0;
+            $p['is_shopee_mapped'] = false;
             $v_id = $p['variation_id'];
             $v_sku = strtolower(trim($p['sku'] ?? ''));
             $valid_sku = !empty($v_sku) && !in_array($v_sku, ['', '-', 'n/a', 'na', 'none', 'null']);
@@ -200,6 +201,7 @@ try {
                 
                 if ($matches_id || $matches_sku) {
                     $p['online_stock'] += (int) $m['stock_value'];
+                    $p['is_shopee_mapped'] = true;
                 }
             }
         }

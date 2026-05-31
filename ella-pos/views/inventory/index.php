@@ -942,7 +942,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 stockHtml = `<span class="badge bg-success-subtle text-success border border-success">${phys} ${unit}</span>`;
             }
 
-            if (online > 0) {
+            if (row.is_shopee_mapped) {
                 stockHtml += `
                     <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
                         Total: ${qty} <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> ${online}</span>
@@ -1049,7 +1049,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 stockBadge = `<span class="badge bg-success-subtle text-success border border-success">${phys} ${unit}</span>`;
             }
 
-            if (online > 0) {
+            if (row.is_shopee_mapped) {
                 stockBadge += `
                     <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
                         Total: ${qty} <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> ${online}</span>
