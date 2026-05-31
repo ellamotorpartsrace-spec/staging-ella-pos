@@ -135,6 +135,7 @@ try {
             p.brand_name,
             p.image_path,
             COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
+            CAST(
             (
                 SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u2.multiplier, 1)), 0)
                 FROM shopee_product_mappings m
@@ -153,7 +154,7 @@ try {
                   AND m2.mapping_status IN ('auto','manual')
                   AND m2.pos_bundle_set_id IS NOT NULL
                   AND m2.pos_bundle_set_id > 0
-            ) as online_stock
+            ) AS SIGNED) as online_stock
             {$relevanceSelect}
         " . $baseSql . "
         {$orderClause}

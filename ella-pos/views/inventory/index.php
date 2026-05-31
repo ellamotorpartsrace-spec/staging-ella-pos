@@ -96,6 +96,7 @@ $sqlProducts = "
            v.price_capital, v.price_retail, v.status, v.low_stock_threshold,
            p.product_name, p.brand_name, p.image_path,
            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
+           CAST(
            (
                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
                FROM shopee_product_mappings m
@@ -114,7 +115,7 @@ $sqlProducts = "
                  AND m2.mapping_status IN ('auto','manual')
                  AND m2.pos_bundle_set_id IS NOT NULL
                  AND m2.pos_bundle_set_id > 0
-           ) as online_stock
+           ) AS SIGNED) as online_stock
     " . $baseSql . "
     ORDER BY p.product_name ASC
     LIMIT $limit OFFSET $offset
