@@ -458,7 +458,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                         ?>
                                         <?php if (!empty($row['is_shopee_mapped'])): ?>
                                             <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
-                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="<?= $online > 0 ? 'text-info' : 'text-danger' ?> text-nowrap" title="Shopee Allocated"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
+                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap" title="Shopee Allocated"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -564,7 +564,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                         ?>
                                         <?php if (!empty($row['is_shopee_mapped'])): ?>
                                             <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
-                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="<?= $online > 0 ? 'text-info' : 'text-danger' ?> text-nowrap" title="Shopee Allocated"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
+                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap" title="Shopee Allocated"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </div>
