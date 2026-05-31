@@ -140,7 +140,7 @@ try {
                 SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u2.multiplier, 1)), 0)
                 FROM shopee_product_mappings m
                 LEFT JOIN product_units u2 ON m.pos_unit_id = u2.id
-                WHERE (m.pos_product_id = v.variation_id OR (v.sku != '' AND m.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
+                WHERE (m.pos_product_id = v.variation_id OR (v.sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null') AND m.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
                   AND m.mapping_status IN ('auto','manual')
                   AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
             ) AS SIGNED) as online_stock
