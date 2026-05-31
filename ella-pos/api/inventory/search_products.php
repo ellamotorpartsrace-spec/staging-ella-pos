@@ -135,7 +135,25 @@ try {
             p.brand_name,
             p.image_path,
             COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
-            COALESCE(i_online.quantity, 0) as online_stock
+            (
+                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u2.multiplier, 1)), 0)
+                FROM shopee_product_mappings m
+                LEFT JOIN product_units u2 ON m.pos_unit_id = u2.id
+                WHERE m.pos_product_id = v.variation_id
+                  AND m.mapping_status IN ('auto','manual')
+                  AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+            ) + (
+                SELECT COALESCE(SUM(
+                    m2.shopee_stock * si.component_qty * COALESCE(cu.multiplier, 1)
+                ), 0)
+                FROM shopee_product_mappings m2
+                INNER JOIN product_unit_set_items si ON si.product_set_id = m2.pos_bundle_set_id
+                LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+                WHERE si.component_variation_id = v.variation_id
+                  AND m2.mapping_status IN ('auto','manual')
+                  AND m2.pos_bundle_set_id IS NOT NULL
+                  AND m2.pos_bundle_set_id > 0
+            ) as online_stock
             {$relevanceSelect}
         " . $baseSql . "
         {$orderClause}

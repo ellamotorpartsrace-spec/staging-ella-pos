@@ -96,7 +96,25 @@ $sqlProducts = "
            v.price_capital, v.price_retail, v.status, v.low_stock_threshold,
            p.product_name, p.brand_name, p.image_path,
            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
-           COALESCE(i_online.quantity, 0) as online_stock
+           (
+               SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+               FROM shopee_product_mappings m
+               LEFT JOIN product_units u ON m.pos_unit_id = u.id
+               WHERE m.pos_product_id = v.variation_id
+                 AND m.mapping_status IN ('auto','manual')
+                 AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+           ) + (
+               SELECT COALESCE(SUM(
+                   m2.shopee_stock * si.component_qty * COALESCE(cu.multiplier, 1)
+               ), 0)
+               FROM shopee_product_mappings m2
+               INNER JOIN product_unit_set_items si ON si.product_set_id = m2.pos_bundle_set_id
+               LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+               WHERE si.component_variation_id = v.variation_id
+                 AND m2.mapping_status IN ('auto','manual')
+                 AND m2.pos_bundle_set_id IS NOT NULL
+                 AND m2.pos_bundle_set_id > 0
+           ) as online_stock
     " . $baseSql . "
     ORDER BY p.product_name ASC
     LIMIT $limit OFFSET $offset
@@ -459,6 +477,8 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 <?php if (count($products) > 0): ?>
                     <?php foreach ($products as $row):
                         $qty = $row['current_stock'];
+                        $online = $row['online_stock'] ?? 0;
+                        $phys = max(0, $qty - $online);
                         $statusClass = $qty == 0 ? 'stock-out' : ($qty <= $row['low_stock_threshold'] ? 'stock-low' : 'status-active');
                         if ($row['status'] !== 'active')
                             $statusClass = 'status-inactive';
