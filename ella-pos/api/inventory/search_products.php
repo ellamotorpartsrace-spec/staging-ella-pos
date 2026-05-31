@@ -134,16 +134,7 @@ try {
             p.product_name,
             p.brand_name,
             p.image_path,
-            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock,
-            CAST(
-            (
-                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u2.multiplier, 1)), 0)
-                FROM shopee_product_mappings m
-                LEFT JOIN product_units u2 ON m.pos_unit_id = u2.id
-                WHERE (m.pos_product_id = v.variation_id OR (v.sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null') AND m.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
-                  AND m.mapping_status IN ('auto','manual')
-                  AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
-            ) AS SIGNED) as online_stock
+            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock
             {$relevanceSelect}
         " . $baseSql . "
         {$orderClause}
@@ -166,6 +157,54 @@ try {
 
     $stmt->execute();
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Optimize online stock loading
+    if (count($results) > 0) {
+        $variation_ids = [];
+        $skus = [];
+        foreach ($results as $p) {
+            $variation_ids[] = (int) $p['variation_id'];
+            if (!empty($p['sku']) && !in_array(strtolower(trim($p['sku'])), ['', '-', 'n/a', 'na', 'none', 'null'])) {
+                $skus[] = $p['sku'];
+            }
+        }
+
+        $variation_ids_str = implode(',', $variation_ids);
+        $skus_escaped = array_map(function($s) use ($conn) { return $conn->quote($s); }, $skus);
+        $skus_str = !empty($skus_escaped) ? implode(',', $skus_escaped) : "''";
+
+        $mappingSql = "
+            SELECT 
+                m.pos_product_id,
+                m.matched_pos_sku,
+                (m.shopee_stock * COALESCE(u.multiplier, 1)) as stock_value
+            FROM shopee_product_mappings m
+            LEFT JOIN product_units u ON m.pos_unit_id = u.id
+            WHERE (m.pos_product_id IN ($variation_ids_str) OR m.matched_pos_sku IN ($skus_str))
+              AND m.mapping_status IN ('auto','manual')
+              AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+        ";
+
+        $mappingStmt = $conn->query($mappingSql);
+        $mappings = $mappingStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($results as &$p) {
+            $p['online_stock'] = 0;
+            $v_id = $p['variation_id'];
+            $v_sku = strtolower(trim($p['sku'] ?? ''));
+            $valid_sku = !empty($v_sku) && !in_array($v_sku, ['', '-', 'n/a', 'na', 'none', 'null']);
+
+            foreach ($mappings as $m) {
+                $matches_id = ($m['pos_product_id'] == $v_id);
+                $matches_sku = ($valid_sku && strtolower(trim($m['matched_pos_sku'] ?? '')) == $v_sku);
+                
+                if ($matches_id || $matches_sku) {
+                    $p['online_stock'] += (int) $m['stock_value'];
+                }
+            }
+        }
+        unset($p);
+    }
 
     echo json_encode([
         'success' => true,
