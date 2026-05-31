@@ -328,11 +328,12 @@ $type_config = [
 
                                         <td class="text-end pe-4 small">
                                             <?php if ($isShopeeRelated): ?>
-                                                <span style="color: #ee4d2d;"><i class="fa-solid fa-shopping-bag me-1"></i>Shopee</span>
-                                            <?php else: ?>
+                                                <div style="color: #ee4d2d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-shopping-bag me-1"></i>Shopee</div>
+                                            <?php endif; ?>
+                                            <div>
                                                 <i class="fa-solid fa-user-circle text-secondary"></i>
                                                 <?= htmlspecialchars($row['full_name'] ?? $row['username'] ?? 'System') ?>
-                                            <?php endif; ?>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
