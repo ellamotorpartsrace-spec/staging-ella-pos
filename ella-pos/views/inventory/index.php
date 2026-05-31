@@ -137,6 +137,7 @@ if (count($products) > 0) {
 
     foreach ($products as &$p) {
         $p['online_stock'] = 0;
+        $p['is_shopee_mapped'] = false;
         $v_id = $p['variation_id'];
         $v_sku = strtolower(trim($p['sku'] ?? ''));
         $valid_sku = !empty($v_sku) && !in_array($v_sku, ['', '-', 'n/a', 'na', 'none', 'null']);
@@ -147,6 +148,7 @@ if (count($products) > 0) {
             
             if ($matches_id || $matches_sku) {
                 $p['online_stock'] += (int) $m['stock_value'];
+                $p['is_shopee_mapped'] = true;
             }
         }
     }
@@ -454,9 +456,9 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                             echo '<span class="badge bg-success-subtle text-success border border-success">' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
-                                        <?php if ($online > 0): ?>
+                                        <?php if (!empty($row['is_shopee_mapped'])): ?>
                                             <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
-                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
+                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="<?= $online > 0 ? 'text-info' : 'text-danger' ?> text-nowrap" title="Shopee Allocated"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -560,9 +562,9 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                             echo '<span class="badge bg-success-subtle text-success border border-success">' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
-                                        <?php if ($online > 0): ?>
+                                        <?php if (!empty($row['is_shopee_mapped'])): ?>
                                             <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
-                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
+                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="<?= $online > 0 ? 'text-info' : 'text-danger' ?> text-nowrap" title="Shopee Allocated"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </div>
