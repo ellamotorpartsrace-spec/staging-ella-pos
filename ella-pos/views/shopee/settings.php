@@ -283,7 +283,6 @@ $authShopId  = $_GET['shop_id'] ?? '';
                             <option value="full">🔄 Full Sync (Re-fetch all products & variations)</option>
                             <option value="stock">📦 Stock Sync Only (Fast stock updates)</option>
                             <option value="price">💰 Price Sync Only (Fast price updates)</option>
-                            <option value="mapping">🔗 Mapping Sync (Re-check unmatched products)</option>
                         </select>
                         <div class="small text-secondary" id="syncModeDesc">Fastest. Only fetches products updated on Shopee since your last sync.</div>
                     </div>

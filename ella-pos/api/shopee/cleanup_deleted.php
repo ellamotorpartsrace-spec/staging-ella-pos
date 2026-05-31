@@ -80,7 +80,18 @@ try {
             
             if (!isset($activeItems[$itemIdStr])) {
                 // Item has been completely deleted from Shopee!
+                // Fetch affected POS products to restore their stock
+                $stmtGetAffected = $conn->prepare("SELECT DISTINCT pos_product_id FROM shopee_product_mappings WHERE shopee_item_id = ? AND pos_product_id IS NOT NULL AND mapping_status IN ('auto', 'manual')");
+                $stmtGetAffected->execute([$itemIdStr]);
+                $affectedPosIds = $stmtGetAffected->fetchAll(PDO::FETCH_COLUMN);
+
                 $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_item_id = ?")->execute([$itemIdStr]);
+                
+                require_once __DIR__ . '/sync_helpers.php';
+                foreach ($affectedPosIds as $posId) {
+                    propagateStockToPos($conn, $posId, 0, 'Ghost Cleanup', '', $_SESSION['user_id'] ?? null, null);
+                }
+
                 $deletedItemsCount++;
             } else {
                 // Item exists. Check if it has models (variations)
@@ -88,9 +99,20 @@ try {
                     $itemsWithModels[] = $itemId;
                     
                     // Cleanup orphaned "Main Item" rows for products that now have variations
+                    $stmtGetAffected = $conn->prepare("SELECT DISTINCT pos_product_id FROM shopee_product_mappings WHERE shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0) AND pos_product_id IS NOT NULL AND mapping_status IN ('auto', 'manual')");
+                    $stmtGetAffected->execute([$itemIdStr]);
+                    $affectedPosIds = $stmtGetAffected->fetchAll(PDO::FETCH_COLUMN);
+
                     $delStmt = $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0)");
                     $delStmt->execute([$itemIdStr]);
-                    $deletedVariationsCount += $delStmt->rowCount();
+                    
+                    if ($delStmt->rowCount() > 0) {
+                        require_once __DIR__ . '/sync_helpers.php';
+                        foreach ($affectedPosIds as $posId) {
+                            propagateStockToPos($conn, $posId, 0, 'Ghost Cleanup', '', $_SESSION['user_id'] ?? null, null);
+                        }
+                        $deletedVariationsCount += $delStmt->rowCount();
+                    }
                 }
             }
         }
@@ -120,15 +142,21 @@ try {
                 }
                 
                 // Fetch local models for this item
-                $varStmt = $conn->prepare("SELECT shopee_model_id FROM shopee_product_mappings WHERE shopee_item_id = ? AND shopee_model_id > 0");
+                $varStmt = $conn->prepare("SELECT shopee_model_id, pos_product_id, mapping_status FROM shopee_product_mappings WHERE shopee_item_id = ? AND shopee_model_id > 0");
                 $varStmt->execute([$iid]);
-                $localModels = $varStmt->fetchAll(PDO::FETCH_COLUMN);
+                $localModels = $varStmt->fetchAll(PDO::FETCH_ASSOC);
                 
-                foreach ($localModels as $localModelId) {
-                    $localModelIdStr = (string)$localModelId;
+                foreach ($localModels as $localModel) {
+                    $localModelIdStr = (string)$localModel['shopee_model_id'];
                     if (!in_array($localModelIdStr, $activeModelIds)) {
                         // Variation was deleted on Shopee!
                         $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_model_id = ?")->execute([$localModelIdStr]);
+                        
+                        if (!empty($localModel['pos_product_id']) && in_array($localModel['mapping_status'], ['auto', 'manual'])) {
+                            require_once __DIR__ . '/sync_helpers.php';
+                            propagateStockToPos($conn, $localModel['pos_product_id'], 0, 'Ghost Cleanup', '', $_SESSION['user_id'] ?? null, null);
+                        }
+                        
                         $deletedVariationsCount++;
                     }
                 }
