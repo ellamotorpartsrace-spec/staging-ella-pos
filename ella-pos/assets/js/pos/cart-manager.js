@@ -193,6 +193,7 @@ const CartManager = {
             wholesale: parseFloat(product.price_wholesale) > 0 ? parseFloat(product.price_wholesale) : parseFloat(product.price_retail || 0),
             dealer: parseFloat(product.price_dealer) > 0 ? parseFloat(product.price_dealer) : parseFloat(product.price_retail || 0)
         };
+        const priceCapital = parseFloat(product.price_capital || 0);
 
         // 3. Resolve Initial Price
         const currentTier = this.getActiveTier();
@@ -210,6 +211,7 @@ const CartManager = {
             // Refresh stock and tiers based on latest product data
             existing.stock = stock;
             existing.tiers = tiers;
+            existing.price_capital = priceCapital;
 
             if (existing.qty + 1 > existing.stock) {
                 const isMax = existing.qty >= existing.stock;
@@ -241,6 +243,7 @@ const CartManager = {
                 sku: product.sku || '',
                 description: product.description || '',
                 stock: stock,
+                price_capital: priceCapital,
                 qty: 1,
                 tiers: tiers,
                 tier_fallback: false,
@@ -316,6 +319,7 @@ const CartManager = {
 
             if (updated) {
                 const newStock = parseInt(updated.stock || 0);
+                const newPriceCapital = parseFloat(updated.price_capital || 0);
                 const newTiers = {
                     retail: parseFloat(updated.price_retail || 0),
                     wholesale: parseFloat(updated.price_wholesale) > 0 ? parseFloat(updated.price_wholesale) : parseFloat(updated.price_retail || 0),
@@ -323,10 +327,11 @@ const CartManager = {
                 };
 
                 // Update if different
-                if (item.stock !== newStock || JSON.stringify(item.tiers) !== JSON.stringify(newTiers)) {
+                if (item.stock !== newStock || item.price_capital !== newPriceCapital || JSON.stringify(item.tiers) !== JSON.stringify(newTiers)) {
                     console.log(`[POS] Auto-refreshed ${item.name}: Stock ${item.stock} -> ${newStock}`);
                     item.stock = newStock;
                     item.tiers = newTiers;
+                    item.price_capital = newPriceCapital;
 
                     // Re-evaluate price in case tiers changed
                     const pricing = this.getDiscountedPrice(item);

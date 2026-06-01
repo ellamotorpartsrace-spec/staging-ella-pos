@@ -258,6 +258,13 @@ const ReceiptFunctions = {
       changeDue = 0;
     }
 
+    const belowCapitalItems = this._getBelowCapitalCartItems();
+    let allowBelowCapital = false;
+    if (belowCapitalItems.length > 0) {
+      allowBelowCapital = await this._showBelowCapitalConfirm(belowCapitalItems);
+      if (!allowBelowCapital) return;
+    }
+
     const confirmed = await EllaConfirm.show({
       title: isPayLater ? 'Scheduled Payment' : 'Confirm Sale',
       message: isPayLater
@@ -338,57 +345,72 @@ const ReceiptFunctions = {
       discount_amount: POS.totals ? POS.totals.discount_amount : 0,
       payment: payment,
       remarks: isPayLater ? "Pay Later" : null,
+      allow_below_capital: allowBelowCapital,
     };
 
-    fetch("../../api/pos/save_sale.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          // Notify cashier if wallet balance was applied or credited
-          const walletUsed = walletSupplementAmt || 0;
-          const savedToWallet = saveToWallet && changeDue > 0;
-          if (walletUsed > 0) {
-            const buyerName = window.POS_BUYER?.buyer_name || 'customer';
-            EllaToast.success(`\u20b1${walletUsed.toFixed(2)} deducted from ${buyerName}'s wallet balance.`);
-          }
-          if (savedToWallet) {
-            const buyerName = window.POS_BUYER?.buyer_name || 'customer';
-            setTimeout(() => {
-              EllaToast.info(`\u20b1${changeDue.toFixed(2)} change saved to ${buyerName}'s wallet.`);
-            }, 800);
-          }
+    const submitSale = async (retryAllowed = true) => {
+      const res = await fetch("../../api/pos/save_sale.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
 
-          // Show receipt with the actual sale reference and date from the database
-          this.showReceiptWithRef(data.sale_ref, data.created_at, {
-            wallet_supplement: walletSupplementAmt,
-            saved_to_wallet: (saveToWallet && changeDue > 0) ? changeDue : 0,
-            shortfall_deducted: !shortfallAsCredit ? (shortfallAmt || 0) : 0,
-            shortfall_as_credit: shortfallAsCredit ? (shortfallAmt || 0) : 0,
-            paid_by_wallet: (paymentMethod === 'wallet') ? grandTotal : 0,
-          });
-          POS.cart = [];
-          if (typeof POS.clearState === 'function') POS.clearState();
-          document.getElementById("amount-tendered").value = "";
-
-          // Reset wallet supplement panel for next transaction
-          if (window.WalletSupplement) WalletSupplement._reset();
-
-          if (isMix) {
-            document.querySelectorAll('.mix-amount-input').forEach(input => input.value = '');
-          }
-
-          // Refresh page to update stock levels
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
-        } else {
-          EllaToast.error('Transaction Failed: ' + (data.message || 'Unknown Error'));
+      if (data.success) {
+        // Notify cashier if wallet balance was applied or credited
+        const walletUsed = walletSupplementAmt || 0;
+        const savedToWallet = saveToWallet && changeDue > 0;
+        if (walletUsed > 0) {
+          const buyerName = window.POS_BUYER?.buyer_name || 'customer';
+          EllaToast.success(`\u20b1${walletUsed.toFixed(2)} deducted from ${buyerName}'s wallet balance.`);
         }
-      })
+        if (savedToWallet) {
+          const buyerName = window.POS_BUYER?.buyer_name || 'customer';
+          setTimeout(() => {
+            EllaToast.info(`\u20b1${changeDue.toFixed(2)} change saved to ${buyerName}'s wallet.`);
+          }, 800);
+        }
+
+        // Show receipt with the actual sale reference and date from the database
+        this.showReceiptWithRef(data.sale_ref, data.created_at, {
+          wallet_supplement: walletSupplementAmt,
+          saved_to_wallet: (saveToWallet && changeDue > 0) ? changeDue : 0,
+          shortfall_deducted: !shortfallAsCredit ? (shortfallAmt || 0) : 0,
+          shortfall_as_credit: shortfallAsCredit ? (shortfallAmt || 0) : 0,
+          paid_by_wallet: (paymentMethod === 'wallet') ? grandTotal : 0,
+        });
+        POS.cart = [];
+        if (typeof POS.clearState === 'function') POS.clearState();
+        document.getElementById("amount-tendered").value = "";
+
+        // Reset wallet supplement panel for next transaction
+        if (window.WalletSupplement) WalletSupplement._reset();
+
+        if (isMix) {
+          document.querySelectorAll('.mix-amount-input').forEach(input => input.value = '');
+        }
+
+        // Refresh page to update stock levels
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+        return;
+      }
+
+      if (data.code === 'BELOW_CAPITAL_CONFIRMATION_REQUIRED' && retryAllowed) {
+        const retryConfirmed = await this._showBelowCapitalConfirm(data.below_capital_items || []);
+        if (!retryConfirmed) {
+          EllaToast.warning('Sale cancelled. Adjust item prices before processing.');
+          return;
+        }
+        payload.allow_below_capital = true;
+        return submitSale(false);
+      }
+
+      EllaToast.error('Transaction Failed: ' + (data.message || 'Unknown Error'));
+    };
+
+    submitSale()
       .catch((err) => {
         console.error(err);
         // Queue sale for offline retry if OfflineQueue is available
@@ -402,6 +424,120 @@ const ReceiptFunctions = {
         btn.disabled = false;
         btn.innerHTML = originalText;
       });
+  },
+
+  _getBelowCapitalCartItems() {
+    return (POS.cart || []).map((item, index) => {
+      const price = parseFloat(item.price || 0);
+      const capital = parseFloat(item.price_capital ?? item.capital_cost ?? item.cost_at_sale ?? 0);
+
+      if (!Number.isFinite(price) || !Number.isFinite(capital) || capital <= 0 || price + 0.0001 >= capital) {
+        return null;
+      }
+
+      return {
+        name: item.name || item.product_name || `Item ${index + 1}`,
+        variation: item.variation || item.variation_name || '',
+        unit_type: item.unit_type || '',
+        qty: parseInt(item.qty || item.quantity || 1, 10),
+        price,
+        capital,
+        difference: capital - price
+      };
+    }).filter(Boolean);
+  },
+
+  _showBelowCapitalConfirm(items = []) {
+    return new Promise((resolve) => {
+      const existing = document.getElementById('belowCapitalConfirmModal');
+      if (existing) existing.remove();
+
+      const currency = POS.config?.currency || '';
+      const fmt = (value) => `${currency}${parseFloat(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const visibleItems = items.slice(0, 8);
+      const rowsHtml = visibleItems.length > 0
+        ? visibleItems.map((item) => {
+          const name = this._escHtml(item.name || item.product_name || 'Item');
+          const variation = this._escHtml(item.variation || item.variation_name || item.unit_type || '');
+          const qty = parseInt(item.qty || item.quantity || 1, 10);
+          const price = parseFloat(item.price || item.price_at_sale || 0);
+          const capital = parseFloat(item.capital ?? item.price_capital ?? item.cost_at_sale ?? 0);
+          const loss = Math.max(capital - price, 0);
+
+          return `
+            <div style="border:1px solid #fee2e2; border-radius:10px; padding:10px 12px; margin-bottom:8px; background:#fff7ed;">
+              <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                <div style="min-width:0;">
+                  <div style="font-weight:800; color:#1e293b; font-size:0.9rem;">${name}</div>
+                  <div style="color:#64748b; font-size:0.76rem;">${variation}${variation ? ' · ' : ''}Qty ${qty}</div>
+                </div>
+                <div style="text-align:right; white-space:nowrap; font-size:0.78rem;">
+                  <div><span style="color:#64748b;">Price:</span> <strong style="color:#dc2626;">${fmt(price)}</strong></div>
+                  <div><span style="color:#64748b;">Capital:</span> <strong>${fmt(capital)}</strong></div>
+                  <div style="color:#dc2626; font-weight:700;">Short: ${fmt(loss)}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')
+        : '<div style="color:#64748b; font-size:0.86rem;">The server detected item prices below capital cost.</div>';
+
+      const moreHtml = items.length > visibleItems.length
+        ? `<div style="color:#64748b; font-size:0.78rem; text-align:center;">And ${items.length - visibleItems.length} more item(s).</div>`
+        : '';
+
+      const modalEl = document.createElement('div');
+      modalEl.className = 'modal fade';
+      modalEl.id = 'belowCapitalConfirmModal';
+      modalEl.setAttribute('tabindex', '-1');
+      modalEl.setAttribute('data-bs-backdrop', 'static');
+      modalEl.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+          <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+            <div class="modal-body p-0">
+              <div style="background:#fef2f2; padding:20px 24px 16px; text-align:center;">
+                <div style="width:56px; height:56px; background:#dc2626; border-radius:16px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px;">
+                  <i class="fa-solid fa-triangle-exclamation" style="font-size:1.6rem; color:#fff;"></i>
+                </div>
+                <h5 style="font-weight:800; color:#1e293b; margin:0 0 4px;">Price Below Capital</h5>
+                <p style="font-size:0.82rem; color:#64748b; margin:0;">Review these item prices before committing the sale.</p>
+              </div>
+              <div style="padding:16px 20px; max-height:360px; overflow:auto;">
+                ${rowsHtml}
+                ${moreHtml}
+              </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-2 pb-4 pt-0 px-4">
+              <button type="button" class="btn btn-outline-secondary px-4 flex-grow-1" id="bc-cancel">
+                Cancel
+              </button>
+              <button type="button" class="btn btn-warning px-4 flex-grow-1 fw-bold" id="bc-confirm">
+                Proceed Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modalEl);
+      const bsModal = new bootstrap.Modal(modalEl);
+
+      let resolved = false;
+      modalEl.querySelector('#bc-confirm').addEventListener('click', () => {
+        resolved = true;
+        bsModal.hide();
+      });
+      modalEl.querySelector('#bc-cancel').addEventListener('click', () => {
+        resolved = false;
+        bsModal.hide();
+      });
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        resolve(resolved);
+        modalEl.remove();
+      });
+
+      bsModal.show();
+    });
   },
 
   /**
