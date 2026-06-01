@@ -28,6 +28,7 @@ $date_to = $_GET['date_to'] ?? '';
 $sql = "
     SELECT 
         sm.movement_id,
+        sm.variation_id,
         sm.store_id,
         sm.type,
         sm.quantity,
@@ -41,12 +42,19 @@ $sql = "
         p.product_name,
         p.brand_name,
         u.full_name as created_by_name,
+        first_in.first_stock_in_id,
         ra.all_images_data,
         COALESCE(ra.attachment_count, 0) as attachment_count
     FROM stock_movements sm
     JOIN product_variations pv ON sm.variation_id = pv.variation_id
     JOIN products p ON pv.product_id = p.product_id
     LEFT JOIN users u ON sm.created_by = u.id
+    LEFT JOIN (
+        SELECT variation_id, COALESCE(store_id, 1) as store_id, MIN(movement_id) as first_stock_in_id
+        FROM stock_movements
+        WHERE type = 'stock_in'
+        GROUP BY variation_id, COALESCE(store_id, 1)
+    ) first_in ON first_in.variation_id = sm.variation_id AND first_in.store_id = COALESCE(sm.store_id, 1)
     LEFT JOIN (
         SELECT reference_number, 
                GROUP_CONCAT(CONCAT(id, ':', COALESCE(NULLIF(image_path, ''), CONCAT('api/inventory/reference_attachment_image.php?id=', id))) ORDER BY id ASC) as all_images_data,
@@ -110,6 +118,13 @@ $type_config = [
     'online_adjustment' => ['label' => 'Online Adjust', 'icon' => 'fa-cloud', 'color' => 'warning', 'bg' => 'bg-warning'],
     'allocation_adjustment' => ['label' => 'Shopee Allocation', 'icon' => 'fa-shopping-bag', 'color' => 'shopee', 'bg' => 'bg-shopee']
 ];
+
+function isFirstStockInMovement(array $row): bool
+{
+    return ($row['type'] ?? '') === 'stock_in'
+        && !empty($row['first_stock_in_id'])
+        && (int) $row['movement_id'] === (int) $row['first_stock_in_id'];
+}
 ?>
 
 <style>
@@ -167,6 +182,18 @@ $type_config = [
     .qty-badge {
         font-size: 1.1rem;
         min-width: 60px;
+    }
+
+    .first-stock-badge {
+        font-size: 0.68rem;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .first-stock-note {
+        color: var(--bs-success);
+        font-size: 0.74rem;
+        font-weight: 700;
     }
 
     /* Desktop table view */
@@ -343,6 +370,7 @@ $type_config = [
                                 <?php foreach ($movements as $row):
                                     $cfg = $type_config[$row['type']] ?? ['label' => $row['type'], 'icon' => 'fa-circle', 'color' => 'secondary', 'bg' => 'bg-secondary'];
                                     $isVoided = ($row['status'] ?? '') === 'voided';
+                                    $isFirstStockIn = isFirstStockInMovement($row);
 
                                     // Determine sign and color based on actual quantity value
                                     // Sales are always deductions but stored as positive numbers
@@ -362,9 +390,17 @@ $type_config = [
                                     </td>
                                     <td>
                                         <div class="fw-bold text-dark <?= $isVoided ? 'text-decoration-line-through' : '' ?>">
-                                            <?= htmlspecialchars($row['product_name']) ?>
+                                            <a href="history.php?id=<?= urlencode($row['variation_id']) ?>"
+                                                class="text-dark text-decoration-none">
+                                                <?= htmlspecialchars($row['product_name']) ?>
+                                            </a>
                                             <?php if ($isVoided): ?>
                                                 <span class="badge bg-danger small ms-1" style="font-size: 0.65rem;">VOIDED</span>
+                                            <?php endif; ?>
+                                            <?php if ($isFirstStockIn): ?>
+                                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle first-stock-badge ms-1">
+                                                    <i class="fa-solid fa-circle-plus me-1"></i>First Stock In
+                                                </span>
                                             <?php endif; ?>
                                         </div>
                                         <small class="text-muted">
@@ -422,6 +458,11 @@ $type_config = [
                                                 <?= htmlspecialchars($row['remarks']) ?>
                                             </div>
                                         <?php endif; ?>
+                                        <?php if ($isFirstStockIn): ?>
+                                            <div class="first-stock-note mt-1">
+                                                <i class="fa-solid fa-clock-rotate-left me-1"></i>First stock entry for this product
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <small class="text-muted">
@@ -451,6 +492,7 @@ $type_config = [
                     <?php foreach ($movements as $row):
                         $cfg = $type_config[$row['type']] ?? ['label' => $row['type'], 'icon' => 'fa-circle', 'color' => 'secondary', 'bg' => 'bg-secondary'];
                         $isVoided = ($row['status'] ?? '') === 'voided';
+                        $isFirstStockIn = isFirstStockInMovement($row);
 
                         // Sales are always deductions but stored as positive numbers
                         $is_positive = $row['quantity'] >= 0 && $row['type'] !== 'sales';
@@ -467,9 +509,17 @@ $type_config = [
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div class="flex-grow-1">
                                         <div class="fw-bold text-dark <?= $isVoided ? 'text-decoration-line-through' : '' ?>">
-                                            <?= htmlspecialchars($row['product_name']) ?>
+                                            <a href="history.php?id=<?= urlencode($row['variation_id']) ?>"
+                                                class="text-dark text-decoration-none">
+                                                <?= htmlspecialchars($row['product_name']) ?>
+                                            </a>
                                             <?php if ($isVoided): ?>
                                                 <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">VOIDED</span>
+                                            <?php endif; ?>
+                                            <?php if ($isFirstStockIn): ?>
+                                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle first-stock-badge ms-1">
+                                                    <i class="fa-solid fa-circle-plus me-1"></i>First Stock In
+                                                </span>
                                             <?php endif; ?>
                                         </div>
                                         <small class="text-muted">
@@ -496,7 +546,7 @@ $type_config = [
                                     </small>
                                 </div>
 
-                                <?php if ($row['reference'] || $row['remarks'] || $row['attachment_count'] == 0): ?>
+                                <?php if ($row['reference'] || $row['remarks'] || $row['attachment_count'] == 0 || $isFirstStockIn): ?>
 
                                     <div class="mt-2 pt-2 border-top">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -522,6 +572,11 @@ $type_config = [
                                                 <?php if ($row['remarks']): ?>
                                                     <small
                                                         class="text-muted d-block mt-1"><?= htmlspecialchars($row['remarks']) ?></small>
+                                                <?php endif; ?>
+                                                <?php if ($isFirstStockIn): ?>
+                                                    <small class="first-stock-note d-block mt-1">
+                                                        <i class="fa-solid fa-clock-rotate-left me-1"></i>First stock entry for this product
+                                                    </small>
                                                 <?php endif; ?>
                                             </div>
                                             <?php if ($row['attachment_count'] > 0): ?>
