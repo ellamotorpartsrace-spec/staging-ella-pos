@@ -125,6 +125,29 @@ function isFirstStockInMovement(array $row): bool
         && !empty($row['first_stock_in_id'])
         && (int) $row['movement_id'] === (int) $row['first_stock_in_id'];
 }
+
+function movementStoreMeta($storeId): array
+{
+    $storeId = (int) ($storeId ?? 1);
+    if ($storeId === 2) {
+        return ['label' => 'Online Shop', 'icon' => 'fa-globe', 'class' => 'text-info'];
+    }
+
+    return ['label' => 'Physical Store', 'icon' => 'fa-store', 'class' => 'text-secondary'];
+}
+
+function hasNegativeStoreBalance(array $movements): bool
+{
+    foreach ($movements as $movement) {
+        if ((int) ($movement['previous_stock'] ?? 0) < 0 || (int) ($movement['new_stock'] ?? 0) < 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+$hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
 ?>
 
 <style>
@@ -193,6 +216,18 @@ function isFirstStockInMovement(array $row): bool
     .first-stock-note {
         color: var(--bs-success);
         font-size: 0.74rem;
+        font-weight: 700;
+    }
+
+    .store-stock-meta {
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .negative-stock-note {
+        color: var(--bs-danger);
+        font-size: 0.72rem;
         font-weight: 700;
     }
 
@@ -341,6 +376,16 @@ function isFirstStockInMovement(array $row): bool
         </div>
     </div>
 
+    <?php if ($hasNegativeStoreBalance): ?>
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-start gap-2 mb-3">
+            <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+            <div>
+                <div class="fw-bold">Negative store stock found in the visible movements.</div>
+                <div class="small mb-0">Movement History shows the stock balance for the movement's store. Shopee Allocation shows combined Physical Store plus Online Shop stock.</div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Results -->
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -360,7 +405,7 @@ function isFirstStockInMovement(array $row): bool
                             <th style="width: 42%;">Product</th>
                             <th style="width: 11%;">Type</th>
                             <th class="text-center" style="width: 9%;">Qty Change</th>
-                            <th class="text-center" style="width: 8%;">Stock Level</th>
+                            <th class="text-center" style="width: 8%;">Store Stock</th>
                             <th style="width: 15%;">Reference</th>
                             <th style="width: 5%;">By</th>
                         </tr>
@@ -371,6 +416,8 @@ function isFirstStockInMovement(array $row): bool
                                     $cfg = $type_config[$row['type']] ?? ['label' => $row['type'], 'icon' => 'fa-circle', 'color' => 'secondary', 'bg' => 'bg-secondary'];
                                     $isVoided = ($row['status'] ?? '') === 'voided';
                                     $isFirstStockIn = isFirstStockInMovement($row);
+                                    $storeMeta = movementStoreMeta($row['store_id'] ?? 1);
+                                    $hasNegativeBalance = (int) $row['previous_stock'] < 0 || (int) $row['new_stock'] < 0;
 
                                     // Determine sign and color based on actual quantity value
                                     // Sales are always deductions but stored as positive numbers
@@ -419,9 +466,17 @@ function isFirstStockInMovement(array $row): bool
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <small class="text-muted"><?= $row['previous_stock'] ?></small>
-                                        <i class="fa-solid fa-arrow-right mx-1 text-muted"></i>
-                                        <span class="fw-bold"><?= $row['new_stock'] ?></span>
+                                        <div class="store-stock-meta <?= $storeMeta['class'] ?> mb-1">
+                                            <i class="fa-solid <?= $storeMeta['icon'] ?> me-1"></i><?= $storeMeta['label'] ?>
+                                        </div>
+                                        <div class="<?= $hasNegativeBalance ? 'text-danger' : '' ?>">
+                                            <small class="text-muted"><?= $row['previous_stock'] ?></small>
+                                            <i class="fa-solid fa-arrow-right mx-1 text-muted"></i>
+                                            <span class="fw-bold"><?= $row['new_stock'] ?></span>
+                                        </div>
+                                        <?php if ($hasNegativeBalance): ?>
+                                            <div class="negative-stock-note mt-1">Negative store balance</div>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="align-middle text-break">
                                         <?php if ($row['reference']): ?>
@@ -493,6 +548,8 @@ function isFirstStockInMovement(array $row): bool
                         $cfg = $type_config[$row['type']] ?? ['label' => $row['type'], 'icon' => 'fa-circle', 'color' => 'secondary', 'bg' => 'bg-secondary'];
                         $isVoided = ($row['status'] ?? '') === 'voided';
                         $isFirstStockIn = isFirstStockInMovement($row);
+                        $storeMeta = movementStoreMeta($row['store_id'] ?? 1);
+                        $hasNegativeBalance = (int) $row['previous_stock'] < 0 || (int) $row['new_stock'] < 0;
 
                         // Sales are always deductions but stored as positive numbers
                         $is_positive = $row['quantity'] >= 0 && $row['type'] !== 'sales';
@@ -537,9 +594,15 @@ function isFirstStockInMovement(array $row): bool
                                         <span class="badge <?= $cfg['bg'] ?> bg-opacity-10 text-<?= $cfg['color'] ?> me-2">
                                             <i class="<?= strpos($cfg['icon'], 'fa-') === 0 && strpos($cfg['icon'], ' ') === false ? 'fa-solid ' . $cfg['icon'] : $cfg['icon'] ?> me-1"></i><?= $cfg['label'] ?>
                                         </span>
-                                        <small class="text-muted">
-                                            <?= $row['previous_stock'] ?> → <strong><?= $row['new_stock'] ?></strong>
+                                        <small class="d-block store-stock-meta <?= $storeMeta['class'] ?> mt-1">
+                                            <i class="fa-solid <?= $storeMeta['icon'] ?> me-1"></i><?= $storeMeta['label'] ?>
                                         </small>
+                                        <small class="<?= $hasNegativeBalance ? 'text-danger fw-bold' : 'text-muted' ?>">
+                                            <?= $row['previous_stock'] ?> &rarr; <strong><?= $row['new_stock'] ?></strong>
+                                        </small>
+                                        <?php if ($hasNegativeBalance): ?>
+                                            <small class="negative-stock-note d-block">Negative store balance</small>
+                                        <?php endif; ?>
                                     </div>
                                     <small class="text-muted">
                                         <?= date('M d, h:i A', strtotime($row['created_at'])) ?>
