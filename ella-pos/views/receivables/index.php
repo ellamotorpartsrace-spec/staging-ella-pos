@@ -748,10 +748,11 @@ require_once '../../includes/sidebar.php';
                     </td>
                     <td class="pe-3 text-end">
                         <div class="d-flex gap-1 justify-content-end">
-                            <button class="btn btn-sm btn-white shadow-sm border rounded-3" onclick="AR.viewHistory(${t.payment_id}, '${encodeURIComponent(t.sale_ref || '').replace(/'/g, '%27')}', ${t.total_paid})">
+                            <button class="btn btn-sm btn-white shadow-sm border rounded-3" onclick="AR.viewHistory(${t.payment_id}, '${encodeURIComponent(t.sale_ref || '').replace(/'/g, '%27')}', ${t.total_paid})" title="View History">
                                 <i class="fa-solid fa-clock-rotate-left text-info"></i>
                             </button>
-                            ${!isPaid ? `<a href="view.php?${t.buyer_id ? 'buyer_id=' + t.buyer_id : 'walkin_name=' + encodeURIComponent(t.walkin_name || t.customer_name)}" class="btn btn-sm btn-primary rounded-3"><i class="fa-solid fa-money-bill"></i></a>` : ''}
+                            ${t.total_paid > 0 ? `<button class="btn btn-sm btn-outline-danger shadow-sm border rounded-3" onclick="AR.revertPayment(${t.sale_id})" title="Revert Last Payment"><i class="fa-solid fa-rotate-left"></i></button>` : ''}
+                            ${!isPaid ? `<a href="view.php?${t.buyer_id ? 'buyer_id=' + t.buyer_id : 'walkin_name=' + encodeURIComponent(t.walkin_name || t.customer_name)}" class="btn btn-sm btn-primary rounded-3" title="Pay"><i class="fa-solid fa-money-bill"></i></a>` : ''}
                         </div>
                     </td>
                 </tr>`;
@@ -1123,6 +1124,40 @@ require_once '../../includes/sidebar.php';
                 else AR.showToast('Error: ' + data.error, 'danger');
             } catch (e) { AR.showToast('Network error', 'danger'); }
             finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Apply Changes'; }
+        },
+
+        async revertPayment(saleId) {
+            if (!confirm('Are you sure you want to revert the latest payment for this transaction? This will undo the last payment made.')) return;
+            
+            try {
+                const res = await fetch(`${BASE_URL}api/receivables/revert_payment.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sale_id: saleId }),
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    if (typeof EllaToast !== 'undefined') {
+                        EllaToast.success('Payment reverted successfully');
+                    } else {
+                        AR.showToast('Payment reverted successfully', 'success');
+                    }
+                    this.loadTransactions();
+                } else {
+                    if (typeof EllaToast !== 'undefined') {
+                        EllaToast.error(data.error || 'Failed to revert payment');
+                    } else {
+                        AR.showToast('Error: ' + (data.error || 'Failed to revert payment'), 'danger');
+                    }
+                }
+            } catch (e) {
+                if (typeof EllaToast !== 'undefined') {
+                    EllaToast.error('Network error');
+                } else {
+                    AR.showToast('Network error', 'danger');
+                }
+            }
         },
 
         m: (v) => parseFloat(v || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
