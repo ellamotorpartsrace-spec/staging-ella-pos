@@ -153,6 +153,32 @@ require_once '../../includes/sidebar.php';
                     </div>
                 </div>
             </div>
+
+            <!-- Security Settings -->
+            <div class="card settings-card shadow-sm mt-4 border-primary border-opacity-25">
+                <div class="card-header bg-transparent d-flex align-items-center gap-3">
+                    <div class="section-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Security & Authorization</h6>
+                        <small class="text-muted">Manage master PIN for sensitive actions</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Current Master PIN</label>
+                        <input type="password" class="form-control" id="sec-old_pin" placeholder="Enter current PIN to authorize change">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Master PIN</label>
+                        <input type="password" class="form-control" id="sec-new_pin" placeholder="Enter new PIN">
+                    </div>
+                    <button class="btn btn-primary btn-sm rounded-3 fw-bold px-3 py-2 w-100" onclick="SystemSettings.updatePin()" id="btn-update-pin">
+                        <i class="fa-solid fa-key me-2"></i>Update Master PIN
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Receipt Settings -->
@@ -250,34 +276,6 @@ require_once '../../includes/sidebar.php';
                         <i class="fa-solid fa-circle-info me-2"></i>
                         <strong>Warning:</strong> Enabling this will immediately restrict access for all staff and buyers.
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Security Settings -->
-        <div class="col-12 col-lg-6">
-            <div class="card settings-card shadow-sm border-primary border-opacity-25">
-                <div class="card-header bg-transparent d-flex align-items-center gap-3">
-                    <div class="section-icon bg-primary bg-opacity-10 text-primary">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <div>
-                        <h6 class="fw-bold mb-0">Security & Authorization</h6>
-                        <small class="text-muted">Manage master PIN for sensitive actions (e.g. reverts)</small>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Current Master PIN</label>
-                        <input type="password" class="form-control" id="sec-old_pin" placeholder="Enter current PIN to authorize change">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">New Master PIN</label>
-                        <input type="password" class="form-control" id="sec-new_pin" placeholder="Enter new PIN">
-                    </div>
-                    <button class="btn btn-primary btn-sm rounded-3 fw-bold px-3 py-2 w-100" onclick="SystemSettings.updatePin()" id="btn-update-pin">
-                        <i class="fa-solid fa-key me-2"></i>Update Master PIN
-                    </button>
                 </div>
             </div>
         </div>
