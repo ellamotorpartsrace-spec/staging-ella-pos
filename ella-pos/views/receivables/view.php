@@ -634,11 +634,13 @@ $isAdmin = ($_SESSION['role'] === 'admin' || hasPermission('view_profit'));
                         : inv.days_overdue === 0 ? '<span class="text-success fw-700">Not due</span>'
                             : `<span class="text-danger fw-800 animate__animated animate__pulse animate__infinite" style="display:inline-block;">${inv.days_overdue} days</span>`;
 
-                const actionBtn = isPaid
-                    ? `<div class="bg-light text-secondary border px-3 py-2 rounded-pill fw-700 d-flex align-items-center justify-content-center" style="font-size: 0.75rem; min-height: 38px;"><i class="fa-solid fa-check me-2"></i>Paid</div>`
-                    : `<button class="btn btn-primary btn-sm px-3 py-2 rounded-4 fw-800 shadow-sm transition-all d-flex align-items-center justify-content-center" onclick="LDR.openPayPanel(${inv.payment_id}, '${encodeURIComponent(inv.sale_ref || '').replace(/'/g, '%27')}', ${inv.balance})" style="min-height: 38px;">
-                            <i class="fa-solid fa-money-bill-wave me-2"></i>Pay
-                       </button>`;
+                const actionBtn = `
+                    <div class="d-flex gap-1 justify-content-end">
+                        ${inv.paid_amount > 0 ? `<button class="btn btn-sm btn-outline-danger px-3 py-2 rounded-4 fw-800 shadow-sm transition-all d-flex align-items-center justify-content-center" onclick="LDR.revertPayment(${inv.sale_id})" style="min-height: 38px;" title="Revert Last Payment"><i class="fa-solid fa-rotate-left"></i></button>` : ''}
+                        ${isPaid ? `<div class="bg-light text-secondary border px-3 py-2 rounded-pill fw-700 d-flex align-items-center justify-content-center flex-grow-1" style="font-size: 0.75rem; min-height: 38px;"><i class="fa-solid fa-check me-2"></i>Paid</div>`
+                        : `<button class="btn btn-primary btn-sm px-3 py-2 rounded-4 fw-800 shadow-sm transition-all d-flex align-items-center justify-content-center flex-grow-1" onclick="LDR.openPayPanel(${inv.payment_id}, '${encodeURIComponent(inv.sale_ref || '').replace(/'/g, '%27')}', ${inv.balance})" style="min-height: 38px;"><i class="fa-solid fa-money-bill-wave me-2"></i>Pay</button>`}
+                    </div>
+                `;
 
                 const commentsBtn = `
                     <button class="btn btn-white border shadow-sm rounded-pill px-3 py-1 position-relative d-flex align-items-center gap-2" 
@@ -754,6 +756,31 @@ $isAdmin = ($_SESSION['role'] === 'admin' || hasPermission('view_profit'));
                 }
             } catch (e) { this.toast('Network error', 'danger'); }
             finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check-double me-2"></i>Post Settlement'; }
+        },
+
+        async revertPayment(saleId) {
+            if (!confirm('Are you sure you want to revert the latest payment for this transaction? This will undo the last payment made.')) return;
+            
+            try {
+                const res = await fetch(`${BASE_URL}api/receivables/revert_payment.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sale_id: saleId }),
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    if (typeof EllaToast !== 'undefined') EllaToast.success('Payment reverted successfully');
+                    else this.toast('Payment reverted successfully', 'success');
+                    this.load();
+                } else {
+                    if (typeof EllaToast !== 'undefined') EllaToast.error(data.error || 'Failed to revert payment');
+                    else this.toast('Error: ' + (data.error || 'Failed to revert payment'), 'danger');
+                }
+            } catch (e) {
+                if (typeof EllaToast !== 'undefined') EllaToast.error('Network error');
+                else this.toast('Network error', 'danger');
+            }
         },
 
         openNoteModal(paymentId, encodedNote, encodedSaleRef) {
