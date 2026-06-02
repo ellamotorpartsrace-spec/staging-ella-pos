@@ -58,7 +58,7 @@ try {
             pv.price_wholesale,
             pv.price_dealer,
             COALESCE(NULLIF(pu.price_capital, 0), pv.price_capital, si.cost_at_sale) as price_capital,
-            (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = si.variation_id AND store_id = 1) as current_stock
+            (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = si.variation_id) as current_stock
         FROM pos_sale_items si
         LEFT JOIN product_variations pv ON si.variation_id = pv.variation_id
         LEFT JOIN product_units pu ON si.unit_id = pu.id
