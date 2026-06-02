@@ -104,6 +104,7 @@ try {
         LEFT JOIN (
             SELECT variation_id, SUM(quantity) as total_qty 
             FROM inventory 
+            WHERE store_id = 1
             GROUP BY variation_id
         ) inv ON v.variation_id = inv.variation_id
         LEFT JOIN (
@@ -160,6 +161,7 @@ try {
         LEFT JOIN (
             SELECT variation_id, SUM(quantity) as total_qty 
             FROM inventory 
+            WHERE store_id = 1
             GROUP BY variation_id
         ) inv ON v.variation_id = inv.variation_id
         LEFT JOIN (

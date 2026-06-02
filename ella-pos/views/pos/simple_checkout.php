@@ -1059,25 +1059,22 @@ require_once '../../includes/sidebar.php';
                 if (typeof POS !== 'undefined') POS.brandDiscounts = {};
                 if (typeof SimpleCheckout !== 'undefined') SimpleCheckout.globalDiscount = { type: 'percent', value: 0 };
 
-                // Restore cart and validate stock
+                // Restore cart and validate stock (keep all items as requested)
                 let stockWarnings = [];
-                let removedItems = [];
+                let outOfStockWarnings = [];
 
-                POS.cart = (loadData.items || []).filter(item => {
+                POS.cart = (loadData.items || []).map(item => {
                     const currentStock = parseInt(item.stock) || 0;
                     const loadedQty = parseInt(item.qty) || 1;
 
                     if (currentStock <= 0) {
-                        removedItems.push(item.name);
-                        return false; // Remove from cart
+                        outOfStockWarnings.push(item.name);
+                    } else if (loadedQty > currentStock) {
+                        stockWarnings.push(`${item.name} (needs ${loadedQty}, has ${currentStock})`);
                     }
 
-                    if (loadedQty > currentStock) {
-                        item.qty = currentStock;
-                        stockWarnings.push(`${item.name} (max ${currentStock})`);
-                    }
-
-                    return true;
+                    // Keep item as is, do not cap or remove it
+                    return item;
                 });
 
                 // Restore discount state from draft
@@ -1093,11 +1090,11 @@ require_once '../../includes/sidebar.php';
 
                 CartManager.renderCart();
 
-                if (removedItems.length > 0 || stockWarnings.length > 0) {
+                if (outOfStockWarnings.length > 0 || stockWarnings.length > 0) {
                     let parts = [];
-                    if (removedItems.length > 0) parts.push(`Removed (Out of Stock): ${removedItems.join(', ')}`);
-                    if (stockWarnings.length > 0) parts.push(`Qty Capped: ${stockWarnings.join(', ')}`);
-                    this.showToast(parts.join(' | '), 'warning');
+                    if (outOfStockWarnings.length > 0) parts.push(`Out of Stock: ${outOfStockWarnings.join(', ')}`);
+                    if (stockWarnings.length > 0) parts.push(`Insufficient Stock: ${stockWarnings.join(', ')}`);
+                    this.showToast(parts.join(' | ') + ' (Please adjust before paying)', 'warning');
                 } else {
                     this.showToast('Draft loaded successfully!', 'success');
                 }
