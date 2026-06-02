@@ -102,7 +102,7 @@ try {
         FROM product_variations v
         INNER JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
-            SELECT variation_id, quantity as stock 
+            SELECT variation_id, GREATEST(0, quantity) as stock 
             FROM inventory 
             WHERE store_id = 1
         ) inv ON v.variation_id = inv.variation_id
@@ -146,7 +146,7 @@ try {
         INNER JOIN product_variations v ON u.variation_id = v.variation_id
         INNER JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
-            SELECT variation_id, quantity as stock 
+            SELECT variation_id, GREATEST(0, quantity) as stock 
             FROM inventory 
             WHERE store_id = 1
         ) inv ON v.variation_id = inv.variation_id
