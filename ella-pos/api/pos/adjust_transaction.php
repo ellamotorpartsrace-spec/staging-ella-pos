@@ -14,6 +14,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 require_once '../../includes/logger.php';
+require_once '../../includes/stock_guard.php';
 
 requireLogin();
 
@@ -172,6 +173,8 @@ try {
             $sub = $price * $qty;
             $multiplier = intval($ai['multiplier'] ?? 1);
             $totalDeduct = $qty * $multiplier;
+            $stockPlan = buildPhysicalStockRequirements([$ai]);
+            assertPhysicalStockAvailable($conn, $stockPlan['requirements'], $stockPlan['labels']);
 
             $stmtInsertItem->execute([
                 $sale_id,
@@ -286,8 +289,15 @@ try {
 } catch (Throwable $e) {
     if (isset($conn))
         $conn->rollBack();
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    http_response_code($e instanceof InsufficientPhysicalStockException ? 409 : 400);
+    $response = ['success' => false, 'error' => $e->getMessage()];
+
+    if ($e instanceof InsufficientPhysicalStockException) {
+        $response['code'] = 'INSUFFICIENT_PHYSICAL_STOCK';
+        $response['stock_shortages'] = $e->getItems();
+    }
+
+    echo json_encode($response);
 }
 
 function normalizePaymentType(string $method): string

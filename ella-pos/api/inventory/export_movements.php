@@ -32,6 +32,7 @@ $sql = "
         sm.remarks,
         sm.created_at,
         pv.variation_name,
+        pv.sku,
         pv.barcode,
         p.product_name,
         p.brand_name,
@@ -47,9 +48,20 @@ $sql = "
 $params = [];
 
 if (!empty($search)) {
-    $sql .= " AND (p.product_name LIKE ? OR p.brand_name LIKE ? OR pv.barcode LIKE ? OR sm.reference LIKE ?)";
-    $term = "%$search%";
-    $params = array_merge($params, [$term, $term, $term, $term]);
+    $searchTokens = preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY);
+
+    foreach ($searchTokens as $token) {
+        $sql .= " AND (
+            p.product_name LIKE ?
+            OR p.brand_name LIKE ?
+            OR pv.variation_name LIKE ?
+            OR pv.sku LIKE ?
+            OR pv.barcode LIKE ?
+            OR sm.reference LIKE ?
+        )";
+        $term = "%{$token}%";
+        $params = array_merge($params, [$term, $term, $term, $term, $term, $term]);
+    }
 }
 
 if (!empty($type_filter)) {
@@ -110,6 +122,7 @@ fputcsv($output, [
     'Product',
     'Brand',
     'Variation',
+    'SKU',
     'Barcode',
     'Type',
     'Quantity Change',
@@ -133,6 +146,7 @@ foreach ($movements as $m) {
         $m['product_name'],
         $m['brand_name'],
         $m['variation_name'],
+        $m['sku'],
         $m['barcode'],
         $type_label,
         $qty_display,

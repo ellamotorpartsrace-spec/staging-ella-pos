@@ -16,6 +16,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 require_once '../../includes/logger.php';
+require_once '../../includes/stock_guard.php';
 
 // Auth Check - Enforce standard permissions
 requirePermission('make_sales');
@@ -93,6 +94,9 @@ try {
         ]);
         exit;
     }
+
+    $stockPlan = buildPhysicalStockRequirements($items);
+    assertPhysicalStockAvailable($conn, $stockPlan['requirements'], $stockPlan['labels']);
 
     $buyerId = !empty($buyer['buyer_id']) ? (int) $buyer['buyer_id'] : null;
     $buyerName = $buyer['buyer_name'] ?? 'Walk-in Customer';
@@ -568,11 +572,18 @@ try {
 } catch (Throwable $e) {
     if (isset($conn))
         $conn->rollBack();
-    http_response_code(500);
-    echo json_encode([
+    http_response_code($e instanceof InsufficientPhysicalStockException ? 409 : 500);
+    $response = [
         'success' => false,
         'message' => $e->getMessage()
-    ]);
+    ];
+
+    if ($e instanceof InsufficientPhysicalStockException) {
+        $response['code'] = 'INSUFFICIENT_PHYSICAL_STOCK';
+        $response['stock_shortages'] = $e->getItems();
+    }
+
+    echo json_encode($response);
 }
 
 /**

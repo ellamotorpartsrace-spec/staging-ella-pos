@@ -38,6 +38,7 @@ $sql = "
         sm.remarks,
         sm.created_at,
         pv.variation_name,
+        pv.sku,
         pv.barcode,
         p.product_name,
         p.brand_name,
@@ -68,9 +69,20 @@ $sql = "
 $params = [];
 
 if (!empty($search)) {
-    $sql .= " AND (p.product_name LIKE ? OR p.brand_name LIKE ? OR pv.barcode LIKE ? OR sm.reference LIKE ?)";
-    $term = "%$search%";
-    $params = array_merge($params, [$term, $term, $term, $term]);
+    $searchTokens = preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY);
+
+    foreach ($searchTokens as $token) {
+        $sql .= " AND (
+            p.product_name LIKE ?
+            OR p.brand_name LIKE ?
+            OR pv.variation_name LIKE ?
+            OR pv.sku LIKE ?
+            OR pv.barcode LIKE ?
+            OR sm.reference LIKE ?
+        )";
+        $term = "%{$token}%";
+        $params = array_merge($params, [$term, $term, $term, $term, $term, $term]);
+    }
 }
 
 if (!empty($type_filter)) {
@@ -148,6 +160,11 @@ function hasNegativeStoreBalance(array $movements): bool
 }
 
 $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
+
+function displayStoreStockValue($value): int
+{
+    return max(0, (int) $value);
+}
 ?>
 
 <style>
@@ -332,7 +349,7 @@ $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
                     <div class="input-group">
                         <span class="input-group-text bg-white"><i class="fa-solid fa-search text-muted"></i></span>
                         <input type="text" name="search" id="movements-search" class="form-control"
-                            placeholder="Product, barcode, reference..." value="<?= htmlspecialchars($search) ?>"
+                            placeholder="Product, SKU, barcode, reference..." value="<?= htmlspecialchars($search) ?>"
                             autocomplete="off">
                         <span class="input-group-text d-none bg-white" id="movements-search-spinner">
                             <i class="fa-solid fa-spinner fa-spin text-primary"></i>
@@ -381,7 +398,10 @@ $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
             <i class="fa-solid fa-triangle-exclamation mt-1"></i>
             <div>
                 <div class="fw-bold">Negative store stock found in the visible movements.</div>
-                <div class="small mb-0">Movement History shows the stock balance for the movement's store. Shopee Allocation shows combined Physical Store plus Online Shop stock.</div>
+                <div class="small mb-0">Movement History now floors negative displayed stock to 0. Use the sync fix to repair current Physical Store and Online Shop balances.</div>
+                <a class="btn btn-sm btn-warning fw-bold mt-2" href="../../api/inventory/sync_inventory.php">
+                    <i class="fa-solid fa-wrench me-1"></i>Open Inventory Sync Fix
+                </a>
             </div>
         </div>
     <?php endif; ?>
@@ -418,6 +438,9 @@ $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
                                     $isFirstStockIn = isFirstStockInMovement($row);
                                     $storeMeta = movementStoreMeta($row['store_id'] ?? 1);
                                     $hasNegativeBalance = (int) $row['previous_stock'] < 0 || (int) $row['new_stock'] < 0;
+                                    $displayPreviousStock = displayStoreStockValue($row['previous_stock']);
+                                    $displayNewStock = displayStoreStockValue($row['new_stock']);
+                                    $skuText = trim((string) ($row['sku'] ?? ''));
 
                                     // Determine sign and color based on actual quantity value
                                     // Sales are always deductions but stored as positive numbers
@@ -453,6 +476,9 @@ $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
                                         <small class="text-muted">
                                             <?= htmlspecialchars($row['brand_name']) ?> |
                                             <?= htmlspecialchars($row['variation_name']) ?>
+                                            <?php if ($skuText !== ''): ?>
+                                                | SKU: <span class="fw-semibold"><?= htmlspecialchars($skuText) ?></span>
+                                            <?php endif; ?>
                                         </small>
                                     </td>
                                     <td>
@@ -470,12 +496,12 @@ $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
                                             <i class="fa-solid <?= $storeMeta['icon'] ?> me-1"></i><?= $storeMeta['label'] ?>
                                         </div>
                                         <div class="<?= $hasNegativeBalance ? 'text-danger' : '' ?>">
-                                            <small class="text-muted"><?= $row['previous_stock'] ?></small>
+                                            <small class="text-muted"><?= $displayPreviousStock ?></small>
                                             <i class="fa-solid fa-arrow-right mx-1 text-muted"></i>
-                                            <span class="fw-bold"><?= $row['new_stock'] ?></span>
+                                            <span class="fw-bold"><?= $displayNewStock ?></span>
                                         </div>
                                         <?php if ($hasNegativeBalance): ?>
-                                            <div class="negative-stock-note mt-1">Negative store balance</div>
+                                            <div class="negative-stock-note mt-1">Negative raw balance displayed as 0</div>
                                         <?php endif; ?>
                                     </td>
                                     <td class="align-middle text-break">
@@ -550,6 +576,9 @@ $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
                         $isFirstStockIn = isFirstStockInMovement($row);
                         $storeMeta = movementStoreMeta($row['store_id'] ?? 1);
                         $hasNegativeBalance = (int) $row['previous_stock'] < 0 || (int) $row['new_stock'] < 0;
+                        $displayPreviousStock = displayStoreStockValue($row['previous_stock']);
+                        $displayNewStock = displayStoreStockValue($row['new_stock']);
+                        $skuText = trim((string) ($row['sku'] ?? ''));
 
                         // Sales are always deductions but stored as positive numbers
                         $is_positive = $row['quantity'] >= 0 && $row['type'] !== 'sales';
@@ -582,6 +611,9 @@ $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
                                         <small class="text-muted">
                                             <?= htmlspecialchars($row['brand_name']) ?> |
                                             <?= htmlspecialchars($row['variation_name']) ?>
+                                            <?php if ($skuText !== ''): ?>
+                                                | SKU: <span class="fw-semibold"><?= htmlspecialchars($skuText) ?></span>
+                                            <?php endif; ?>
                                         </small>
                                     </div>
                                     <span class="badge bg-<?= $qty_color ?>-subtle text-<?= $qty_color ?> qty-badge">
@@ -598,10 +630,10 @@ $hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
                                             <i class="fa-solid <?= $storeMeta['icon'] ?> me-1"></i><?= $storeMeta['label'] ?>
                                         </small>
                                         <small class="<?= $hasNegativeBalance ? 'text-danger fw-bold' : 'text-muted' ?>">
-                                            <?= $row['previous_stock'] ?> &rarr; <strong><?= $row['new_stock'] ?></strong>
+                                            <?= $displayPreviousStock ?> &rarr; <strong><?= $displayNewStock ?></strong>
                                         </small>
                                         <?php if ($hasNegativeBalance): ?>
-                                            <small class="negative-stock-note d-block">Negative store balance</small>
+                                            <small class="negative-stock-note d-block">Negative raw balance displayed as 0</small>
                                         <?php endif; ?>
                                     </div>
                                     <small class="text-muted">
