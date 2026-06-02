@@ -6,6 +6,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 require_once '../../includes/reference_attachment_storage.php';
+require_once '../../includes/payable_reference_sync.php';
 
 // Ensure user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -80,6 +81,18 @@ try {
                 throw new Exception("Payment record not found");
             }
 
+            $conn->beginTransaction();
+            try {
+                syncSupplierPayableForReference($conn, (string)$payment['po_ref']);
+                $conn->commit();
+            } catch (Throwable $syncError) {
+                $conn->rollBack();
+                throw $syncError;
+            }
+
+            $stmt->execute([$id]);
+            $payment = $stmt->fetch();
+
             // Also get reference images (from restock)
             $refStmt = $conn->prepare("
                 SELECT COALESCE(NULLIF(image_path, ''), CONCAT('api/inventory/reference_attachment_image.php?id=', id)) as image_path
@@ -94,7 +107,8 @@ try {
 
             // Get receipt items matching the PO ref (Physical Store only)
             $itemsStmt = $conn->prepare("
-                SELECT sm.quantity, sm.remarks, p.product_name, pv.variation_name, pv.price_capital as current_cost
+                SELECT sm.quantity, sm.remarks, p.product_name, pv.variation_name,
+                       COALESCE(NULLIF(sm.capital_cost, 0), pv.price_capital) as current_cost
                 FROM stock_movements sm
                 JOIN product_variations pv ON sm.variation_id = pv.variation_id
                 JOIN products p ON pv.product_id = p.product_id
@@ -150,6 +164,30 @@ try {
 
         $stmt->execute();
         $payables = $stmt->fetchAll();
+
+        $refsToSync = [];
+        foreach ($payables as $payable) {
+            $poRef = trim((string)($payable['po_ref'] ?? ''));
+            if ($poRef !== '') {
+                $refsToSync[$poRef] = true;
+            }
+        }
+
+        if (!empty($refsToSync)) {
+            $conn->beginTransaction();
+            try {
+                foreach (array_keys($refsToSync) as $poRef) {
+                    syncSupplierPayableForReference($conn, $poRef);
+                }
+                $conn->commit();
+            } catch (Throwable $syncError) {
+                $conn->rollBack();
+                throw $syncError;
+            }
+
+            $stmt->execute();
+            $payables = $stmt->fetchAll();
+        }
 
         echo json_encode(['status' => 'success', 'data' => $payables]);
         exit;

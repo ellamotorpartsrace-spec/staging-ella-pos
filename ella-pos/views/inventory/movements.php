@@ -28,6 +28,7 @@ $date_to = $_GET['date_to'] ?? '';
 $sql = "
     SELECT 
         sm.movement_id,
+        sm.variation_id,
         sm.store_id,
         sm.type,
         sm.quantity,
@@ -37,16 +38,24 @@ $sql = "
         sm.remarks,
         sm.created_at,
         pv.variation_name,
+        pv.sku,
         pv.barcode,
         p.product_name,
         p.brand_name,
         u.full_name as created_by_name,
+        first_in.first_stock_in_id,
         ra.all_images_data,
         COALESCE(ra.attachment_count, 0) as attachment_count
     FROM stock_movements sm
     JOIN product_variations pv ON sm.variation_id = pv.variation_id
     JOIN products p ON pv.product_id = p.product_id
     LEFT JOIN users u ON sm.created_by = u.id
+    LEFT JOIN (
+        SELECT variation_id, COALESCE(store_id, 1) as store_id, MIN(movement_id) as first_stock_in_id
+        FROM stock_movements
+        WHERE type = 'stock_in'
+        GROUP BY variation_id, COALESCE(store_id, 1)
+    ) first_in ON first_in.variation_id = sm.variation_id AND first_in.store_id = COALESCE(sm.store_id, 1)
     LEFT JOIN (
         SELECT reference_number, 
                GROUP_CONCAT(CONCAT(id, ':', COALESCE(NULLIF(image_path, ''), CONCAT('api/inventory/reference_attachment_image.php?id=', id))) ORDER BY id ASC) as all_images_data,
@@ -60,9 +69,20 @@ $sql = "
 $params = [];
 
 if (!empty($search)) {
-    $sql .= " AND (p.product_name LIKE ? OR p.brand_name LIKE ? OR pv.barcode LIKE ? OR sm.reference LIKE ?)";
-    $term = "%$search%";
-    $params = array_merge($params, [$term, $term, $term, $term]);
+    $searchTokens = preg_split('/\s+/', trim($search), -1, PREG_SPLIT_NO_EMPTY);
+
+    foreach ($searchTokens as $token) {
+        $sql .= " AND (
+            p.product_name LIKE ?
+            OR p.brand_name LIKE ?
+            OR pv.variation_name LIKE ?
+            OR pv.sku LIKE ?
+            OR pv.barcode LIKE ?
+            OR sm.reference LIKE ?
+        )";
+        $term = "%{$token}%";
+        $params = array_merge($params, [$term, $term, $term, $term, $term, $term]);
+    }
 }
 
 if (!empty($type_filter)) {
@@ -110,6 +130,41 @@ $type_config = [
     'online_adjustment' => ['label' => 'Online Adjust', 'icon' => 'fa-cloud', 'color' => 'warning', 'bg' => 'bg-warning'],
     'allocation_adjustment' => ['label' => 'Shopee Allocation', 'icon' => 'fa-shopping-bag', 'color' => 'shopee', 'bg' => 'bg-shopee']
 ];
+
+function isFirstStockInMovement(array $row): bool
+{
+    return ($row['type'] ?? '') === 'stock_in'
+        && !empty($row['first_stock_in_id'])
+        && (int) $row['movement_id'] === (int) $row['first_stock_in_id'];
+}
+
+function movementStoreMeta($storeId): array
+{
+    $storeId = (int) ($storeId ?? 1);
+    if ($storeId === 2) {
+        return ['label' => 'Online Shop', 'icon' => 'fa-globe', 'class' => 'text-info'];
+    }
+
+    return ['label' => 'Physical Store', 'icon' => 'fa-store', 'class' => 'text-secondary'];
+}
+
+function hasNegativeStoreBalance(array $movements): bool
+{
+    foreach ($movements as $movement) {
+        if ((int) ($movement['previous_stock'] ?? 0) < 0 || (int) ($movement['new_stock'] ?? 0) < 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+$hasNegativeStoreBalance = hasNegativeStoreBalance($movements);
+
+function displayStoreStockValue($value): int
+{
+    return max(0, (int) $value);
+}
 ?>
 
 <style>
@@ -167,6 +222,30 @@ $type_config = [
     .qty-badge {
         font-size: 1.1rem;
         min-width: 60px;
+    }
+
+    .first-stock-badge {
+        font-size: 0.68rem;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .first-stock-note {
+        color: var(--bs-success);
+        font-size: 0.74rem;
+        font-weight: 700;
+    }
+
+    .store-stock-meta {
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .negative-stock-note {
+        color: var(--bs-danger);
+        font-size: 0.72rem;
+        font-weight: 700;
     }
 
     /* Desktop table view */
@@ -270,7 +349,7 @@ $type_config = [
                     <div class="input-group">
                         <span class="input-group-text bg-white"><i class="fa-solid fa-search text-muted"></i></span>
                         <input type="text" name="search" id="movements-search" class="form-control"
-                            placeholder="Product, barcode, reference..." value="<?= htmlspecialchars($search) ?>"
+                            placeholder="Product, SKU, barcode, reference..." value="<?= htmlspecialchars($search) ?>"
                             autocomplete="off">
                         <span class="input-group-text d-none bg-white" id="movements-search-spinner">
                             <i class="fa-solid fa-spinner fa-spin text-primary"></i>
@@ -314,6 +393,19 @@ $type_config = [
         </div>
     </div>
 
+    <?php if ($hasNegativeStoreBalance): ?>
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-start gap-2 mb-3">
+            <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+            <div>
+                <div class="fw-bold">Negative store stock found in the visible movements.</div>
+                <div class="small mb-0">Movement History now floors negative displayed stock to 0. Use the sync fix to repair current Physical Store and Online Shop balances.</div>
+                <a class="btn btn-sm btn-warning fw-bold mt-2" href="../../api/inventory/sync_inventory.php">
+                    <i class="fa-solid fa-wrench me-1"></i>Open Inventory Sync Fix
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Results -->
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -333,7 +425,7 @@ $type_config = [
                             <th style="width: 42%;">Product</th>
                             <th style="width: 11%;">Type</th>
                             <th class="text-center" style="width: 9%;">Qty Change</th>
-                            <th class="text-center" style="width: 8%;">Stock Level</th>
+                            <th class="text-center" style="width: 8%;">Store Stock</th>
                             <th style="width: 15%;">Reference</th>
                             <th style="width: 5%;">By</th>
                         </tr>
@@ -343,6 +435,12 @@ $type_config = [
                                 <?php foreach ($movements as $row):
                                     $cfg = $type_config[$row['type']] ?? ['label' => $row['type'], 'icon' => 'fa-circle', 'color' => 'secondary', 'bg' => 'bg-secondary'];
                                     $isVoided = ($row['status'] ?? '') === 'voided';
+                                    $isFirstStockIn = isFirstStockInMovement($row);
+                                    $storeMeta = movementStoreMeta($row['store_id'] ?? 1);
+                                    $hasNegativeBalance = (int) $row['previous_stock'] < 0 || (int) $row['new_stock'] < 0;
+                                    $displayPreviousStock = displayStoreStockValue($row['previous_stock']);
+                                    $displayNewStock = displayStoreStockValue($row['new_stock']);
+                                    $skuText = trim((string) ($row['sku'] ?? ''));
 
                                     // Determine sign and color based on actual quantity value
                                     // Sales are always deductions but stored as positive numbers
@@ -362,14 +460,25 @@ $type_config = [
                                     </td>
                                     <td>
                                         <div class="fw-bold text-dark <?= $isVoided ? 'text-decoration-line-through' : '' ?>">
-                                            <?= htmlspecialchars($row['product_name']) ?>
+                                            <a href="history.php?id=<?= urlencode($row['variation_id']) ?>"
+                                                class="text-dark text-decoration-none">
+                                                <?= htmlspecialchars($row['product_name']) ?>
+                                            </a>
                                             <?php if ($isVoided): ?>
                                                 <span class="badge bg-danger small ms-1" style="font-size: 0.65rem;">VOIDED</span>
+                                            <?php endif; ?>
+                                            <?php if ($isFirstStockIn): ?>
+                                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle first-stock-badge ms-1">
+                                                    <i class="fa-solid fa-circle-plus me-1"></i>First Stock In
+                                                </span>
                                             <?php endif; ?>
                                         </div>
                                         <small class="text-muted">
                                             <?= htmlspecialchars($row['brand_name']) ?> |
                                             <?= htmlspecialchars($row['variation_name']) ?>
+                                            <?php if ($skuText !== ''): ?>
+                                                | SKU: <span class="fw-semibold"><?= htmlspecialchars($skuText) ?></span>
+                                            <?php endif; ?>
                                         </small>
                                     </td>
                                     <td>
@@ -383,9 +492,17 @@ $type_config = [
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <small class="text-muted"><?= $row['previous_stock'] ?></small>
-                                        <i class="fa-solid fa-arrow-right mx-1 text-muted"></i>
-                                        <span class="fw-bold"><?= $row['new_stock'] ?></span>
+                                        <div class="store-stock-meta <?= $storeMeta['class'] ?> mb-1">
+                                            <i class="fa-solid <?= $storeMeta['icon'] ?> me-1"></i><?= $storeMeta['label'] ?>
+                                        </div>
+                                        <div class="<?= $hasNegativeBalance ? 'text-danger' : '' ?>">
+                                            <small class="text-muted"><?= $displayPreviousStock ?></small>
+                                            <i class="fa-solid fa-arrow-right mx-1 text-muted"></i>
+                                            <span class="fw-bold"><?= $displayNewStock ?></span>
+                                        </div>
+                                        <?php if ($hasNegativeBalance): ?>
+                                            <div class="negative-stock-note mt-1">Negative raw balance displayed as 0</div>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="align-middle text-break">
                                         <?php if ($row['reference']): ?>
@@ -422,6 +539,11 @@ $type_config = [
                                                 <?= htmlspecialchars($row['remarks']) ?>
                                             </div>
                                         <?php endif; ?>
+                                        <?php if ($isFirstStockIn): ?>
+                                            <div class="first-stock-note mt-1">
+                                                <i class="fa-solid fa-clock-rotate-left me-1"></i>First stock entry for this product
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <small class="text-muted">
@@ -451,6 +573,12 @@ $type_config = [
                     <?php foreach ($movements as $row):
                         $cfg = $type_config[$row['type']] ?? ['label' => $row['type'], 'icon' => 'fa-circle', 'color' => 'secondary', 'bg' => 'bg-secondary'];
                         $isVoided = ($row['status'] ?? '') === 'voided';
+                        $isFirstStockIn = isFirstStockInMovement($row);
+                        $storeMeta = movementStoreMeta($row['store_id'] ?? 1);
+                        $hasNegativeBalance = (int) $row['previous_stock'] < 0 || (int) $row['new_stock'] < 0;
+                        $displayPreviousStock = displayStoreStockValue($row['previous_stock']);
+                        $displayNewStock = displayStoreStockValue($row['new_stock']);
+                        $skuText = trim((string) ($row['sku'] ?? ''));
 
                         // Sales are always deductions but stored as positive numbers
                         $is_positive = $row['quantity'] >= 0 && $row['type'] !== 'sales';
@@ -467,14 +595,25 @@ $type_config = [
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div class="flex-grow-1">
                                         <div class="fw-bold text-dark <?= $isVoided ? 'text-decoration-line-through' : '' ?>">
-                                            <?= htmlspecialchars($row['product_name']) ?>
+                                            <a href="history.php?id=<?= urlencode($row['variation_id']) ?>"
+                                                class="text-dark text-decoration-none">
+                                                <?= htmlspecialchars($row['product_name']) ?>
+                                            </a>
                                             <?php if ($isVoided): ?>
                                                 <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">VOIDED</span>
+                                            <?php endif; ?>
+                                            <?php if ($isFirstStockIn): ?>
+                                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle first-stock-badge ms-1">
+                                                    <i class="fa-solid fa-circle-plus me-1"></i>First Stock In
+                                                </span>
                                             <?php endif; ?>
                                         </div>
                                         <small class="text-muted">
                                             <?= htmlspecialchars($row['brand_name']) ?> |
                                             <?= htmlspecialchars($row['variation_name']) ?>
+                                            <?php if ($skuText !== ''): ?>
+                                                | SKU: <span class="fw-semibold"><?= htmlspecialchars($skuText) ?></span>
+                                            <?php endif; ?>
                                         </small>
                                     </div>
                                     <span class="badge bg-<?= $qty_color ?>-subtle text-<?= $qty_color ?> qty-badge">
@@ -487,16 +626,22 @@ $type_config = [
                                         <span class="badge <?= $cfg['bg'] ?> bg-opacity-10 text-<?= $cfg['color'] ?> me-2">
                                             <i class="<?= strpos($cfg['icon'], 'fa-') === 0 && strpos($cfg['icon'], ' ') === false ? 'fa-solid ' . $cfg['icon'] : $cfg['icon'] ?> me-1"></i><?= $cfg['label'] ?>
                                         </span>
-                                        <small class="text-muted">
-                                            <?= $row['previous_stock'] ?> → <strong><?= $row['new_stock'] ?></strong>
+                                        <small class="d-block store-stock-meta <?= $storeMeta['class'] ?> mt-1">
+                                            <i class="fa-solid <?= $storeMeta['icon'] ?> me-1"></i><?= $storeMeta['label'] ?>
                                         </small>
+                                        <small class="<?= $hasNegativeBalance ? 'text-danger fw-bold' : 'text-muted' ?>">
+                                            <?= $displayPreviousStock ?> &rarr; <strong><?= $displayNewStock ?></strong>
+                                        </small>
+                                        <?php if ($hasNegativeBalance): ?>
+                                            <small class="negative-stock-note d-block">Negative raw balance displayed as 0</small>
+                                        <?php endif; ?>
                                     </div>
                                     <small class="text-muted">
                                         <?= date('M d, h:i A', strtotime($row['created_at'])) ?>
                                     </small>
                                 </div>
 
-                                <?php if ($row['reference'] || $row['remarks'] || $row['attachment_count'] == 0): ?>
+                                <?php if ($row['reference'] || $row['remarks'] || $row['attachment_count'] == 0 || $isFirstStockIn): ?>
 
                                     <div class="mt-2 pt-2 border-top">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -522,6 +667,11 @@ $type_config = [
                                                 <?php if ($row['remarks']): ?>
                                                     <small
                                                         class="text-muted d-block mt-1"><?= htmlspecialchars($row['remarks']) ?></small>
+                                                <?php endif; ?>
+                                                <?php if ($isFirstStockIn): ?>
+                                                    <small class="first-stock-note d-block mt-1">
+                                                        <i class="fa-solid fa-clock-rotate-left me-1"></i>First stock entry for this product
+                                                    </small>
                                                 <?php endif; ?>
                                             </div>
                                             <?php if ($row['attachment_count'] > 0): ?>

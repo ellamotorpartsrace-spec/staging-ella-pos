@@ -3,6 +3,7 @@
 header("Content-Type: application/json");
 require_once '../../config/database.php';
 require_once '../../includes/logger.php';
+require_once '../../includes/stock_guard.php';
 session_start();
 
 $data = json_decode(file_get_contents('php://input'), true);
@@ -22,6 +23,9 @@ try {
     $buyer = $data['buyer'];
     $saleRef = 'POS-' . date('YmdHis') . '-' . rand(100, 999);
     $userId = $_SESSION['user_id'] ?? 1; // Default to admin if no session
+
+    $stockPlan = buildPhysicalStockRequirements($cart);
+    assertPhysicalStockAvailable($conn, $stockPlan['requirements'], $stockPlan['labels']);
 
     $status = ($payment['method'] === 'pay_later') ? 'not_completed' : 'completed';
     $salePaymentStatus = ($payment['method'] === 'pay_later') ? 'unpaid' : 'paid';
@@ -139,6 +143,13 @@ try {
 } catch (Exception $e) {
     if (isset($conn))
         $conn->rollBack();
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    http_response_code($e instanceof InsufficientPhysicalStockException ? 409 : 500);
+    $response = ['success' => false, 'message' => $e->getMessage()];
+
+    if ($e instanceof InsufficientPhysicalStockException) {
+        $response['code'] = 'INSUFFICIENT_PHYSICAL_STOCK';
+        $response['stock_shortages'] = $e->getItems();
+    }
+
+    echo json_encode($response);
 }

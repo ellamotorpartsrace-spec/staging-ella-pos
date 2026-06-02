@@ -16,6 +16,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 require_once '../../includes/logger.php';
+require_once '../../includes/stock_guard.php';
 
 // Auth Check - Enforce standard permissions
 requirePermission('make_sales');
@@ -43,6 +44,59 @@ try {
     $items = $data['items'];
     $buyer = $data['buyer'] ?? [];
     $payment = $data['payment'] ?? [];
+    $allowBelowCapital = filter_var($data['allow_below_capital'] ?? $payment['allow_below_capital'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+    // Guard the final commit against stale browser carts that do not have current capital prices.
+    $guardCostUnitStmt = $conn->prepare("SELECT price_capital FROM product_units WHERE id = ?");
+    $guardCostVarStmt = $conn->prepare("SELECT price_capital FROM product_variations WHERE variation_id = ?");
+    $belowCapitalItems = [];
+
+    foreach ($items as $idx => $item) {
+        $variationId = (int) ($item['variation_id'] ?? 0);
+        if ($variationId <= 0) {
+            continue;
+        }
+
+        $unitId = isset($item['unit_id']) && intval($item['unit_id']) > 0 ? (int) $item['unit_id'] : null;
+        $costPrice = 0.0;
+
+        if ($unitId) {
+            $guardCostUnitStmt->execute([$unitId]);
+            $unitCost = $guardCostUnitStmt->fetchColumn();
+            $costPrice = $unitCost !== false ? (float) $unitCost : 0.0;
+        }
+
+        if ($costPrice <= 0) {
+            $guardCostVarStmt->execute([$variationId]);
+            $costPrice = (float) ($guardCostVarStmt->fetchColumn() ?: 0);
+        }
+
+        $salePrice = (float) ($item['price'] ?? 0);
+        if ($costPrice > 0 && ($salePrice + 0.0001) < $costPrice) {
+            $belowCapitalItems[] = [
+                'name' => $item['product_name'] ?? ($item['name'] ?? ('Item ' . ($idx + 1))),
+                'variation' => $item['variation_name'] ?? ($item['variation'] ?? ($item['unit_type'] ?? '')),
+                'qty' => (int) ($item['quantity'] ?? ($item['qty'] ?? 1)),
+                'price' => $salePrice,
+                'capital' => $costPrice
+            ];
+        }
+    }
+
+    if (!$allowBelowCapital && !empty($belowCapitalItems)) {
+        $conn->rollBack();
+        http_response_code(409);
+        echo json_encode([
+            'success' => false,
+            'code' => 'BELOW_CAPITAL_CONFIRMATION_REQUIRED',
+            'message' => 'Some item prices are below capital cost. Please confirm before saving the sale.',
+            'below_capital_items' => $belowCapitalItems
+        ]);
+        exit;
+    }
+
+    $stockPlan = buildPhysicalStockRequirements($items);
+    assertPhysicalStockAvailable($conn, $stockPlan['requirements'], $stockPlan['labels']);
 
     $buyerId = !empty($buyer['buyer_id']) ? (int) $buyer['buyer_id'] : null;
     $buyerName = $buyer['buyer_name'] ?? 'Walk-in Customer';
@@ -518,11 +572,18 @@ try {
 } catch (Throwable $e) {
     if (isset($conn))
         $conn->rollBack();
-    http_response_code(500);
-    echo json_encode([
+    http_response_code($e instanceof InsufficientPhysicalStockException ? 409 : 500);
+    $response = [
         'success' => false,
         'message' => $e->getMessage()
-    ]);
+    ];
+
+    if ($e instanceof InsufficientPhysicalStockException) {
+        $response['code'] = 'INSUFFICIENT_PHYSICAL_STOCK';
+        $response['stock_shortages'] = $e->getItems();
+    }
+
+    echo json_encode($response);
 }
 
 /**

@@ -57,9 +57,11 @@ try {
             pv.price_retail,
             pv.price_wholesale,
             pv.price_dealer,
+            COALESCE(NULLIF(pu.price_capital, 0), pv.price_capital, si.cost_at_sale) as price_capital,
             (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = si.variation_id AND store_id = 1) as current_stock
         FROM pos_sale_items si
         LEFT JOIN product_variations pv ON si.variation_id = pv.variation_id
+        LEFT JOIN product_units pu ON si.unit_id = pu.id
         WHERE si.sale_id = ?
         ORDER BY si.sale_item_id ASC
     ";
@@ -73,6 +75,8 @@ try {
     foreach ($items as $item) {
         $cartItems[] = [
             'variation_id' => (int) $item['variation_id'],
+            'unit_id' => $item['unit_id'] ? (int) $item['unit_id'] : null,
+            'multiplier' => (int) ($item['multiplier'] ?? 1) ?: 1,
             'name' => $item['product_name'],
             'brand' => $item['brand_name'],
             'variation' => $item['variation_name'],
@@ -86,6 +90,7 @@ try {
             'override_tier' => null,
             'qty' => (int) $item['quantity'],
             'stock' => (int) $item['current_stock'],
+            'price_capital' => floatval($item['price_capital'] ?? 0),
             // Include tiers so price switching works
             'tiers' => [
                 'retail' => floatval($item['price_retail']),
