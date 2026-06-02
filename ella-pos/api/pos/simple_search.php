@@ -101,9 +101,9 @@ try {
         FROM product_variations v
         INNER JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
-            SELECT variation_id, SUM(quantity) as stock 
+            SELECT variation_id, quantity as stock 
             FROM inventory 
-            GROUP BY variation_id
+            WHERE store_id = 1
         ) inv ON v.variation_id = inv.variation_id
         LEFT JOIN (
             SELECT m.pos_product_id, SUM(m.shopee_stock * COALESCE(u.multiplier, 1)) as allocated
@@ -151,9 +151,9 @@ try {
         INNER JOIN product_variations v ON u.variation_id = v.variation_id
         INNER JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
-            SELECT variation_id, SUM(quantity) as stock 
+            SELECT variation_id, quantity as stock 
             FROM inventory 
-            GROUP BY variation_id
+            WHERE store_id = 1
         ) inv ON v.variation_id = inv.variation_id
         LEFT JOIN (
             SELECT m.pos_product_id, SUM(m.shopee_stock * COALESCE(u.multiplier, 1)) as allocated

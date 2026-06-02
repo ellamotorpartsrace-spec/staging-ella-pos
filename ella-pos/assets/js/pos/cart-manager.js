@@ -559,8 +559,8 @@ const CartManager = {
     clearCart() {
         const hasItems = POS.cart.length > 0;
         const buyerSelected = window.POS_BUYER && window.POS_BUYER.is_walkin === 0;
-        const hasDiscount = (SimpleCheckout.globalDiscount && SimpleCheckout.globalDiscount.value > 0) || 
-                            (POS.brandDiscounts && Object.keys(POS.brandDiscounts).length > 0);
+        const hasDiscount = (SimpleCheckout.globalDiscount && SimpleCheckout.globalDiscount.value > 0) ||
+            (POS.brandDiscounts && Object.keys(POS.brandDiscounts).length > 0);
         const hasTendered = document.getElementById('amount-tendered')?.value !== '';
 
         if (!hasItems && !buyerSelected && !hasDiscount && !hasTendered) return;
@@ -577,18 +577,18 @@ const CartManager = {
                 POS.cart = [];
                 this._undoStack = [];
                 if (typeof SimpleCheckout !== 'undefined') SimpleCheckout.removeDiscount(true);
-                
+
                 // 2. Reset Modules
                 if (typeof CustomerSelector !== 'undefined') CustomerSelector.resetToWalkin();
                 if (typeof PaymentMethodHandler !== 'undefined') PaymentMethodHandler.reset();
-                
+
                 // 3. Clear Persisted State
                 if (typeof POS !== 'undefined' && typeof POS.clearState === 'function') POS.clearState();
 
                 // 4. Update UI
                 this.renderCart();
                 this.updateChange();
-                
+
                 EllaToast.info('Transaction cleared');
             }
         });
