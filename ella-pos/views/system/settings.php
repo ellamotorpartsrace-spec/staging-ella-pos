@@ -254,6 +254,33 @@ require_once '../../includes/sidebar.php';
             </div>
         </div>
 
+        <!-- Security Settings -->
+        <div class="col-12 col-lg-6">
+            <div class="card settings-card shadow-sm border-primary border-opacity-25">
+                <div class="card-header bg-transparent d-flex align-items-center gap-3">
+                    <div class="section-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Security & Authorization</h6>
+                        <small class="text-muted">Manage master PIN for sensitive actions (e.g. reverts)</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Current Master PIN</label>
+                        <input type="password" class="form-control" id="sec-old_pin" placeholder="Enter current PIN to authorize change">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Master PIN</label>
+                        <input type="password" class="form-control" id="sec-new_pin" placeholder="Enter new PIN">
+                    </div>
+                    <button class="btn btn-primary btn-sm rounded-3 fw-bold px-3 py-2 w-100" onclick="SystemSettings.updatePin()" id="btn-update-pin">
+                        <i class="fa-solid fa-key me-2"></i>Update Master PIN
+                    </button>
+                </div>
+            </div>
+        </div>
 
     </div>
 
@@ -385,6 +412,43 @@ require_once '../../includes/sidebar.php';
             } catch (err) {
                 console.error(err);
                 this.showToast('Network error while saving', 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        },
+
+        async updatePin() {
+            const oldPin = document.getElementById('sec-old_pin').value;
+            const newPin = document.getElementById('sec-new_pin').value;
+            const btn = document.getElementById('btn-update-pin');
+            
+            if (!oldPin || !newPin) {
+                this.showToast('Please enter both current and new PIN', 'warning');
+                return;
+            }
+
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Updating...';
+
+            try {
+                const res = await fetch('../../api/system/update_pin.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ old_pin: oldPin, new_pin: newPin })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    this.showToast('Master PIN updated successfully!', 'success');
+                    document.getElementById('sec-old_pin').value = '';
+                    document.getElementById('sec-new_pin').value = '';
+                } else {
+                    this.showToast(data.error || 'Failed to update PIN', 'danger');
+                }
+            } catch (err) {
+                this.showToast('Network error while updating PIN', 'danger');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHTML;

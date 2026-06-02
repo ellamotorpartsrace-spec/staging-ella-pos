@@ -25,10 +25,20 @@ if (!isset($data['sale_id'])) {
 }
 
 $sale_id = intval($data['sale_id']);
+$pin = $data['pin'] ?? '';
 
 try {
     $db = new Database();
     $conn = $db->getConnection();
+
+    // Verify Master PIN
+    $pinStmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'master_pin'");
+    $pinStmt->execute();
+    $masterPin = $pinStmt->fetchColumn();
+
+    if ($masterPin && $pin !== $masterPin) {
+        throw new Exception("Invalid Master PIN. Please ask an admin.");
+    }
 
     $conn->beginTransaction();
 

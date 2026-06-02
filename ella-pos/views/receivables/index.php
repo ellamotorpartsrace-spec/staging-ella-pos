@@ -1127,13 +1127,21 @@ require_once '../../includes/sidebar.php';
         },
 
         async revertPayment(saleId) {
+            const pin = prompt('Enter Master PIN to revert this payment:');
+            if (pin === null) return; // User cancelled
+            if (!pin.trim()) {
+                if (typeof EllaToast !== 'undefined') EllaToast.warning('PIN is required');
+                else this.showToast('PIN is required', 'warning');
+                return;
+            }
+            
             if (!confirm('Are you sure you want to revert the latest payment for this transaction? This will undo the last payment made.')) return;
             
             try {
                 const res = await fetch(`${BASE_URL}api/receivables/revert_payment.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sale_id: saleId }),
+                    body: JSON.stringify({ sale_id: saleId, pin: pin.trim() }),
                 });
                 const data = await res.json();
                 
