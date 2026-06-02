@@ -11,7 +11,7 @@ if (!class_exists('InsufficientPhysicalStockException')) {
             $this->items = $items;
             $count = count($items);
             parent::__construct(
-                'Insufficient physical stock for ' . $count . ' item' . ($count === 1 ? '' : 's') . '. Sync inventory or move stock back from Online Shop before checkout.'
+                'Insufficient total stock for ' . $count . ' item' . ($count === 1 ? '' : 's') . '. Please check available inventory before checkout.'
             );
         }
 
@@ -76,10 +76,9 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
     }
 
     $stockStmt = $conn->prepare("
-        SELECT quantity
+        SELECT SUM(quantity)
         FROM inventory
         WHERE variation_id = ?
-          AND store_id = 1
         FOR UPDATE
     ");
 
