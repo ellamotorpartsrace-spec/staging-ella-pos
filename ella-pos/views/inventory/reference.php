@@ -13,6 +13,7 @@ require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 require_once '../../config/database.php';
 require_once '../../includes/reference_attachment_storage.php';
+require_once '../../includes/payable_reference_sync.php';
 
 $ref = $_GET['ref'] ?? null;
 $from = $_GET['from'] ?? 'movements';
@@ -32,6 +33,20 @@ if (!$ref) {
 
 $db = new Database();
 $conn = $db->getConnection();
+
+$payableSyncError = null;
+if ($_SESSION['role'] === 'admin' || hasPermission('view_payables')) {
+    try {
+        $conn->beginTransaction();
+        syncSupplierPayableForReference($conn, (string) $ref);
+        $conn->commit();
+    } catch (Throwable $syncError) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
+        $payableSyncError = $syncError->getMessage();
+    }
+}
 
 // 1. Fetch Reference Image
 $stmtImg = $conn->prepare("SELECT * FROM reference_attachments WHERE reference_number = ? ORDER BY id ASC");
@@ -133,7 +148,19 @@ if (!empty($variationIds)) {
             $totalTransactionCost += abs($row['quantity']) * (float) $row['price_capital'];
         }
     }
+
+    $stockInSummary = payableReferenceStockInSummary($conn, (string) $ref);
+    if ((int) ($stockInSummary['line_count'] ?? 0) > 0) {
+        $totalTransactionCost = (float) $stockInSummary['reference_total'];
+    }
     ?>
+
+    <?php if ($payableSyncError): ?>
+        <div class="alert alert-warning border-0 shadow-sm mb-3">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            Payable refresh skipped: <?= htmlspecialchars($payableSyncError) ?>
+        </div>
+    <?php endif; ?>
 
     <?php if (count($items) > 0 && $totalTransactionCost > 0): ?>
         <div class="row g-3 mb-4">

@@ -24,7 +24,7 @@ function payableReferenceStockInSummary(PDO $conn, string $reference): array
         SELECT
             COUNT(*) AS line_count,
             COALESCE(SUM(
-                ABS(sm.quantity) * COALESCE(NULLIF(sm.capital_cost, 0), pv.price_capital, 0)
+                sm.quantity * COALESCE(NULLIF(sm.capital_cost, 0), pv.price_capital, 0)
             ), 0) AS reference_total
         FROM stock_movements sm
         LEFT JOIN product_variations pv ON pv.variation_id = sm.variation_id
