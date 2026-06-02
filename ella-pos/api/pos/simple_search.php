@@ -86,7 +86,7 @@ try {
             v.price_dealer,
             v.unit_type,
             v.barcode,
-            COALESCE(inv.stock, 0) AS stock,
+            GREATEST(0, COALESCE(inv.total_qty, 0) - COALESCE(sa.shopee_allocated, 0)) AS stock,
             CAST(1 AS UNSIGNED) AS multiplier,
             NULL AS unit_id,
             (
@@ -102,19 +102,22 @@ try {
         FROM product_variations v
         INNER JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
-            SELECT 
-                i.variation_id, 
-                GREATEST(0, SUM(i.quantity) - COALESCE(sa.shopee_allocated, 0)) as stock 
-            FROM inventory i
-            LEFT JOIN (
-                SELECT m.pos_product_id, COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) as shopee_allocated
-                FROM shopee_product_mappings m
-                LEFT JOIN product_units u ON m.pos_unit_id = u.id
-                WHERE m.mapping_status IN ('auto','manual')
-                GROUP BY m.pos_product_id
-            ) sa ON i.variation_id = sa.pos_product_id
-            GROUP BY i.variation_id, sa.shopee_allocated
+            SELECT variation_id, SUM(quantity) as total_qty 
+            FROM inventory 
+            GROUP BY variation_id
         ) inv ON v.variation_id = inv.variation_id
+        LEFT JOIN (
+            SELECT 
+                v_inner.variation_id,
+                COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) as shopee_allocated
+            FROM product_variations v_inner
+            JOIN shopee_product_mappings m 
+                ON m.pos_product_id = v_inner.variation_id
+            LEFT JOIN product_units u ON m.pos_unit_id = u.id
+            WHERE m.mapping_status IN ('auto','manual')
+              AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+            GROUP BY v_inner.variation_id
+        ) sa ON v.variation_id = sa.variation_id
         WHERE v.status = 'active'
         AND (
             v.barcode = :barcode
@@ -138,7 +141,7 @@ try {
             u.price_dealer,
             u.unit_name AS unit_type,
             u.barcode,
-            FLOOR(COALESCE(inv.stock, 0) / u.multiplier) AS stock,
+            FLOOR(GREATEST(0, COALESCE(inv.total_qty, 0) - COALESCE(sa.shopee_allocated, 0)) / u.multiplier) AS stock,
             u.multiplier,
             u.id AS unit_id,
             (
@@ -155,19 +158,22 @@ try {
         INNER JOIN product_variations v ON u.variation_id = v.variation_id
         INNER JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
-            SELECT 
-                i.variation_id, 
-                GREATEST(0, SUM(i.quantity) - COALESCE(sa.shopee_allocated, 0)) as stock 
-            FROM inventory i
-            LEFT JOIN (
-                SELECT m.pos_product_id, COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) as shopee_allocated
-                FROM shopee_product_mappings m
-                LEFT JOIN product_units u ON m.pos_unit_id = u.id
-                WHERE m.mapping_status IN ('auto','manual')
-                GROUP BY m.pos_product_id
-            ) sa ON i.variation_id = sa.pos_product_id
-            GROUP BY i.variation_id, sa.shopee_allocated
+            SELECT variation_id, SUM(quantity) as total_qty 
+            FROM inventory 
+            GROUP BY variation_id
         ) inv ON v.variation_id = inv.variation_id
+        LEFT JOIN (
+            SELECT 
+                v_inner.variation_id,
+                COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) as shopee_allocated
+            FROM product_variations v_inner
+            JOIN shopee_product_mappings m 
+                ON m.pos_product_id = v_inner.variation_id
+            LEFT JOIN product_units u ON m.pos_unit_id = u.id
+            WHERE m.mapping_status IN ('auto','manual')
+              AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+            GROUP BY v_inner.variation_id
+        ) sa ON v.variation_id = sa.variation_id
         WHERE v.status = 'active'
         AND (
             u.barcode = :barcode
