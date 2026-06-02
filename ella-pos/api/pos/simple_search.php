@@ -102,9 +102,18 @@ try {
         FROM product_variations v
         INNER JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
-            SELECT variation_id, GREATEST(0, quantity) as stock 
-            FROM inventory 
-            WHERE store_id = 1
+            SELECT 
+                i.variation_id, 
+                GREATEST(0, i.quantity - COALESCE(sa.shopee_allocated, 0)) as stock 
+            FROM inventory i
+            LEFT JOIN (
+                SELECT m.pos_product_id, COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) as shopee_allocated
+                FROM shopee_product_mappings m
+                LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                WHERE m.mapping_status IN ('auto','manual')
+                GROUP BY m.pos_product_id
+            ) sa ON i.variation_id = sa.pos_product_id
+            WHERE i.store_id = 1
         ) inv ON v.variation_id = inv.variation_id
         WHERE v.status = 'active'
         AND (
@@ -146,9 +155,18 @@ try {
         INNER JOIN product_variations v ON u.variation_id = v.variation_id
         INNER JOIN products p ON v.product_id = p.product_id
         LEFT JOIN (
-            SELECT variation_id, GREATEST(0, quantity) as stock 
-            FROM inventory 
-            WHERE store_id = 1
+            SELECT 
+                i.variation_id, 
+                GREATEST(0, i.quantity - COALESCE(sa.shopee_allocated, 0)) as stock 
+            FROM inventory i
+            LEFT JOIN (
+                SELECT m.pos_product_id, COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) as shopee_allocated
+                FROM shopee_product_mappings m
+                LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                WHERE m.mapping_status IN ('auto','manual')
+                GROUP BY m.pos_product_id
+            ) sa ON i.variation_id = sa.pos_product_id
+            WHERE i.store_id = 1
         ) inv ON v.variation_id = inv.variation_id
         WHERE v.status = 'active'
         AND (
