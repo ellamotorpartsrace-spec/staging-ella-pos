@@ -86,7 +86,7 @@ try {
             v.price_dealer,
             v.unit_type,
             v.barcode,
-            (COALESCE(inv.stock, 0) - COALESCE(shopee.allocated, 0)) AS stock,
+            COALESCE(inv.stock, 0) AS stock,
             CAST(1 AS UNSIGNED) AS multiplier,
             NULL AS unit_id,
             (
@@ -106,13 +106,6 @@ try {
             FROM inventory 
             WHERE store_id = 1
         ) inv ON v.variation_id = inv.variation_id
-        LEFT JOIN (
-            SELECT m.pos_product_id, SUM(m.shopee_stock * COALESCE(u.multiplier, 1)) as allocated
-            FROM shopee_product_mappings m
-            LEFT JOIN product_units u ON m.pos_unit_id = u.id
-            WHERE m.mapping_status IN ('auto','manual')
-            GROUP BY m.pos_product_id
-        ) shopee ON v.variation_id = shopee.pos_product_id
         WHERE v.status = 'active'
         AND (
             v.barcode = :barcode
@@ -136,7 +129,7 @@ try {
             u.price_dealer,
             u.unit_name AS unit_type,
             u.barcode,
-            FLOOR((COALESCE(inv.stock, 0) - COALESCE(shopee.allocated, 0)) / u.multiplier) AS stock,
+            FLOOR(COALESCE(inv.stock, 0) / u.multiplier) AS stock,
             u.multiplier,
             u.id AS unit_id,
             (
@@ -157,13 +150,6 @@ try {
             FROM inventory 
             WHERE store_id = 1
         ) inv ON v.variation_id = inv.variation_id
-        LEFT JOIN (
-            SELECT m.pos_product_id, SUM(m.shopee_stock * COALESCE(u.multiplier, 1)) as allocated
-            FROM shopee_product_mappings m
-            LEFT JOIN product_units u ON m.pos_unit_id = u.id
-            WHERE m.mapping_status IN ('auto','manual')
-            GROUP BY m.pos_product_id
-        ) shopee ON v.variation_id = shopee.pos_product_id
         WHERE v.status = 'active'
         AND (
             u.barcode = :barcode
