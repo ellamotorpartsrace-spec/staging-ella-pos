@@ -31,13 +31,13 @@ try {
                 COUNT(di.item_id) AS item_count,
                 SUM(
                     CASE WHEN di.variation_id IS NOT NULL AND 
-                        (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = di.variation_id) <= 0 
+                        (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = di.variation_id AND store_id = 1) <= 0 
                     THEN 1 ELSE 0 END
                 ) AS out_of_stock_count,
                 SUM(
                     CASE WHEN di.variation_id IS NOT NULL AND 
-                        (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = di.variation_id) > 0 AND
-                        (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = di.variation_id) < di.qty
+                        (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = di.variation_id AND store_id = 1) > 0 AND
+                        (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = di.variation_id AND store_id = 1) < di.qty
                     THEN 1 ELSE 0 END
                 ) AS partial_stock_count
             FROM pos_drafts d

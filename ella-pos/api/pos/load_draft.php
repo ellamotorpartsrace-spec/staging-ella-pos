@@ -45,7 +45,7 @@ try {
                     pv.price_dealer,
                     pv.sku,
                     COALESCE(NULLIF(pu.price_capital, 0), pv.price_capital) AS price_capital,
-                    (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = di.variation_id) AS current_stock
+                    (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = di.variation_id AND store_id = 1) AS current_stock
                 FROM pos_draft_items di
                 LEFT JOIN product_variations pv ON di.variation_id = pv.variation_id
                 LEFT JOIN product_units pu ON di.unit_id = pu.id

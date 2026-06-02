@@ -125,12 +125,12 @@ try {
             p.product_name,
             p.brand_name,
             v.variation_name,
-            (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = v.variation_id) as current_stock,
+            (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = v.variation_id AND store_id = 1) as current_stock,
             v.low_stock_threshold
         FROM product_variations v
         JOIN products p ON v.product_id = p.product_id
         WHERE v.status = 'active'
-        AND (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = v.variation_id) <= v.low_stock_threshold
+        AND (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = v.variation_id AND store_id = 1) <= v.low_stock_threshold
         ORDER BY current_stock ASC
         LIMIT 10
     ");
