@@ -42,7 +42,7 @@ $attachments = $stmtImg->fetchAll(PDO::FETCH_ASSOC);
 $sqlItems = "
     SELECT sm.*, 
            p.product_name, p.brand_name, 
-           v.variation_name, v.sku, v.unit_type, COALESCE(sm.capital_cost, v.price_capital) as price_capital,
+           v.variation_name, v.sku, v.unit_type, COALESCE(NULLIF(sm.capital_cost, 0), v.price_capital) as price_capital,
            u.full_name as created_by_name
     FROM stock_movements sm
     JOIN product_variations v ON sm.variation_id = v.variation_id

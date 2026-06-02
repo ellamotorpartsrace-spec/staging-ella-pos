@@ -4,6 +4,7 @@ header("Content-Type: application/json");
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
+require_once '../../includes/payable_reference_sync.php';
 
 // Only accept POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -59,6 +60,7 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
     $conn->beginTransaction();
+    $hasMovementStatus = payableReferenceColumnExists($conn, 'stock_movements', 'status');
 
     // 1. Load original movement
     $stmt = $conn->prepare("
@@ -77,7 +79,7 @@ try {
         exit;
     }
 
-    if ($original['status'] === 'voided') {
+    if ($hasMovementStatus && ($original['status'] ?? '') === 'voided') {
         $conn->rollBack();
         echo json_encode(['success' => false, 'error' => 'This record is already voided and cannot be edited']);
         exit;
@@ -163,8 +165,13 @@ try {
 
     // 3. Update original movement
     if ($action_type === 'void') {
-        $conn->prepare("UPDATE stock_movements SET status = 'voided', quantity = 0, previous_stock = ?, new_stock = ? WHERE movement_id = ?")
-             ->execute([$prev_qty_for_record, $final_qty, $movement_id]);
+        if ($hasMovementStatus) {
+            $conn->prepare("UPDATE stock_movements SET status = 'voided', quantity = 0, previous_stock = ?, new_stock = ? WHERE movement_id = ?")
+                 ->execute([$prev_qty_for_record, $final_qty, $movement_id]);
+        } else {
+            $conn->prepare("UPDATE stock_movements SET quantity = 0, previous_stock = ?, new_stock = ? WHERE movement_id = ?")
+                 ->execute([$prev_qty_for_record, $final_qty, $movement_id]);
+        }
     } else {
         $conn->prepare("UPDATE stock_movements SET variation_id = ?, quantity = ?, capital_cost = ?, previous_stock = ?, new_stock = ? WHERE movement_id = ?")
              ->execute([$new_variation_id, $new_quantity, $new_capital, $prev_qty_for_record, $final_qty, $movement_id]);
@@ -187,7 +194,10 @@ try {
     // 4. Update Financial Payables (if applicable)
     // Trigger on any financial change OR when voiding (full removal of value)
     $has_financial_change = abs($total_delta_cost) > 0.001 || $action_type === 'void';
-    if ($has_financial_change) {
+    if ($has_financial_change && !empty($reference)) {
+        syncSupplierPayableForReference($conn, $reference);
+    }
+    if (false && $has_financial_change) {
         // Find Purchase Order — by reference first
         $po = null;
         if (!empty($reference)) {

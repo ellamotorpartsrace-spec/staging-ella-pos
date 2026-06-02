@@ -4,6 +4,7 @@ header("Content-Type: application/json");
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
+require_once '../../includes/payable_reference_sync.php';
 
 // Only accept POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -54,6 +55,7 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
     $conn->beginTransaction();
+    $hasMovementStatus = payableReferenceColumnExists($conn, 'stock_movements', 'status');
 
     // 1. Check if reference exists in PO or stock_movements
     $stmtPO = $conn->prepare("SELECT po_id, supplier_id FROM purchase_orders WHERE po_ref = ? FOR UPDATE");
@@ -85,16 +87,28 @@ try {
     ")->execute([$variation_id, $quantity, $quantity]);
 
     // 3. Insert New Stock Movement
-    $stmtMove = $conn->prepare("
-        INSERT INTO stock_movements 
-        (variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost, status)
-        VALUES (?, 'stock_in', ?, ?, ?, ?, ?, ?, ?, 'active')
-    ");
-    $stmtMove->execute([$variation_id, $quantity, $previous_stock, $new_stock, $reference, $remarks, $user_id, $capital_cost]);
+    if ($hasMovementStatus) {
+        $stmtMove = $conn->prepare("
+            INSERT INTO stock_movements
+            (variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost, status)
+            VALUES (?, 'stock_in', ?, ?, ?, ?, ?, ?, ?, 'active')
+        ");
+        $stmtMove->execute([$variation_id, $quantity, $previous_stock, $new_stock, $reference, $remarks, $user_id, $capital_cost]);
+    } else {
+        $stmtMove = $conn->prepare("
+            INSERT INTO stock_movements
+            (variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
+            VALUES (?, 'stock_in', ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmtMove->execute([$variation_id, $quantity, $previous_stock, $new_stock, $reference, $remarks, $user_id, $capital_cost]);
+    }
     $new_movement_id = $conn->lastInsertId();
 
     // 4. Update Financial Payables (if PO exists)
     if ($po) {
+        syncSupplierPayableForReference($conn, $reference);
+    }
+    if (false && $po) {
         $po_id = $po['po_id'];
         
         // A. Recalculate PO Total
