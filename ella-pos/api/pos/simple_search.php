@@ -104,7 +104,7 @@ try {
         LEFT JOIN (
             SELECT 
                 i.variation_id, 
-                GREATEST(0, i.quantity - COALESCE(sa.shopee_allocated, 0)) as stock 
+                GREATEST(0, SUM(i.quantity) - COALESCE(sa.shopee_allocated, 0)) as stock 
             FROM inventory i
             LEFT JOIN (
                 SELECT m.pos_product_id, COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) as shopee_allocated
@@ -113,7 +113,7 @@ try {
                 WHERE m.mapping_status IN ('auto','manual')
                 GROUP BY m.pos_product_id
             ) sa ON i.variation_id = sa.pos_product_id
-            WHERE i.store_id = 1
+            GROUP BY i.variation_id, sa.shopee_allocated
         ) inv ON v.variation_id = inv.variation_id
         WHERE v.status = 'active'
         AND (
@@ -157,7 +157,7 @@ try {
         LEFT JOIN (
             SELECT 
                 i.variation_id, 
-                GREATEST(0, i.quantity - COALESCE(sa.shopee_allocated, 0)) as stock 
+                GREATEST(0, SUM(i.quantity) - COALESCE(sa.shopee_allocated, 0)) as stock 
             FROM inventory i
             LEFT JOIN (
                 SELECT m.pos_product_id, COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) as shopee_allocated
@@ -166,7 +166,7 @@ try {
                 WHERE m.mapping_status IN ('auto','manual')
                 GROUP BY m.pos_product_id
             ) sa ON i.variation_id = sa.pos_product_id
-            WHERE i.store_id = 1
+            GROUP BY i.variation_id, sa.shopee_allocated
         ) inv ON v.variation_id = inv.variation_id
         WHERE v.status = 'active'
         AND (
