@@ -404,7 +404,7 @@ HIGHLIGHT: COPY BASH COMMANDS USED FOR LATEST PUSH
 git init
 git status --short --branch --untracked-files=all
 git add ella-pos/views/shopee/allocation.php
-git commit -m "Fix Shopee allocation math for unit-mapped items"
+git commit -m "MSG UPDATE"
 git push origin testing
 git pull --ff-only origin testing
 
@@ -417,4 +417,19 @@ git push
 
 
 git remote add origin https://github.com/ellamotorpartsrace-spec/ERP_SYSTEM.git
+```
+
+============================================================
+UPDATE MAIN BRANCH FROM TESTING
+============================================================
+
+```bash
+git status --short --branch
+git switch testing
+git pull --ff-only origin testing
+git switch main
+git pull --ff-only origin main
+git merge testing
+git push origin main
+git status --short --branch
 ```
