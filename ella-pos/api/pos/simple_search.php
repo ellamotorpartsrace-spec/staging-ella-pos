@@ -86,7 +86,22 @@ try {
             v.price_dealer,
             v.unit_type,
             v.barcode,
-            GREATEST(0, COALESCE(inv.total_qty, 0) - COALESCE(sa.shopee_allocated, 0)) AS stock,
+            GREATEST(0, (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0)) - (
+                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0)
+                FROM shopee_product_mappings m
+                LEFT JOIN product_units u_inner ON m.pos_unit_id = u_inner.id
+                WHERE m.mapping_status IN ('auto','manual')
+                  AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+                  AND (m.pos_product_id = v.variation_id 
+                       OR (v.sku IS NOT NULL 
+                           AND v.sku != '' 
+                           AND v.sku != '-' 
+                           AND v.sku != 'n/a' 
+                           AND v.sku != 'na' 
+                           AND v.sku != 'none' 
+                           AND v.sku != 'null' 
+                           AND m.matched_pos_sku COLLATE utf8mb4_general_ci = v.sku COLLATE utf8mb4_general_ci))
+            )) AS stock,
             CAST(1 AS UNSIGNED) AS multiplier,
             NULL AS unit_id,
             (
@@ -101,31 +116,8 @@ try {
             ) AS relevance_score
         FROM product_variations v
         INNER JOIN products p ON v.product_id = p.product_id
-        LEFT JOIN (
-            SELECT variation_id, SUM(quantity) as total_qty 
-            FROM inventory 
-            GROUP BY variation_id
-        ) inv ON v.variation_id = inv.variation_id
-        LEFT JOIN (
-            SELECT 
-                v_inner.variation_id,
-                COALESCE(SUM(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0) as shopee_allocated
-            FROM product_variations v_inner
-            JOIN shopee_product_mappings m 
-                ON (m.pos_product_id = v_inner.variation_id 
-                    OR (v_inner.sku IS NOT NULL 
-                        AND v_inner.sku != '' 
-                        AND v_inner.sku != '-' 
-                        AND v_inner.sku != 'n/a' 
-                        AND v_inner.sku != 'na' 
-                        AND v_inner.sku != 'none' 
-                        AND v_inner.sku != 'null' 
-                        AND m.matched_pos_sku COLLATE utf8mb4_general_ci = v_inner.sku COLLATE utf8mb4_general_ci))
-            LEFT JOIN product_units u_inner ON m.pos_unit_id = u_inner.id
-            WHERE m.mapping_status IN ('auto','manual')
-              AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
-            GROUP BY v_inner.variation_id
-        ) sa ON v.variation_id = sa.variation_id
+        LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
+        LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
         WHERE v.status = 'active'
         AND (
             v.barcode = :barcode
@@ -149,7 +141,22 @@ try {
             u.price_dealer,
             u.unit_name AS unit_type,
             u.barcode,
-            FLOOR(GREATEST(0, COALESCE(inv.total_qty, 0) - COALESCE(sa.shopee_allocated, 0)) / u.multiplier) AS stock,
+            FLOOR(GREATEST(0, (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0)) - (
+                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0)
+                FROM shopee_product_mappings m
+                LEFT JOIN product_units u_inner ON m.pos_unit_id = u_inner.id
+                WHERE m.mapping_status IN ('auto','manual')
+                  AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+                  AND (m.pos_product_id = v.variation_id 
+                       OR (v.sku IS NOT NULL 
+                           AND v.sku != '' 
+                           AND v.sku != '-' 
+                           AND v.sku != 'n/a' 
+                           AND v.sku != 'na' 
+                           AND v.sku != 'none' 
+                           AND v.sku != 'null' 
+                           AND m.matched_pos_sku COLLATE utf8mb4_general_ci = v.sku COLLATE utf8mb4_general_ci))
+            )) / u.multiplier) AS stock,
             u.multiplier,
             u.id AS unit_id,
             (
@@ -165,31 +172,8 @@ try {
         FROM product_units u
         INNER JOIN product_variations v ON u.variation_id = v.variation_id
         INNER JOIN products p ON v.product_id = p.product_id
-        LEFT JOIN (
-            SELECT variation_id, SUM(quantity) as total_qty 
-            FROM inventory 
-            GROUP BY variation_id
-        ) inv ON v.variation_id = inv.variation_id
-        LEFT JOIN (
-            SELECT 
-                v_inner.variation_id,
-                COALESCE(SUM(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0) as shopee_allocated
-            FROM product_variations v_inner
-            JOIN shopee_product_mappings m 
-                ON (m.pos_product_id = v_inner.variation_id 
-                    OR (v_inner.sku IS NOT NULL 
-                        AND v_inner.sku != '' 
-                        AND v_inner.sku != '-' 
-                        AND v_inner.sku != 'n/a' 
-                        AND v_inner.sku != 'na' 
-                        AND v_inner.sku != 'none' 
-                        AND v_inner.sku != 'null' 
-                        AND m.matched_pos_sku COLLATE utf8mb4_general_ci = v_inner.sku COLLATE utf8mb4_general_ci))
-            LEFT JOIN product_units u_inner ON m.pos_unit_id = u_inner.id
-            WHERE m.mapping_status IN ('auto','manual')
-              AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
-            GROUP BY v_inner.variation_id
-        ) sa ON v.variation_id = sa.variation_id
+        LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
+        LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
         WHERE v.status = 'active'
         AND (
             u.barcode = :barcode
