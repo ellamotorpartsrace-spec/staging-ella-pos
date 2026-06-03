@@ -89,7 +89,7 @@ try {
                 v.barcode,
                 CAST(1 AS UNSIGNED) AS multiplier,
                 NULL AS unit_id,
-                COALESCE(i_phys.quantity, 0) AS physical_stock,
+                (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0)) AS physical_stock,
                 (
                     CASE 
                         WHEN v.barcode = :barcode THEN 100
@@ -129,7 +129,7 @@ try {
                 u.barcode,
                 u.multiplier,
                 u.id AS unit_id,
-                COALESCE(i_phys.quantity, 0) AS physical_stock,
+                (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0)) AS physical_stock,
                 (
                     CASE 
                         WHEN u.barcode = :barcode THEN 100

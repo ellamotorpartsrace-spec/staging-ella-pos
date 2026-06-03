@@ -75,11 +75,10 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
         return;
     }
 
-    $stockStmt = $conn->prepare("
+    $lockStmt = $conn->prepare("
         SELECT quantity
         FROM inventory
         WHERE variation_id = ?
-          AND store_id = 1
         FOR UPDATE
     ");
 
@@ -95,19 +94,32 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
         LIMIT 1
     ");
 
+    $stockStmt = $conn->prepare("
+        SELECT 
+            (
+                (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = :vid)
+                - 
+                COALESCE(
+                    (SELECT SUM(m.shopee_stock * COALESCE(u.multiplier, 1))
+                     FROM shopee_product_mappings m
+                     LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                     WHERE m.mapping_status IN ('auto','manual')
+                       AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+                       AND (m.pos_product_id = :vid 
+                            OR (:sku != '' AND :sku != '-' AND :sku != 'n/a' AND :sku != 'na' AND :sku != 'none' AND :sku != 'null' 
+                                AND m.matched_pos_sku COLLATE utf8mb4_general_ci = :sku2 COLLATE utf8mb4_general_ci))
+                    )
+                , 0)
+            ) AS available_stock
+    ");
+
     $shortages = [];
 
     foreach ($requirements as $variationId => $requiredQty) {
         $variationId = (int)$variationId;
         $requiredQty = (int)$requiredQty;
 
-        $stockStmt->execute([$variationId]);
-        $current = $stockStmt->fetchColumn();
-        $availableQty = $current === false ? 0 : (int)$current;
-
-        if ($availableQty >= $requiredQty) {
-            continue;
-        }
+        $lockStmt->execute([$variationId]);
 
         $name = trim((string)($labels[$variationId] ?? ''));
         $sku = '';
@@ -121,6 +133,18 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
             $name = trim($labelName . ($labelVariation !== '' ? ' - ' . $labelVariation : '')) ?: $name;
             $sku = trim((string)($label['sku'] ?? ''));
             $barcode = trim((string)($label['barcode'] ?? ''));
+        }
+
+        $stockStmt->execute([
+            ':vid' => $variationId,
+            ':sku' => $sku,
+            ':sku2' => $sku
+        ]);
+        $current = $stockStmt->fetchColumn();
+        $availableQty = $current === false ? 0 : (int)$current;
+
+        if ($availableQty >= $requiredQty) {
+            continue;
         }
 
         $shortages[] = [
