@@ -48,3 +48,23 @@ After config.php: 1.05ms
 After sidebar.php: 30.1ms
 After sqlStats: 66.6ms
 After sqlProducts: 80.12ms
+Start index.php
+After config.php: 10.27ms
+After sidebar.php: 21.06ms
+After sqlStats: 67.14ms
+After sqlProducts: 83.33ms
+Start index.php
+After config.php: 1.88ms
+After sidebar.php: 42.94ms
+After sqlStats: 86ms
+After sqlProducts: 96.74ms
+Start index.php
+After config.php: 1.12ms
+After sidebar.php: 49.66ms
+After sqlStats: 88.53ms
+After sqlProducts: 100.52ms
+Start index.php
+After config.php: 1ms
+After sidebar.php: 32.24ms
+After sqlStats: 66.16ms
+After sqlProducts: 78.81ms
