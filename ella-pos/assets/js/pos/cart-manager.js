@@ -725,16 +725,25 @@ onclick="event.stopPropagation()" >
                    </button> `
                 : '';
 
-            // Low stock indicator
-            let lowStockHtml = '';
-            if (item.stock > 0) {
-                const stockUsedPct = (item.qty / item.stock) * 100;
-                if (stockUsedPct >= 100) {
-                    lowStockHtml = `<span class="cart-low-stock-badge danger"><i class="fa-solid fa-triangle-exclamation"></i>MAX STOCK</span>`;
-                } else if (stockUsedPct >= 80) {
-                    lowStockHtml = `<span class="cart-low-stock-badge warning"><i class="fa-solid fa-triangle-exclamation"></i>${item.stock - item.qty} left</span>`;
-                }
+            // Stock Indicator
+            let stockBadgeClass = 'bg-secondary';
+            let stockIcon = 'fa-box';
+            let stockText = `Stock: ${item.stock}`;
+            
+            if (item.stock <= 0) {
+                stockBadgeClass = 'bg-danger';
+                stockIcon = 'fa-triangle-exclamation';
+                stockText = 'OUT OF STOCK';
+            } else if (item.qty > item.stock) {
+                stockBadgeClass = 'bg-danger';
+                stockIcon = 'fa-triangle-exclamation';
+                stockText = `Short (${item.stock} left)`;
+            } else if ((item.qty / item.stock) * 100 >= 80) {
+                stockBadgeClass = 'bg-warning text-dark';
+                stockText = `Stock: ${item.stock} (${item.stock - item.qty} left)`;
             }
+            
+            const stockIndicatorHtml = `<span class="badge ${stockBadgeClass} ms-1" style="font-size:8px"><i class="fa-solid ${stockIcon} me-1"></i>${stockText}</span>`;
 
             rowsHtml.push(`
     <tr data-cart-index="${index}" class="${isDiscounted ? 'cart-row-discounted' : ''}"
@@ -755,9 +764,9 @@ onclick="event.stopPropagation()" >
                                         <span class="badge ${tierBadgeClass}" style="font-size:8px">${tierLabel}</span>
                                         ${isDiscounted ? `<span class="badge bg-danger ms-1" style="font-size:8px">${discountDetail || 'DISCOUNTED'}</span>` : ''}
                                         ${item.tier_fallback ? `<span class="badge bg-warning text-dark ms-1" style="font-size:8px">No ${itemTier} price &ndash; using SRP</span>` : ''}
+                                        ${stockIndicatorHtml}
                                     </div>
                                     ${unitBreakdownHtml}
-                                    ${lowStockHtml ? `<div class="mt-1">${lowStockHtml}</div>` : ''}
                                 </div>
                             </div>
                         </div>

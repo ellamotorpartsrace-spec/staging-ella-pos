@@ -72,88 +72,90 @@ try {
     $limit = 50;
 
     $sql = "
-        SELECT 
-            v.variation_id,
-            p.product_name,
-            p.brand_name,
-            p.image_path,
-            p.description,
-            v.variation_name,
-            v.sku,
-            v.price_capital,
-            v.price_retail,
-            v.price_wholesale,
-            v.price_dealer,
-            v.unit_type,
-            v.barcode,
-            COALESCE(i_phys.quantity, 0) AS stock,
-            CAST(1 AS UNSIGNED) AS multiplier,
-            NULL AS unit_id,
-            (
-                CASE 
-                    WHEN v.barcode = :barcode THEN 100
-                    WHEN v.sku = :barcode THEN 90
-                    WHEN p.product_name LIKE CONCAT(:barcode, '%') THEN 80
-                    WHEN v.variation_name LIKE CONCAT(:barcode, '%') THEN 80
-                    WHEN p.brand_name LIKE CONCAT(:barcode, '%') THEN 80
-                    ELSE 10
-                END
-            ) AS relevance_score
-        FROM product_variations v
-        INNER JOIN products p ON v.product_id = p.product_id
-        LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
-        LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
-        WHERE v.status = 'active'
-        AND (
-            v.barcode = :barcode
-            OR ({$searchCondition})
+        WITH MatchedProducts AS (
+            SELECT 
+                v.variation_id,
+                p.product_name,
+                p.brand_name,
+                p.image_path,
+                p.description,
+                v.variation_name,
+                v.sku,
+                v.price_capital,
+                v.price_retail,
+                v.price_wholesale,
+                v.price_dealer,
+                v.unit_type,
+                v.barcode,
+                CAST(1 AS UNSIGNED) AS multiplier,
+                NULL AS unit_id,
+                (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0)) AS physical_stock,
+                (
+                    CASE 
+                        WHEN v.barcode = :barcode THEN 100
+                        WHEN v.sku = :barcode THEN 90
+                        WHEN p.product_name LIKE CONCAT(:barcode, '%') THEN 80
+                        WHEN v.variation_name LIKE CONCAT(:barcode, '%') THEN 80
+                        WHEN p.brand_name LIKE CONCAT(:barcode, '%') THEN 80
+                        ELSE 10
+                    END
+                ) AS relevance_score
+            FROM product_variations v
+            INNER JOIN products p ON v.product_id = p.product_id
+            LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
+            LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+            WHERE v.status = 'active'
+            AND (
+                v.barcode = :barcode
+                OR ({$searchCondition})
+            )
+            {$categoryCondition}
+            
+            UNION ALL
+            
+            SELECT 
+                v.variation_id,
+                p.product_name,
+                p.brand_name,
+                p.image_path,
+                COALESCE(u.description, p.description) AS description,
+                v.variation_name,
+                v.sku,
+                COALESCE(NULLIF(u.price_capital, 0), v.price_capital) AS price_capital,
+                u.price_retail,
+                u.price_wholesale,
+                u.price_dealer,
+                u.unit_name AS unit_type,
+                u.barcode,
+                u.multiplier,
+                u.id AS unit_id,
+                (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0)) AS physical_stock,
+                (
+                    CASE 
+                        WHEN u.barcode = :barcode THEN 100
+                        WHEN v.sku = :barcode THEN 90
+                        WHEN p.product_name LIKE CONCAT(:barcode, '%') THEN 80
+                        WHEN v.variation_name LIKE CONCAT(:barcode, '%') THEN 80
+                        WHEN p.brand_name LIKE CONCAT(:barcode, '%') THEN 80
+                        ELSE 10
+                    END
+                ) AS relevance_score
+            FROM product_units u
+            INNER JOIN product_variations v ON u.variation_id = v.variation_id
+            INNER JOIN products p ON v.product_id = p.product_id
+            LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
+            LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+            WHERE v.status = 'active'
+            AND (
+                u.barcode = :barcode
+                OR ({$searchCondition})
+            )
+            {$categoryCondition}
         )
-        {$categoryCondition}
-        
-        UNION ALL
-        
-        SELECT 
-            v.variation_id,
-            p.product_name,
-            p.brand_name,
-            p.image_path,
-            COALESCE(u.description, p.description) AS description,
-            v.variation_name,
-            v.sku,
-            COALESCE(NULLIF(u.price_capital, 0), v.price_capital) AS price_capital,
-            u.price_retail,
-            u.price_wholesale,
-            u.price_dealer,
-            u.unit_name AS unit_type,
-            u.barcode,
-            FLOOR(COALESCE(i_phys.quantity, 0) / u.multiplier) AS stock,
-            u.multiplier,
-            u.id AS unit_id,
-            (
-                CASE 
-                    WHEN u.barcode = :barcode THEN 100
-                    WHEN v.sku = :barcode THEN 90
-                    WHEN p.product_name LIKE CONCAT(:barcode, '%') THEN 80
-                    WHEN v.variation_name LIKE CONCAT(:barcode, '%') THEN 80
-                    WHEN p.brand_name LIKE CONCAT(:barcode, '%') THEN 80
-                    ELSE 10
-                END
-            ) AS relevance_score
-        FROM product_units u
-        INNER JOIN product_variations v ON u.variation_id = v.variation_id
-        INNER JOIN products p ON v.product_id = p.product_id
-        LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
-        LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
-        WHERE v.status = 'active'
-        AND (
-            u.barcode = :barcode
-            OR ({$searchCondition})
-        )
-        {$categoryCondition}
-        
+        SELECT * FROM MatchedProducts
         ORDER BY 
             relevance_score DESC,
-            (stock > 0) DESC,
+            physical_stock > 0 DESC,
             product_name ASC,
             variation_name ASC,
             multiplier ASC
@@ -164,11 +166,44 @@ try {
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Image Path Fix
-    foreach ($rows as &$row) {
-        $row['image_url'] = !empty($row['image_path'])
-            ? "../../" . $row['image_path']
-            : "../../assets/img/products/no-image.png";
+    // Calculate Shopee deductions ONLY for the returned top 50 rows (Highly Optimized)
+    if (!empty($rows)) {
+        $deductSql = "
+            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0)
+            FROM shopee_product_mappings m
+            LEFT JOIN product_units u_inner ON m.pos_unit_id = u_inner.id
+            WHERE m.mapping_status IN ('auto','manual')
+              AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+              AND (m.pos_product_id = :variation_id 
+                   OR (:sku != '' AND :sku != '-' AND :sku != 'n/a' AND :sku != 'na' AND :sku != 'none' AND :sku != 'null'
+                       AND m.matched_pos_sku COLLATE utf8mb4_general_ci = :sku2 COLLATE utf8mb4_general_ci))
+        ";
+        $deductStmt = $conn->prepare($deductSql);
+
+        foreach ($rows as &$row) {
+            $sku = (string)($row['sku'] ?? '');
+            $deductStmt->execute([
+                ':variation_id' => $row['variation_id'],
+                ':sku' => $sku,
+                ':sku2' => $sku
+            ]);
+            $shopeeDeduction = (int)$deductStmt->fetchColumn();
+            
+            $trueStock = max(0, $row['physical_stock'] - $shopeeDeduction);
+            
+            if ($row['multiplier'] > 1) {
+                $row['stock'] = floor($trueStock / $row['multiplier']);
+            } else {
+                $row['stock'] = $trueStock;
+            }
+            
+            unset($row['physical_stock']); // clean up
+
+            // Image Path Fix
+            $row['image_url'] = !empty($row['image_path'])
+                ? "../../" . $row['image_path']
+                : "../../assets/img/products/no-image.png";
+        }
     }
 
     echo json_encode($rows ?: []);
