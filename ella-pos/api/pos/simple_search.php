@@ -86,22 +86,7 @@ try {
             v.price_dealer,
             v.unit_type,
             v.barcode,
-            GREATEST(0, (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0)) - (
-                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0)
-                FROM shopee_product_mappings m
-                LEFT JOIN product_units u_inner ON m.pos_unit_id = u_inner.id
-                WHERE m.mapping_status IN ('auto','manual')
-                  AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
-                  AND (m.pos_product_id = v.variation_id 
-                       OR (v.sku IS NOT NULL 
-                           AND v.sku != '' 
-                           AND v.sku != '-' 
-                           AND v.sku != 'n/a' 
-                           AND v.sku != 'na' 
-                           AND v.sku != 'none' 
-                           AND v.sku != 'null' 
-                           AND m.matched_pos_sku COLLATE utf8mb4_general_ci = v.sku COLLATE utf8mb4_general_ci))
-            )) AS stock,
+            COALESCE(i_phys.quantity, 0) AS stock,
             CAST(1 AS UNSIGNED) AS multiplier,
             NULL AS unit_id,
             (
@@ -141,22 +126,7 @@ try {
             u.price_dealer,
             u.unit_name AS unit_type,
             u.barcode,
-            FLOOR(GREATEST(0, (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0)) - (
-                SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0)
-                FROM shopee_product_mappings m
-                LEFT JOIN product_units u_inner ON m.pos_unit_id = u_inner.id
-                WHERE m.mapping_status IN ('auto','manual')
-                  AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
-                  AND (m.pos_product_id = v.variation_id 
-                       OR (v.sku IS NOT NULL 
-                           AND v.sku != '' 
-                           AND v.sku != '-' 
-                           AND v.sku != 'n/a' 
-                           AND v.sku != 'na' 
-                           AND v.sku != 'none' 
-                           AND v.sku != 'null' 
-                           AND m.matched_pos_sku COLLATE utf8mb4_general_ci = v.sku COLLATE utf8mb4_general_ci))
-            )) / u.multiplier) AS stock,
+            FLOOR(COALESCE(i_phys.quantity, 0) / u.multiplier) AS stock,
             u.multiplier,
             u.id AS unit_id,
             (
