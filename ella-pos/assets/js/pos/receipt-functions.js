@@ -407,6 +407,11 @@ const ReceiptFunctions = {
         return submitSale(false);
       }
 
+      if (data.code === 'INSUFFICIENT_PHYSICAL_STOCK' && data.stock_shortages) {
+        this._showStockShortageModal(data.stock_shortages);
+        return;
+      }
+
       EllaToast.error('Transaction Failed: ' + (data.message || 'Unknown Error'));
     };
 
@@ -538,6 +543,45 @@ const ReceiptFunctions = {
 
       bsModal.show();
     });
+  },
+
+  _showStockShortageModal(shortages) {
+    let html = '<div class="alert alert-danger mb-3" style="text-align: left;"><i class="fa-solid fa-triangle-exclamation me-2"></i>The following items do not have enough stock to complete the transaction:</div>';
+    html += '<div class="table-responsive"><table class="table table-sm table-bordered text-start align-middle" style="font-size: 13px;">';
+    html += '<thead class="table-light"><tr><th>Product</th><th class="text-center">Req</th><th class="text-center">Avail</th><th class="text-center">Short</th></tr></thead><tbody>';
+    
+    shortages.forEach(item => {
+        let name = item.name;
+        if (item.variation && item.variation !== '') {
+            name += ` - ${item.variation}`;
+        }
+        html += `
+            <tr>
+                <td><span class="fw-bold text-danger">${name}</span></td>
+                <td class="text-center text-danger fw-bold">${item.requested}</td>
+                <td class="text-center text-success fw-bold">${item.available}</td>
+                <td class="text-center text-danger fw-bold">${item.shortfall}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    html += '<p class="text-muted small mt-2 mb-0" style="text-align: left;">Please adjust the quantity or remove these items from your cart to proceed.</p>';
+
+    if (typeof EllaConfirm !== 'undefined') {
+        EllaConfirm.show({
+            title: 'Insufficient Stock',
+            message: html,
+            isHtml: true,
+            modalSize: 'modal-md',
+            confirmText: 'Got it',
+            confirmClass: 'btn-secondary',
+            icon: 'fa-box-open',
+            iconColor: 'text-danger'
+        });
+    } else {
+        EllaToast.error('Insufficient stock for one or more items.');
+    }
   },
 
   /**
