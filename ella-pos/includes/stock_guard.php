@@ -85,7 +85,7 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
     $lockStmt = $conn->prepare("
         SELECT quantity
         FROM inventory
-        WHERE variation_id = ?
+        WHERE variation_id = ? AND store_id = 1
         FOR UPDATE
     ");
 
@@ -104,7 +104,7 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
     $stockStmt = $conn->prepare("
         SELECT 
             (
-                (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = :vid1)
+                (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = :vid1 AND store_id = 1)
                 - 
                 COALESCE(
                     (SELECT SUM(m.shopee_stock * COALESCE(u.multiplier, 1))
@@ -158,11 +158,12 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
 
         $shortages[] = [
             'variation_id' => $variationId,
-            'name' => $name !== '' ? $name : 'Variation #' . $variationId,
+            'name' => isset($label['product_name']) ? trim($label['product_name']) : ($name !== '' ? $name : 'Variation #' . $variationId),
+            'variation' => isset($label['variation_name']) ? trim($label['variation_name']) : '',
             'sku' => $sku,
             'barcode' => $barcode,
             'requested' => $requiredQty,
-            'available' => $availableQty,
+            'available' => max(0, $availableQty),
             'shortfall' => $requiredQty - $availableQty,
         ];
     }
