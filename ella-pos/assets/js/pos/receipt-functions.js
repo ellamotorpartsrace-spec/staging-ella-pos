@@ -546,41 +546,53 @@ const ReceiptFunctions = {
   },
 
   _showStockShortageModal(shortages) {
-    let html = '<div class="alert alert-danger mb-3" style="text-align: left;"><i class="fa-solid fa-triangle-exclamation me-2"></i>The following items do not have enough stock to complete the transaction:</div>';
-    html += '<div class="table-responsive"><table class="table table-sm table-bordered text-start align-middle" style="font-size: 13px;">';
-    html += '<thead class="table-light"><tr><th>Product</th><th class="text-center">Req</th><th class="text-center">Avail</th><th class="text-center">Short</th></tr></thead><tbody>';
+    let html = '<div style="text-align: left; margin-top: 10px;">';
     
     shortages.forEach(item => {
         let name = item.name;
         if (item.variation && item.variation !== '') {
-            name += ` - ${item.variation}`;
+            name += ` <span style="color:#64748b; font-size: 0.9em;">(${item.variation})</span>`;
         }
+        
         html += `
-            <tr>
-                <td><span class="fw-bold text-danger">${name}</span></td>
-                <td class="text-center text-danger fw-bold">${item.requested}</td>
-                <td class="text-center text-success fw-bold">${item.available}</td>
-                <td class="text-center text-danger fw-bold">${item.shortfall}</td>
-            </tr>
+            <div style="background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; padding: 12px 16px; margin-bottom: 12px; border-radius: 6px;">
+                <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px; font-size: 14px;">${name}</div>
+                <div style="display: flex; gap: 10px; font-size: 13px; text-align: center; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #fee2e2;">
+                    <div style="flex: 1; border-right: 1px solid #f1f5f9;">
+                        <div style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">In Stock</div>
+                        <strong style="color: #10b981; font-size: 15px;">${item.available}</strong>
+                    </div>
+                    <div style="flex: 1; border-right: 1px solid #f1f5f9;">
+                        <div style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Needed</div>
+                        <strong style="color: #f59e0b; font-size: 15px;">${item.requested}</strong>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="color: #dc2626; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Shortage</div>
+                        <strong style="color: #dc2626; font-size: 15px;">${item.shortfall}</strong>
+                    </div>
+                </div>
+            </div>
         `;
     });
     
-    html += '</tbody></table></div>';
-    html += '<p class="text-muted small mt-2 mb-0" style="text-align: left;">Please adjust the quantity or remove these items from your cart to proceed.</p>';
+    html += '<p style="color: #64748b; font-size: 13px; margin-top: 15px; text-align: center; margin-bottom: 0;">Please reduce the quantity or remove these items from your cart.</p>';
+    html += '</div>';
 
-    if (typeof EllaConfirm !== 'undefined') {
-        EllaConfirm.show({
-            title: 'Insufficient Stock',
-            message: html,
-            isHtml: true,
-            modalSize: 'modal-md',
-            confirmText: 'Got it',
-            confirmClass: 'btn-secondary',
-            icon: 'fa-box-open',
-            iconColor: 'text-danger'
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Out of Stock',
+            html: html,
+            confirmButtonText: 'Got it, I will adjust',
+            confirmButtonColor: '#3b82f6',
+            width: '480px',
+            customClass: {
+                popup: 'rounded-4 shadow-lg'
+            }
         });
     } else {
-        EllaToast.error('Insufficient stock for one or more items.');
+        // Fallback to basic alert if Swal is missing
+        alert('Insufficient stock for some items. Please check your cart.');
     }
   },
 
