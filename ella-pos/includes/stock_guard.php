@@ -49,6 +49,7 @@ function buildPhysicalStockRequirements(array $items, array $options = []): arra
 
     $requirements = [];
     $labels = [];
+    $multipliers = []; // Track multiplier per variation_id
 
     foreach ($items as $index => $item) {
         if (!is_array($item)) {
@@ -70,13 +71,14 @@ function buildPhysicalStockRequirements(array $items, array $options = []): arra
             $name = trim((string)stockGuardFirstValue($item, $nameKeys, 'Item ' . ($index + 1)));
             $variation = trim((string)stockGuardFirstValue($item, $variationNameKeys, ''));
             $labels[$variationId] = trim($name . ($variation !== '' ? ' - ' . $variation : ''));
+            $multipliers[$variationId] = $multiplier; // Store multiplier for this variation
         }
     }
 
-    return ['requirements' => $requirements, 'labels' => $labels];
+    return ['requirements' => $requirements, 'labels' => $labels, 'multipliers' => $multipliers];
 }
 
-function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $labels = []): void
+function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $labels = [], array $multipliers = []): void
 {
     if (empty($requirements)) {
         return;
@@ -124,6 +126,7 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
     foreach ($requirements as $variationId => $requiredQty) {
         $variationId = (int)$variationId;
         $requiredQty = (int)$requiredQty;
+        $multiplier = max(1, (int)($multipliers[$variationId] ?? 1));
 
         $lockStmt->execute([$variationId]);
 
@@ -150,11 +153,17 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
             ':sku2' => $sku
         ]);
         $current = $stockStmt->fetchColumn();
-        $availableQty = $current === false ? 0 : (int)$current;
+        // availableQty is in raw pieces (Total Stock - Shopee Allocated)
+        $availableQtyRaw = $current === false ? 0 : (int)$current;
 
-        if ($availableQty >= $requiredQty) {
+        if ($availableQtyRaw >= $requiredQty) {
             continue;
         }
+
+        // Convert to human-readable sellable units (same as POS cart badge)
+        $availableDisplay = ($multiplier > 1) ? (int)floor($availableQtyRaw / $multiplier) : max(0, $availableQtyRaw);
+        $requestedDisplay = (int)($requiredQty / $multiplier);
+        $shortfallDisplay = max(0, $requestedDisplay - $availableDisplay);
 
         $shortages[] = [
             'variation_id' => $variationId,
@@ -162,9 +171,9 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
             'variation' => isset($label['variation_name']) ? trim($label['variation_name']) : '',
             'sku' => $sku,
             'barcode' => $barcode,
-            'requested' => $requiredQty,
-            'available' => max(0, $availableQty),
-            'shortfall' => $requiredQty - $availableQty,
+            'requested' => $requestedDisplay,
+            'available' => $availableDisplay,
+            'shortfall' => $shortfallDisplay,
         ];
     }
 

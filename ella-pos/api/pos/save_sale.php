@@ -96,7 +96,7 @@ try {
     }
 
     $stockPlan = buildPhysicalStockRequirements($items);
-    assertPhysicalStockAvailable($conn, $stockPlan['requirements'], $stockPlan['labels']);
+    assertPhysicalStockAvailable($conn, $stockPlan['requirements'], $stockPlan['labels'], $stockPlan['multipliers'] ?? []);
 
     $buyerId = !empty($buyer['buyer_id']) ? (int) $buyer['buyer_id'] : null;
     $buyerName = $buyer['buyer_name'] ?? 'Walk-in Customer';
