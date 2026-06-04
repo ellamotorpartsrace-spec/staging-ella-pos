@@ -175,16 +175,17 @@ try {
             WHERE m.mapping_status IN ('auto','manual')
               AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
               AND (m.pos_product_id = :variation_id 
-                   OR (:sku != '' AND :sku != '-' AND :sku != 'n/a' AND :sku != 'na' AND :sku != 'none' AND :sku != 'null'
-                       AND m.matched_pos_sku COLLATE utf8mb4_general_ci = :sku2 COLLATE utf8mb4_general_ci))
+                   OR (:has_sku = 1 AND m.matched_pos_sku COLLATE utf8mb4_general_ci = :sku2 COLLATE utf8mb4_general_ci))
         ";
         $deductStmt = $conn->prepare($deductSql);
 
         foreach ($rows as &$row) {
             $sku = (string)($row['sku'] ?? '');
+            $hasSku = ($sku != '' && $sku != '-' && $sku != 'n/a' && $sku != 'na' && $sku != 'none' && $sku != 'null') ? 1 : 0;
+
             $deductStmt->execute([
                 ':variation_id' => $row['variation_id'],
-                ':sku' => $sku,
+                ':has_sku' => $hasSku,
                 ':sku2' => $sku
             ]);
             $shopeeDeduction = (int)$deductStmt->fetchColumn();

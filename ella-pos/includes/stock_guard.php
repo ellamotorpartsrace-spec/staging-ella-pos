@@ -10,8 +10,15 @@ if (!class_exists('InsufficientPhysicalStockException')) {
         {
             $this->items = $items;
             $count = count($items);
+            
+            $debugList = [];
+            foreach ($items as $item) {
+                $debugList[] = "{$item['name']} (Req: {$item['requested']}, Avail: {$item['available']})";
+            }
+            $debugStr = implode(', ', $debugList);
+            
             parent::__construct(
-                'Insufficient physical stock for ' . $count . ' item' . ($count === 1 ? '' : 's') . '. Sync inventory or move stock back from Online Shop before checkout.'
+                'Insufficient stock for ' . $count . ' item(s). Please check: ' . $debugStr
             );
         }
 
@@ -97,7 +104,7 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
     $stockStmt = $conn->prepare("
         SELECT 
             (
-                (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = :vid)
+                (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = :vid1)
                 - 
                 COALESCE(
                     (SELECT SUM(m.shopee_stock * COALESCE(u.multiplier, 1))
@@ -105,9 +112,8 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
                      LEFT JOIN product_units u ON m.pos_unit_id = u.id
                      WHERE m.mapping_status IN ('auto','manual')
                        AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
-                       AND (m.pos_product_id = :vid 
-                            OR (:sku != '' AND :sku != '-' AND :sku != 'n/a' AND :sku != 'na' AND :sku != 'none' AND :sku != 'null' 
-                                AND m.matched_pos_sku COLLATE utf8mb4_general_ci = :sku2 COLLATE utf8mb4_general_ci))
+                       AND (m.pos_product_id = :vid2 
+                            OR (:has_sku = 1 AND m.matched_pos_sku COLLATE utf8mb4_general_ci = :sku2 COLLATE utf8mb4_general_ci))
                     )
                 , 0)
             ) AS available_stock
@@ -135,9 +141,12 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
             $barcode = trim((string)($label['barcode'] ?? ''));
         }
 
+        $hasSku = ($sku != '' && $sku != '-' && $sku != 'n/a' && $sku != 'na' && $sku != 'none' && $sku != 'null') ? 1 : 0;
+
         $stockStmt->execute([
-            ':vid' => $variationId,
-            ':sku' => $sku,
+            ':vid1' => $variationId,
+            ':vid2' => $variationId,
+            ':has_sku' => $hasSku,
             ':sku2' => $sku
         ]);
         $current = $stockStmt->fetchColumn();
