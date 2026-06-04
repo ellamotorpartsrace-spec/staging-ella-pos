@@ -85,7 +85,7 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
     $lockStmt = $conn->prepare("
         SELECT quantity
         FROM inventory
-        WHERE variation_id = ? AND store_id = 1
+        WHERE variation_id = ?
         FOR UPDATE
     ");
 
@@ -104,7 +104,7 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
     $stockStmt = $conn->prepare("
         SELECT 
             (
-                (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = :vid1 AND store_id = 1)
+                (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = :vid1)
                 - 
                 COALESCE(
                     (SELECT SUM(m.shopee_stock * COALESCE(u.multiplier, 1))
