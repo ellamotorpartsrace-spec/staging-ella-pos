@@ -645,18 +645,12 @@ if (isset($_GET['id'])) {
                         <i class="fa-solid fa-magnifying-glass text-primary me-2"></i>Find Product
                     </div>
                     <div class="card-body">
-                        <!-- Progressive Search Input -->
-                        <div class="position-relative mb-3">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fa-solid fa-barcode"></i></span>
-                                <input type="text" id="single-search" class="form-control"
-                                    placeholder="Scan Barcode, Product Name or Brand..."
-                                    value="<?= htmlspecialchars($search) ?>" autofocus autocomplete="off">
-                                <span class="input-group-text d-none" id="single-search-spinner">
-                                    <i class="fa-solid fa-spinner fa-spin text-primary"></i>
-                                </span>
-                            </div>
-                            <div id="single-search-results" class="search-dropdown list-group d-none"></div>
+                        <!-- Progressive Search Input via Modal -->
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary w-100 btn-lg shadow-sm d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#searchProductModal" onclick="UnifiedSearchModal.open('single')">
+                                <span><i class="fa-solid fa-magnifying-glass me-2"></i>Search / Scan Product...</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
                         </div>
 
                         <?php if (isset($_GET['id']) && !$selected_product): ?>
@@ -965,79 +959,13 @@ if (isset($_GET['id'])) {
 
                         <hr>
 
-                        <!-- Product Search -->
-                        <div class="position-relative mb-3">
+                        <!-- Product Search via Modal -->
+                        <div class="mb-3">
                             <label class="form-label fw-bold">Search Product</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fa-solid fa-barcode"></i></span>
-                                <input type="text" id="batch-search" class="form-control"
-                                    placeholder="Scan barcode or type product name..." autocomplete="off">
-                            </div>
-                            <div id="batch-search-results" class="search-dropdown list-group d-none"></div>
-                        </div>
-
-                        <!-- Quick Add Form (after selecting product) -->
-                        <div id="quick-add-form" class="d-none">
-                            <div class="card quick-add-shell border-0 mb-3">
-                                <div class="card-body p-3">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <div>
-                                            <div class="fw-bold" id="qa-product-name">Product Name</div>
-                                            <small class="text-muted" id="qa-product-details">Brand | Variation</small>
-                                        </div>
-                                        <button type="button" class="btn-close"
-                                            onclick="BatchRestock.clearQuickAdd()"></button>
-                                    </div>
-                                    <div class="row g-2">
-                                        <div class="col-4">
-                                            <label class="form-label small">Qty</label>
-                                            <input type="number" id="qa-qty" class="form-control" min="1" value="1">
-                                        </div>
-                                        <div class="col-5">
-                                            <label class="form-label small">Cost/Unit</label>
-                                            <input type="number" id="qa-cost" class="form-control" step="0.01"
-                                                placeholder="0.00">
-                                        </div>
-                                        <div class="col-3 d-flex flex-column justify-content-end pb-1">
-                                            <div class="form-check form-switch mb-1">
-                                                <input class="form-check-input" type="checkbox" id="qa-is-free"
-                                                    onchange="BatchRestock.toggleFree(this)">
-                                                <label class="form-check-label small fw-bold text-success"
-                                                    for="qa-is-free">FREE</label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Free Item Reason (shown when FREE is toggled) -->
-                                    <div id="qa-free-reason-row" class="d-none mt-2">
-                                        <div
-                                            class="alert alert-success border-success py-2 px-3 mb-0 d-flex align-items-center gap-2">
-                                            <i class="fa-solid fa-gift text-success"></i>
-                                            <div class="flex-grow-1">
-                                                <div class="small fw-bold text-success mb-1">Free Item — Select Reason
-                                                </div>
-                                                <select id="qa-free-reason" class="form-select form-select-sm">
-                                                    <option value="Supplier Promo">🎁 Supplier Promo / Bonus</option>
-                                                    <option value="Warranty Replacement">🔄 Warranty Replacement
-                                                    </option>
-                                                    <option value="Damaged Return">📦 Damaged Return</option>
-                                                    <option value="Sample">🧪 Sample / Demo Item</option>
-                                                    <option value="Other">📝 Other</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <input type="hidden" id="qa-variation-id">
-                                    <input type="hidden" id="qa-current-stock">
-                                    <input type="hidden" id="qa-sku">
-                                    <input type="hidden" id="qa-barcode">
-                                    <button type="button" class="btn btn-success w-100 mt-3"
-                                        onclick="BatchRestock.addToBatch()">
-                                        <i class="fa-solid fa-plus me-1"></i>Add to Batch
-                                    </button>
-                                </div>
-                            </div>
+                            <button type="button" class="btn btn-outline-success w-100 btn-lg shadow-sm d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#searchProductModal" onclick="UnifiedSearchModal.open('batch')">
+                                <span><i class="fa-solid fa-magnifying-glass me-2"></i>Search / Scan Product...</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1176,6 +1104,103 @@ if (isset($_GET['id'])) {
     </div>
 </div>
 
+<!-- ================= SEARCH PRODUCT MODAL ================= -->
+<div class="modal fade" id="searchProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white py-3 bg-primary" id="searchProductModalHeader">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-magnifying-glass me-2"></i>Find Product
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light" style="min-height: 400px;" id="modal-body-container">
+                <!-- Search Input Area -->
+                <div id="modal-search-area">
+                    <div class="input-group input-group-lg mb-3 shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fa-solid fa-barcode"></i></span>
+                        <input type="text" id="modal-search-input" class="form-control border-start-0 ps-0"
+                            placeholder="Scan barcode, type product name or brand..." autocomplete="off">
+                        <span class="input-group-text bg-white border-start-0 d-none" id="modal-search-spinner">
+                            <i class="fa-solid fa-spinner fa-spin text-primary"></i>
+                        </span>
+                    </div>
+                    <div id="modal-search-results" class="list-group shadow-sm d-none"></div>
+                    <div class="text-center py-5 text-muted" id="modal-search-empty">
+                        <i class="fa-solid fa-box-open fa-3x opacity-25 mb-3"></i>
+                        <h6>Search for a product</h6>
+                        <p class="small">Scan a barcode or type a keyword to begin</p>
+                    </div>
+                </div>
+
+                <!-- Quick Add Form -->
+                <div id="quick-add-form" class="d-none">
+                    <div class="card quick-add-shell border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-3">
+                                <div>
+                                    <div class="fw-bold fs-5" id="qa-product-name">Product Name</div>
+                                    <small class="text-muted" id="qa-product-details">Brand | Variation</small>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    onclick="UnifiedSearchModal.showSearchArea()">
+                                    <i class="fa-solid fa-arrow-left me-1"></i>Back to Search
+                                </button>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Qty</label>
+                                    <input type="number" id="qa-qty" class="form-control form-control-lg" min="1" value="1">
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold">Cost/Unit</label>
+                                    <input type="number" id="qa-cost" class="form-control form-control-lg" step="0.01"
+                                        placeholder="0.00">
+                                </div>
+                                <div class="col-md-3 d-flex flex-column justify-content-end pb-2">
+                                    <div class="form-check form-switch mb-1">
+                                        <input class="form-check-input" type="checkbox" id="qa-is-free"
+                                            onchange="BatchRestock.toggleFree(this)">
+                                        <label class="form-check-label small fw-bold text-success"
+                                            for="qa-is-free">FREE</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Free Item Reason -->
+                            <div id="qa-free-reason-row" class="d-none mt-3">
+                                <div class="alert alert-success border-success py-2 px-3 mb-0 d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-gift text-success"></i>
+                                    <div class="flex-grow-1">
+                                        <div class="small fw-bold text-success mb-1">Free Item — Select Reason
+                                        </div>
+                                        <select id="qa-free-reason" class="form-select form-select-sm">
+                                            <option value="Supplier Promo">🎁 Supplier Promo / Bonus</option>
+                                            <option value="Warranty Replacement">🔄 Warranty Replacement</option>
+                                            <option value="Damaged Return">📦 Damaged Return</option>
+                                            <option value="Sample">🧪 Sample / Demo Item</option>
+                                            <option value="Other">📝 Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="qa-variation-id">
+                            <input type="hidden" id="qa-current-stock">
+                            <input type="hidden" id="qa-sku">
+                            <input type="hidden" id="qa-barcode">
+                            <button type="button" class="btn btn-success btn-lg w-100 mt-4"
+                                onclick="BatchRestock.addToBatch()">
+                                <i class="fa-solid fa-plus me-2"></i>Add to Batch
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // Toggle due date visibility for single mode
     function toggleDueDate(selectElem) {
@@ -1206,26 +1231,39 @@ if (isset($_GET['id'])) {
     }
 
     // =====================================================
-    // SINGLE MODE PROGRESSIVE SEARCH
+    // UNIFIED PROGRESSIVE SEARCH MODAL
     // =====================================================
-    const SingleModeSearch = {
+    const UnifiedSearchModal = {
+        mode: 'single', // 'single' or 'batch'
         searchTimeout: null,
+        modal: null,
 
         init() {
-            const searchInput = document.getElementById('single-search');
+            const modalEl = document.getElementById('searchProductModal');
+            if (modalEl) {
+                this.modal = new bootstrap.Modal(modalEl);
+                modalEl.addEventListener('shown.bs.modal', () => {
+                    document.getElementById('modal-search-input').focus();
+                });
+                modalEl.addEventListener('hidden.bs.modal', () => {
+                    document.getElementById('modal-search-input').value = '';
+                    this.clearResults();
+                });
+            }
+
+            const searchInput = document.getElementById('modal-search-input');
             if (!searchInput) return;
 
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(this.searchTimeout);
                 const query = e.target.value.trim();
                 if (query.length < 1) {
-                    document.getElementById('single-search-results').classList.add('d-none');
+                    this.clearResults();
                     return;
                 }
                 this.searchTimeout = setTimeout(() => this.searchProducts(query), 300);
             });
 
-            // Handle Enter key for immediate search
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -1236,23 +1274,34 @@ if (isset($_GET['id'])) {
                     }
                 }
             });
+        },
 
-            // Close dropdown on outside click
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('#single-search') && !e.target.closest('#single-search-results')) {
-                    document.getElementById('single-search-results').classList.add('d-none');
-                }
-            });
+        open(mode) {
+            this.mode = mode;
+            const header = document.getElementById('searchProductModalHeader');
+            if (mode === 'single') {
+                header.classList.remove('bg-success');
+                header.classList.add('bg-primary');
+            } else {
+                header.classList.remove('bg-primary');
+                header.classList.add('bg-success');
+            }
+            this.modal?.show();
+        },
+
+        clearResults() {
+            document.getElementById('modal-search-results').classList.add('d-none');
+            document.getElementById('modal-search-empty').classList.remove('d-none');
         },
 
         async searchProducts(query) {
-            const spinner = document.getElementById('single-search-spinner');
+            const spinner = document.getElementById('modal-search-spinner');
             spinner?.classList.remove('d-none');
+            document.getElementById('modal-search-empty').classList.add('d-none');
 
             try {
                 const res = await fetch(`../../api/inventory/search_products.php?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
-                // Handle both old format (array) and new format ({products: []})
                 const products = data.products || data;
                 this.renderSearchResults(products);
             } catch (err) {
@@ -1263,9 +1312,9 @@ if (isset($_GET['id'])) {
         },
 
         renderSearchResults(products) {
-            const container = document.getElementById('single-search-results');
-            const query = document.getElementById('single-search').value.trim();
-            const safeQuery = query ? query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&').split(/\\s+/).filter(Boolean) : [];
+            const container = document.getElementById('modal-search-results');
+            const query = document.getElementById('modal-search-input').value.trim();
+            const safeQuery = query ? query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').split(/\s+/).filter(Boolean) : [];
             const highlight = (text) => {
                 if (!text) return '';
                 let hlText = this.escapeHtml(text);
@@ -1292,7 +1341,6 @@ if (isset($_GET['id'])) {
             let html = `<div class="search-dropdown-header"><i class="fa-solid fa-search me-1"></i>${products.length} result${products.length !== 1 ? 's' : ''} found</div>`;
 
             html += products.slice(0, 15).map(p => {
-                // Determine stock status
                 const stock = parseInt(p.current_stock) || 0;
                 const threshold = parseInt(p.low_stock_threshold) || 5;
                 let stockBadgeClass = 'stock-badge-in';
@@ -1306,13 +1354,14 @@ if (isset($_GET['id'])) {
                     stockIcon = 'fa-exclamation-triangle';
                 }
 
-                // Build image HTML
                 const imageHtml = p.image_path
                     ? `<img src="${baseUrl}${this.escapeHtml(p.image_path)}" class="product-suggestion-img" alt="">`
                     : `<div class="product-suggestion-placeholder"><i class="fa-solid fa-box"></i></div>`;
 
+                const productData = encodeURIComponent(JSON.stringify(p));
+
                 return `
-                <a href="restock.php?mode=single&id=${p.variation_id}" class="product-suggestion">
+                <div class="product-suggestion" onclick="UnifiedSearchModal.selectProduct(JSON.parse(decodeURIComponent('${productData}')))">
                     ${imageHtml}
                     <div class="product-suggestion-content">
                         <div class="product-suggestion-name">${highlight(p.product_name)}</div>
@@ -1330,11 +1379,26 @@ if (isset($_GET['id'])) {
                         </span>
                         <div class="price-capital mt-1">₱${parseFloat(p.price_capital || 0).toFixed(2)}</div>
                     </div>
-                </a>`;
+                </div>`;
             }).join('');
 
             container.innerHTML = html;
             container.classList.remove('d-none');
+        },
+
+        selectProduct(product) {
+            if (this.mode === 'single') {
+                window.location.href = `restock.php?mode=single&id=${product.variation_id}`;
+            } else {
+                document.getElementById('modal-search-area').classList.add('d-none');
+                BatchRestock.selectProduct(product);
+            }
+        },
+
+        showSearchArea() {
+            document.getElementById('quick-add-form').classList.add('d-none');
+            document.getElementById('modal-search-area').classList.remove('d-none');
+            document.getElementById('modal-search-input').focus();
         },
 
         escapeHtml(text) {
@@ -1350,29 +1414,9 @@ if (isset($_GET['id'])) {
         creditTerms: [],
 
         init() {
-            const searchInput = document.getElementById('batch-search');
-            if (!searchInput) return;
-
             // Initialize at least one credit term
             this.creditTerms = [{ date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: '' }];
             this.renderCreditTerms();
-
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(this.searchTimeout);
-                const query = e.target.value.trim();
-                if (query.length < 2) {
-                    document.getElementById('batch-search-results').classList.add('d-none');
-                    return;
-                }
-                this.searchTimeout = setTimeout(() => this.searchProducts(query), 300);
-            });
-
-            // Close dropdown on outside click
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('#batch-search') && !e.target.closest('#batch-search-results')) {
-                    document.getElementById('batch-search-results').classList.add('d-none');
-                }
-            });
 
             this.loadState();
 
@@ -1575,99 +1619,7 @@ if (isset($_GET['id'])) {
             }
         },
 
-        async searchProducts(query) {
-            try {
-                const res = await fetch(`../../api/inventory/search_products.php?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                const products = data.products || data;
-                this.renderSearchResults(products);
-            } catch (err) {
-                console.error('Search error:', err);
-            }
-        },
-
-        renderSearchResults(products) {
-            const container = document.getElementById('batch-search-results');
-            const query = document.getElementById('batch-search').value.trim();
-            const safeQuery = query ? query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&').split(/\\s+/).filter(Boolean) : [];
-            const highlight = (text) => {
-                if (!text) return '';
-                let hlText = this.escapeHtml(text);
-                if (safeQuery.length === 0) return hlText;
-                safeQuery.forEach(q => {
-                    const regex = new RegExp(`(${q})`, 'gi');
-                    hlText = hlText.replace(regex, '<mark class="bg-warning bg-opacity-50 p-0 rounded text-dark">$1</mark>');
-                });
-                return hlText;
-            };
-
-            if (!products || products.length === 0) {
-                container.innerHTML = `
-                    <div class="search-dropdown-empty">
-                        <i class="fa-solid fa-box-open d-block"></i>
-                        <div class="fw-medium">No products found</div>
-                        <small>Try a different search term</small>
-                    </div>`;
-                container.classList.remove('d-none');
-                return;
-            }
-
-            const baseUrl = '<?= BASE_URL ?>';
-            let html = `<div class="search-dropdown-header"><i class="fa-solid fa-search me-1"></i>${products.length} result${products.length !== 1 ? 's' : ''} found</div>`;
-
-            html += products.slice(0, 15).map(p => {
-                // Determine stock status
-                const stock = parseInt(p.current_stock) || 0;
-                const threshold = parseInt(p.low_stock_threshold) || 5;
-                let stockBadgeClass = 'stock-badge-in';
-                let stockIcon = 'fa-check-circle';
-
-                if (stock === 0) {
-                    stockBadgeClass = 'stock-badge-out';
-                    stockIcon = 'fa-times-circle';
-                } else if (stock <= threshold) {
-                    stockBadgeClass = 'stock-badge-low';
-                    stockIcon = 'fa-exclamation-triangle';
-                }
-
-                // Build image HTML
-                const imageHtml = p.image_path
-                    ? `<img src="${baseUrl}${this.escapeHtml(p.image_path)}" class="product-suggestion-img" alt="">`
-                    : `<div class="product-suggestion-placeholder"><i class="fa-solid fa-box"></i></div>`;
-
-                // Safely encode product data for onclick
-                const productData = encodeURIComponent(JSON.stringify(p));
-
-                return `
-                <div class="product-suggestion" onclick="BatchRestock.selectProduct(JSON.parse(decodeURIComponent('${productData}')))">
-                    ${imageHtml}
-                    <div class="product-suggestion-content">
-                        <div class="product-suggestion-name">${highlight(p.product_name)}</div>
-                        <div class="product-suggestion-details">
-                            <strong>${p.brand_name ? highlight(p.brand_name) : 'No Brand'}</strong> • ${p.variation_name ? highlight(p.variation_name) : 'Default'}
-                        </div>
-                        <div class="product-suggestion-meta">
-                            ${p.sku ? `<span class="product-suggestion-badge sku-badge"><i class="fa-solid fa-tag me-1"></i>${highlight(p.sku)}</span>` : ''}
-                            ${p.barcode ? `<span class="product-suggestion-badge barcode-badge"><i class="fa-solid fa-barcode me-1"></i>${highlight(p.barcode)}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="product-suggestion-right">
-                        <span class="product-suggestion-badge ${stockBadgeClass}">
-                            <i class="fa-solid ${stockIcon} me-1"></i>${stock} ${p.unit_type || 'pcs'}
-                        </span>
-                        <div class="price-capital mt-1">₱${parseFloat(p.price_capital || 0).toFixed(2)}</div>
-                    </div>
-                </div>`;
-            }).join('');
-
-            container.innerHTML = html;
-            container.classList.remove('d-none');
-        },
-
         selectProduct(product) {
-            // We no longer block here, as the user might want to add the same item as FREE.
-            // Duplicate checking is now handled in addToBatch.
-
             document.getElementById('qa-product-name').textContent = product.product_name;
             document.getElementById('qa-product-details').textContent =
                 `${product.brand_name || ''} | ${product.variation_name || ''} | Stock: ${product.current_stock}`;
@@ -1682,9 +1634,8 @@ if (isset($_GET['id'])) {
             document.getElementById('qa-free-reason-row').classList.add('d-none');
             document.getElementById('qa-free-reason').value = 'Supplier Promo';
 
+            document.getElementById('modal-search-area').classList.add('d-none');
             document.getElementById('quick-add-form').classList.remove('d-none');
-            document.getElementById('batch-search-results').classList.add('d-none');
-            document.getElementById('batch-search').value = '';
             document.getElementById('qa-qty').focus();
         },
 
@@ -1694,6 +1645,14 @@ if (isset($_GET['id'])) {
             document.getElementById('qa-cost').disabled = false;
             document.getElementById('qa-free-reason-row').classList.add('d-none');
             document.getElementById('qa-free-reason').value = 'Supplier Promo';
+            
+            const searchArea = document.getElementById('modal-search-area');
+            if (searchArea) {
+                searchArea.classList.remove('d-none');
+                setTimeout(() => {
+                    document.getElementById('modal-search-input')?.focus();
+                }, 100);
+            }
         },
 
         toggleFree(checkbox) {
@@ -2408,7 +2367,7 @@ if (isset($_GET['id'])) {
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-        SingleModeSearch.init();
+        UnifiedSearchModal.init();
         BatchRestock.init();
         SingleModeForm.init();
         RestockDraftUI.init();
