@@ -31,7 +31,7 @@ const EllaConfirm = (() => {
         modalEl.setAttribute('tabindex', '-1');
         modalEl.setAttribute('aria-hidden', 'true');
         modalEl.innerHTML = `
-            <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-dialog modal-dialog-centered modal-sm" id="ella-confirm-dialog">
                 <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
                     <div class="modal-body text-center p-4">
                         <div id="ella-confirm-icon" class="mb-3">
@@ -80,6 +80,8 @@ const EllaConfirm = (() => {
      * @param {string} options.iconColor - Icon color class (default: "text-warning")
      * @param {Function} options.onConfirm - Called when confirmed
      * @param {Function} options.onCancel  - Called when cancelled
+     * @param {boolean} options.isHtml - Whether message is HTML (default: false)
+     * @param {string} options.modalSize - Modal size class e.g. 'modal-md', 'modal-lg' (default: 'modal-sm')
      * @returns {Promise<boolean>}
      */
     function show(options = {}) {
@@ -93,13 +95,21 @@ const EllaConfirm = (() => {
             confirmClass = 'btn-danger',
             icon = 'fa-question-circle',
             iconColor = 'text-warning',
+            isHtml = false,
+            modalSize = 'modal-sm',
             onConfirm = null,
             onCancel = null
         } = options;
 
         // Update DOM
+        modalEl.querySelector('#ella-confirm-dialog').className = `modal-dialog modal-dialog-centered ${modalSize}`;
         modalEl.querySelector('#ella-confirm-title').textContent = title;
-        modalEl.querySelector('#ella-confirm-message').textContent = message;
+        
+        if (isHtml) {
+            modalEl.querySelector('#ella-confirm-message').innerHTML = message;
+        } else {
+            modalEl.querySelector('#ella-confirm-message').textContent = message;
+        }
 
         const okBtn = modalEl.querySelector('#ella-confirm-ok');
         okBtn.textContent = confirmText;
