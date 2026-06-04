@@ -546,54 +546,77 @@ const ReceiptFunctions = {
   },
 
   _showStockShortageModal(shortages) {
-    let html = '<div style="text-align: left; margin-top: 10px;">';
-    
-    shortages.forEach(item => {
-        let name = item.name;
-        if (item.variation && item.variation !== '') {
-            name += ` <span style="color:#64748b; font-size: 0.9em;">(${item.variation})</span>`;
-        }
-        
-        html += `
-            <div style="background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; padding: 12px 16px; margin-bottom: 12px; border-radius: 6px;">
-                <div style="font-weight: 700; color: #1e293b; margin-bottom: 8px; font-size: 14px;">${name}</div>
-                <div style="display: flex; gap: 10px; font-size: 13px; text-align: center; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #fee2e2;">
-                    <div style="flex: 1; border-right: 1px solid #f1f5f9;">
-                        <div style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">In Stock</div>
-                        <strong style="color: #10b981; font-size: 15px;">${item.available}</strong>
-                    </div>
-                    <div style="flex: 1; border-right: 1px solid #f1f5f9;">
-                        <div style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Needed</div>
-                        <strong style="color: #f59e0b; font-size: 15px;">${item.requested}</strong>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="color: #dc2626; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Shortage</div>
-                        <strong style="color: #dc2626; font-size: 15px;">${item.shortfall}</strong>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += '<p style="color: #64748b; font-size: 13px; margin-top: 15px; text-align: center; margin-bottom: 0;">Please reduce the quantity or remove these items from your cart.</p>';
-    html += '</div>';
+    // Remove any existing modal
+    const existing = document.getElementById('stockShortageModal');
+    if (existing) existing.remove();
 
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            icon: 'error',
-            title: 'Out of Stock',
-            html: html,
-            confirmButtonText: 'Got it, I will adjust',
-            confirmButtonColor: '#3b82f6',
-            width: '480px',
-            customClass: {
-                popup: 'rounded-4 shadow-lg'
-            }
-        });
-    } else {
-        // Fallback to basic alert if Swal is missing
-        alert('Insufficient stock for some items. Please check your cart.');
-    }
+    // Build item cards
+    const itemsHtml = shortages.map(item => {
+      const name = this._escHtml(item.name || 'Unknown Product');
+      const variation = item.variation && item.variation !== '' ? this._escHtml(item.variation) : '';
+
+      return `
+        <div style="background:#fef2f2; border:1px solid #fecaca; border-left:4px solid #ef4444; border-radius:10px; padding:12px 16px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+            <div style="min-width:0;">
+              <div style="font-weight:800; color:#1e293b; font-size:0.9rem;">${name}</div>
+              ${variation ? `<div style="color:#64748b; font-size:0.78rem;">Variation: ${variation}</div>` : ''}
+            </div>
+            <div style="text-align:right; white-space:nowrap; font-size:0.78rem;">
+              <div><span style="color:#64748b;">In Stock:</span> <strong style="color:#16a34a;">${item.available}</strong></div>
+              <div><span style="color:#64748b;">Needed:</span> <strong style="color:#dc2626;">${item.requested}</strong></div>
+              <div style="color:#dc2626; font-weight:700;">Short: ${item.shortfall}</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const modalEl = document.createElement('div');
+    modalEl.className = 'modal fade';
+    modalEl.id = 'stockShortageModal';
+    modalEl.setAttribute('tabindex', '-1');
+    modalEl.setAttribute('data-bs-backdrop', 'static');
+    modalEl.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered" style="max-width:500px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+          <div class="modal-body p-0">
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#fef2f2,#fee2e2); padding:20px 24px 16px; text-align:center;">
+              <div style="width:56px; height:56px; background:#dc2626; border-radius:16px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px;">
+                <i class="fa-solid fa-box-open" style="font-size:1.6rem; color:#fff;"></i>
+              </div>
+              <h5 style="font-weight:800; color:#1e293b; margin:0 0 4px;">Insufficient Stock</h5>
+              <p style="font-size:0.82rem; color:#64748b; margin:0;">The following items don't have enough stock to complete this sale.</p>
+            </div>
+            <!-- Items List -->
+            <div style="padding:16px 20px; max-height:340px; overflow-y:auto;">
+              ${itemsHtml}
+            </div>
+            <!-- Footer hint -->
+            <div style="padding:0 20px 6px; text-align:center;">
+              <p style="color:#94a3b8; font-size:0.78rem; margin:0;">Adjust the quantity or remove these items from your cart to proceed.</p>
+            </div>
+          </div>
+          <div class="modal-footer border-0 justify-content-center pb-4 pt-2 px-4">
+            <button type="button" class="btn btn-secondary px-5 fw-bold" id="stock-shortage-close" style="border-radius:10px;">
+              <i class="fa-solid fa-check me-1"></i> Got it
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modalEl);
+    const bsModal = new bootstrap.Modal(modalEl);
+
+    modalEl.querySelector('#stock-shortage-close').addEventListener('click', () => {
+      bsModal.hide();
+    });
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      modalEl.remove();
+    });
+
+    bsModal.show();
   },
 
   /**
