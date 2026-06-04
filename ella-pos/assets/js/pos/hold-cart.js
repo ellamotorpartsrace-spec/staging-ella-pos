@@ -144,7 +144,17 @@ const HoldCart = (() => {
         saveSlots(slots);
 
         // Re-render
-        if (typeof CartManager !== 'undefined') CartManager.renderCart();
+        if (typeof CartManager !== 'undefined') {
+            CartManager.renderCart();
+            // Background-refresh stock for all items (stale values from when cart was held)
+            POS.cart.forEach((_, i) => {
+                setTimeout(() => {
+                    if (typeof CartManager.refreshStock === 'function') {
+                        CartManager.refreshStock(i);
+                    }
+                }, i * 120); // Stagger requests slightly to avoid hammering the server
+            });
+        }
         renderBadges();
 
         EllaToast.success(`Resumed Slot #${index + 1}`);
