@@ -145,16 +145,3 @@ try {
 } catch (Exception $e) {
     echo "[Auto Sync Error] " . $e->getMessage() . "\n";
 }
-                echo " - [Error] ID {$mapId}: " . $e->getMessage() . "\n";
-            }
-        }
-        
-        // Sleep slightly to respect Shopee API limits
-        usleep(500000); // 0.5s
-    }
-
-    echo "[Auto Sync] Completed! Success: {$totalSuccess}, Failed: {$totalFailed}\n";
-
-} catch (Exception $e) {
-    echo "[Auto Sync Error] " . $e->getMessage() . "\n";
-}
