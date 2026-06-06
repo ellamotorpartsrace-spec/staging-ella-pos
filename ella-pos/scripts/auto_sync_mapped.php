@@ -122,10 +122,15 @@ try {
                          ->execute([$mapId, $alertMsg]);
                 }
 
-                // Propagate to POS
-                if (!empty($posProductId)) {
-                    propagateStockToPos($conn, (int)$posProductId, $allocatedStock, $prodName, $skuVal, 1, $mapId);
-                }
+                // NOTE: Do NOT call propagateStockToPos here.
+                // The background cron should ONLY refresh the shopee_stock cache value in
+                // shopee_product_mappings (done above). POS inventory (store_id 1 & 2)
+                // must only change when the user explicitly clicks "Save & Sync" in the
+                // allocation edit modal (via update_allocation.php).
+                // Calling propagateStockToPos here caused stock to fluctuate every minute
+                // because the cron overwrites the user's set POS allocation with the raw
+                // live Shopee stock, causing the stock counts to revert back to Shopee's
+                // live value instead of keeping the user's intended allocation.
                 
                 $totalSuccess++;
                 // Silenced to prevent massive cron logs on Hostinger:
