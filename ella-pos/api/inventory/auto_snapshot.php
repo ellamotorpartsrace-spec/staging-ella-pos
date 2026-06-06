@@ -115,9 +115,12 @@ try {
     $conn->beginTransaction();
     $name       = 'Auto Snapshot — ' . date('Y-m-d H:i:s');
     $snapshotId = createSnapshotInternal($conn, $name, 'Scheduled automatic snapshot.', 'auto', 0, 'System (Cron)');
-    $count      = (int)$conn->query(
-        "SELECT total_products FROM inventory_snapshots WHERE id = {$snapshotId}"
-    )->fetchColumn();
+    $stats = $conn->query(
+        "SELECT total_products, total_stock_qty FROM inventory_snapshots WHERE id = {$snapshotId}"
+    )->fetch(PDO::FETCH_ASSOC);
+
+    $count = (int)$stats['total_products'];
+    $stockQty = (int)$stats['total_stock_qty'];
 
     // 4. Update last-ran timestamp
     $conn->prepare(
@@ -129,7 +132,7 @@ try {
     // 5. Audit log
     logSnapshotAudit(
         $conn, 'AUTO_SNAPSHOT', $snapshotId, $name, null,
-        $count, 'Scheduled auto-snapshot.', 0, 'System (Cron)', '127.0.0.1'
+        $count, 'Scheduled auto-snapshot.', 0, 'System (Cron)', '127.0.0.1', $stockQty
     );
 
     $conn->commit();

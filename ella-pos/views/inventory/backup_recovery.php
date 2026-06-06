@@ -482,9 +482,9 @@ require_once '../../includes/sidebar.php';
           <tr>
             <th class="ps-4">SKU</th>
             <th>Product Name</th>
-            <th class="text-center">A&nbsp;Total</th>
-            <th class="text-center">B&nbsp;Total</th>
-            <th class="text-center">Stock Δ</th>
+            <th class="text-center">A&nbsp;POS</th>
+            <th class="text-center">B&nbsp;POS</th>
+            <th class="text-center">POS Δ</th>
             <th class="text-center">A&nbsp;Shopee</th>
             <th class="text-center">B&nbsp;Shopee</th>
             <th class="text-center">Shopee Δ</th>
@@ -1480,8 +1480,8 @@ document.getElementById('btnCompare').addEventListener('click',async()=>{
     <tr class="diff-${r.change_type}">
       <td class="ps-4"><code class="small">${esc(r.sku||'—')}</code></td>
       <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.product_name)}">${esc(r.product_name||'—')}</td>
-      <td class="text-center">${dN(r.a_total)}</td><td class="text-center">${dN(r.b_total)}</td>
-      <td class="text-center">${dDelta(r.total_diff)}</td>
+      <td class="text-center">${dN(r.a_pos)}</td><td class="text-center">${dN(r.b_pos)}</td>
+      <td class="text-center">${dDelta(r.pos_diff)}</td>
       <td class="text-center">${dN(r.a_shopee)}</td><td class="text-center">${dN(r.b_shopee)}</td>
       <td class="text-center">${dDelta(r.shopee_diff)}</td>
       <td class="text-center pe-4"><span class="chip chip-${r.change_type}">${r.change_type.toUpperCase()}</span></td>

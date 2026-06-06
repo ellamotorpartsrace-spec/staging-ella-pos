@@ -120,7 +120,7 @@ try {
                 $totalSuccess++;
             } catch (Exception $e) {
                 $totalFailed++;
-                echo " - [Error] ID {$mapId}: " . $e->getMessage() . "\n";
+                echo " - [Error] Map ID {$mapId} | Item ID {$itemId} | SKU '{$skuVal}': " . $e->getMessage() . "\n";
             }
         }
         

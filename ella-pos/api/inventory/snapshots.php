@@ -308,7 +308,7 @@ function handleCompare(PDO $conn): void
         } elseif (!$b) {
             $changeType = 'removed';
             $removed++;
-        } elseif ((int)$a['total_stock'] !== (int)$b['total_stock']
+        } elseif ((int)$a['current_pos_stock'] !== (int)$b['current_pos_stock']
                || (int)$a['shopee_allocated'] !== (int)$b['shopee_allocated']) {
             $changeType = 'changed';
             $changed++;
@@ -328,13 +328,14 @@ function handleCompare(PDO $conn): void
             'a_pos'         => $a ? (int)$a['current_pos_stock'] : null,
             'b_pos'         => $b ? (int)$b['current_pos_stock'] : null,
             'total_diff'    => ($b ? (int)$b['total_stock']      : 0) - ($a ? (int)$a['total_stock']      : 0),
+            'pos_diff'      => ($b ? (int)$b['current_pos_stock']: 0) - ($a ? (int)$a['current_pos_stock']: 0),
             'shopee_diff'   => ($b ? (int)$b['shopee_allocated'] : 0) - ($a ? (int)$a['shopee_allocated'] : 0),
             'change_type'   => $changeType,
         ];
     }
 
     // Sort: biggest absolute stock change first
-    usort($diff, fn($x, $y) => abs($y['total_diff']) <=> abs($x['total_diff']));
+    usort($diff, fn($x, $y) => abs($y['pos_diff']) <=> abs($x['pos_diff']));
 
     echo json_encode([
         'success'    => true,
@@ -582,10 +583,8 @@ function handleExportComparison(PDO $conn): void
     // Column headers
     fputcsv($out, [
         'SKU', 'Product Name',
-        'A Total Stock', 'B Total Stock',
-        'A Shopee Alloc', 'B Shopee Alloc',
-        'A POS Stock', 'B POS Stock',
-        'Total Stock Δ', 'Shopee Alloc Δ',
+        'A POS Stock', 'B POS Stock', 'POS Stock Δ',
+        'A Shopee Alloc', 'B Shopee Alloc', 'Shopee Alloc Δ',
         'Change Type',
     ]);
 
@@ -593,13 +592,11 @@ function handleExportComparison(PDO $conn): void
         fputcsv($out, [
             $row['sku']          ?? '',
             $row['product_name'] ?? '',
-            $row['a_total']  !== null ? $row['a_total']  : 'N/A',
-            $row['b_total']  !== null ? $row['b_total']  : 'N/A',
-            $row['a_shopee'] !== null ? $row['a_shopee'] : 'N/A',
-            $row['b_shopee'] !== null ? $row['b_shopee'] : 'N/A',
             $row['a_pos']    !== null ? $row['a_pos']    : 'N/A',
             $row['b_pos']    !== null ? $row['b_pos']    : 'N/A',
-            ($row['total_diff']  >= 0 ? '+' : '') . $row['total_diff'],
+            ($row['pos_diff'] >= 0 ? '+' : '') . $row['pos_diff'],
+            $row['a_shopee'] !== null ? $row['a_shopee'] : 'N/A',
+            $row['b_shopee'] !== null ? $row['b_shopee'] : 'N/A',
             ($row['shopee_diff'] >= 0 ? '+' : '') . $row['shopee_diff'],
             strtoupper($row['change_type']),
         ]);
