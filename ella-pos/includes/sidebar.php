@@ -7,7 +7,7 @@ $role = $_SESSION['role'] ?? 'cashier';
 $current_page = basename($_SERVER['PHP_SELF']);
 $canManageInventory = $role === 'admin' || hasPermission('adjust_prices') || in_array($role, ['manager', 'stockman']);
 $canViewInventory = $canManageInventory || hasPermission('view_product_history');
-$canViewShopee = $role === 'admin' || in_array($role, ['manager']);
+$canViewShopee = true; // Open for all logged in users
 $canViewSales = hasPermission('make_sales') || hasPermission('view_sales');
 $canViewCustomers = hasPermission('view_buyers') || hasPermission('view_wallet_ledger') || hasPermission('view_receivables');
 $canViewFinance = hasPermission('view_finance') || hasPermission('view_payables') || hasPermission('view_expenses') || hasPermission('manage_service_fees');
@@ -215,30 +215,38 @@ try {
                             <i class="fa-solid fa-bag-shopping"></i> <span class="nav-text">Shopee Products</span>
                         </a>
                     </li>
+                    <?php if (hasPermission('shopee_mapping')): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/shopee/mapping.php"
                             class="<?= $current_page === 'mapping.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-link"></i> <span class="nav-text">Product Mapping</span>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (hasPermission('shopee_allocation')): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/shopee/allocation.php"
                             class="<?= $current_page === 'allocation.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-sliders"></i> <span class="nav-text">Stock Allocation</span>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if ($role === 'admin'): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/shopee/logs.php"
                             class="<?= $current_page === 'logs.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Sync Logs</span>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if ($role === 'admin'): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/shopee/settings.php"
                             class="<?= $current_page === 'settings.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-gear"></i> <span class="nav-text">Shopee Settings</span>
                         </a>
                     </li>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

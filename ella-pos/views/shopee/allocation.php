@@ -2,7 +2,7 @@
 $page_title = 'Shopee Sync — Stock Allocation';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
-requirePermission('shopee_sync');
+requirePermission('shopee_allocation');
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 

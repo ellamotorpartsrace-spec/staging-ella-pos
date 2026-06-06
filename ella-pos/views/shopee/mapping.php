@@ -2,7 +2,7 @@
 $page_title = 'Shopee Sync — Product Mapping';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
-requirePermission('shopee_sync');
+requirePermission('shopee_mapping');
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 

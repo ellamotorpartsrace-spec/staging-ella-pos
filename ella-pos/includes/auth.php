@@ -77,10 +77,16 @@ function updateSessionActivity(): void
 /**
  * Styled Access Denied page with automatic redirect.
  */
-function denyAccess(string $message = "You do not have permission to view this page."): void
+function denyAccess(string $message = "You do not have permission to view this page.", ?string $redirectUrl = null): void
 {
     http_response_code(403);
-    $dashboardUrl = BASE_URL . "views/dashboard/index.php";
+    
+    if ($redirectUrl === null) {
+        $redirectUrl = BASE_URL . "views/dashboard/index.php";
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/shopee/') !== false) {
+            $redirectUrl = BASE_URL . "views/shopee/index.php";
+        }
+    }
 
     echo <<<HTML
     <!DOCTYPE html>
@@ -88,7 +94,7 @@ function denyAccess(string $message = "You do not have permission to view this p
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="refresh" content="5;url={$dashboardUrl}">
+        <meta http-equiv="refresh" content="5;url={$redirectUrl}">
         <title>Access Denied</title>
         <style>
             body {
@@ -131,7 +137,7 @@ function denyAccess(string $message = "You do not have permission to view this p
             <div class="icon">🛑</div>
             <h2>Access Denied</h2>
             <p>{$message}</p>
-            <a href="{$dashboardUrl}" class="btn">Return to Dashboard Now</a>
+            <a href="{$redirectUrl}" class="btn">Return to Dashboard Now</a>
             <div class="countdown">Redirecting in <span id="timer">5</span> seconds...</div>
         </div>
         <script>
