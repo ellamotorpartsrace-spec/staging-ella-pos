@@ -1,9 +1,14 @@
 <?php
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../classes/ShopeeAPI.php';
+/**
+ * scripts/shopee_backfill.php
+ * DISABLED — shopee_reserved_stock system has been retired.
+ * Shopee manages stock natively (orders deduct, cancellations restore).
+ */
+echo "[Backfill] Disabled — shopee_reserved_stock tracking is no longer needed.\n";
+exit(0);
 
-try {
+// ── ORIGINAL CODE BELOW (kept for reference) ──────────────────────────────────
+
     $db = new Database();
     $conn = $db->getConnection();
 

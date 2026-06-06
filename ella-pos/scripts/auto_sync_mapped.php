@@ -92,31 +92,16 @@ try {
                 $liveStock = (int)$liveData['stock'];
                 $livePrice = (float)$liveData['price'];
 
-                // Query active reservation sum to calculate the true Allocated stock
-                $resStmt = $conn->prepare("
-                    SELECT COALESCE(SUM(quantity), 0)
-                    FROM shopee_reserved_stock
-                    WHERE shopee_item_id = ? 
-                      AND (
-                          (? IS NULL AND shopee_model_id IS NULL)
-                          OR (? = shopee_model_id)
-                      )
-                      AND is_active = 1
-                ");
-                $resStmt->execute([
-                    $itemId,
-                    $modelId ?: null,
-                    $modelId ?: null
-                ]);
-                $reservedQty = (int)$resStmt->fetchColumn();
-                $allocatedStock = $liveStock + $reservedQty;
-
-                // Update mapping cache (use Allocated stock)
+                // Update shopee_stock with the live Shopee value.
+                // This reflects actual stock on Shopee (e.g., allocation was 50, buyer
+                // ordered 5, Shopee now reports 45 → shopee_stock becomes 45).
+                // We do NOT add reservedQty here — that was causing inflation (e.g., 97+704=801).
+                // We do NOT call propagateStockToPos — POS inventory only changes on user Save.
                 $updCache = $conn->prepare("UPDATE shopee_product_mappings SET shopee_stock = ?, shopee_price = ?, last_synced_at = NOW(), updated_at = NOW() WHERE id = ?");
-                $updCache->execute([$allocatedStock, $livePrice, $mapId]);
+                $updCache->execute([$liveStock, $livePrice, $mapId]);
 
-                // Create OOS alert if stock hit 0 and it wasn't 0 before
-                if ($allocatedStock == 0 && (int)$map['shopee_stock'] > 0 && isset($config['out_of_stock_alerts']) && (int)$config['out_of_stock_alerts'] === 1) {
+                // Create OOS alert if live stock just hit 0 and it wasn't 0 before
+                if ($liveStock == 0 && (int)$map['shopee_stock'] > 0 && isset($config['out_of_stock_alerts']) && (int)$config['out_of_stock_alerts'] === 1) {
                     $alertMsg = "'{$prodName}' has run completely out of stock online! Please restock soon.";
                     $conn->prepare("INSERT INTO shopee_alerts (mapping_id, message) VALUES (?, ?)")
                          ->execute([$mapId, $alertMsg]);

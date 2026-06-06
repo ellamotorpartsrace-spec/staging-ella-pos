@@ -1,7 +1,13 @@
 <?php
-require 'config/database.php';
-require 'classes/ShopeeAPI.php';
+/**
+ * scripts/shopee_fast_backfill.php
+ * DISABLED — shopee_reserved_stock system has been retired.
+ * Shopee manages stock natively (orders deduct, cancellations restore).
+ */
+echo "[Fast Backfill] Disabled — shopee_reserved_stock tracking is no longer needed.\n";
+exit(0);
 
+// ── ORIGINAL CODE BELOW (kept for reference) ──────────────────────────────────
 
 $db = new Database();
 $conn = $db->getConnection();

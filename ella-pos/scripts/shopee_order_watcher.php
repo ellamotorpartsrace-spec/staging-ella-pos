@@ -1,13 +1,23 @@
 <?php
 /**
  * scripts/shopee_order_watcher.php
- * Automated background script to watch Shopee orders and manage reserved stock.
- * Runs via cron job every 5–10 minutes.
+ * DISABLED — Reserved stock tracking is no longer needed.
+ *
+ * Shopee manages its own stock natively:
+ *   - A buyer orders → Shopee deducts stock automatically.
+ *   - A buyer cancels → Shopee restores stock automatically.
+ *
+ * Maintaining a separate shopee_reserved_stock table was causing the Allocated
+ * column to fluctuate (live + reservedQty inflated the displayed value).
+ * The system now trusts Shopee's live stock directly.
+ *
+ * This file is kept for reference but will not execute.
  */
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../config/database.php';
+echo "[Order Watcher] Disabled — Shopee manages stock natively. No reserved stock tracking needed.\n";
+exit(0);
 
-try {
+// ── ORIGINAL CODE BELOW (kept for reference) ──────────────────────────────────
+
     $db = new Database();
     $conn = $db->getConnection();
 

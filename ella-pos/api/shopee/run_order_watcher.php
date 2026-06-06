@@ -1,9 +1,17 @@
 <?php
-// api/shopee/run_order_watcher.php — Manually trigger order watcher
+/**
+ * api/shopee/run_order_watcher.php
+ * DISABLED — Order watcher is no longer needed.
+ *
+ * Shopee manages its own stock natively (orders deduct, cancellations restore).
+ * The shopee_reserved_stock system has been removed to prevent stock fluctuation.
+ */
 header('Content-Type: application/json');
-require_once '../../config/config.php';
-require_once '../../config/database.php';
-require_once '../../includes/auth.php';
+echo json_encode([
+    'success' => false,
+    'error'   => 'Order watcher is disabled. Shopee manages stock natively — reserved stock tracking is no longer needed.'
+]);
+
 
 // Secure: check login and role
 requireLogin();

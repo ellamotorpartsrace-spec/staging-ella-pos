@@ -72,7 +72,11 @@ try {
 
             $allocatedStock = $liveStock;
 
-            // Update mapping table with fresh values (use Allocated stock)
+            // Update shopee_stock with the live Shopee value.
+            // This reflects actual stock on Shopee (e.g., allocation was 50, buyer
+            // ordered 5, Shopee now reports 45 → shopee_stock becomes 45 here).
+            // We do NOT add reservedQty — that caused inflation (e.g., 97+704=801).
+            // We do NOT call propagateStockToPos — POS inventory only changes on user Save.
             $updCache = $conn->prepare("UPDATE shopee_product_mappings SET shopee_stock = ?, shopee_price = ?, last_synced_at = NOW(), updated_at = NOW() WHERE id = ?");
             $updCache->execute([$allocatedStock, $livePrice, $mapId]);
 
@@ -175,19 +179,21 @@ try {
                 $posOnlineStock = 0;
             }
 
+            $dbAllocation = (int)($fresh['shopee_stock'] ?? $map['shopee_stock']);
             $oldStock = (int)$map['shopee_stock'];
-            $newStock = (int)$allocatedStock;
+            $newStock = (int)$allocatedStock; // live stock (same as what we just wrote)
             
             $updated[] = [
                 'id' => $mapId,
-                'shopee_stock' => $allocatedStock,
+                'shopee_stock' => $dbAllocation,        // updated live value from DB
+                'shopee_live_stock' => $allocatedStock, // same live stock (informational)
                 'shopee_price' => $livePrice,
                 'stock_allocation_ratio' => (int)($fresh['stock_allocation_ratio'] ?? 0),
                 'pos_physical_stock' => $posPhysStock,
                 'pos_online_stock' => $posOnlineStock,
                 'bundle_total_sets' => $bundleTotalSets,
                 'success' => true,
-                'changed' => ($oldStock !== $newStock)
+                'changed' => ($oldStock !== $newStock)  // true when Shopee stock changed (e.g. sale happened)
             ];
 
             if (!$skipLog) {

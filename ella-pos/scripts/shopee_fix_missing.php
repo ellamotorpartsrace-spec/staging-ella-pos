@@ -1,7 +1,13 @@
 <?php
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../classes/ShopeeAPI.php';
+/**
+ * scripts/shopee_fix_missing.php
+ * DISABLED — shopee_reserved_stock system has been retired.
+ * Shopee manages stock natively (orders deduct, cancellations restore).
+ */
+echo "[Fix Missing] Disabled — shopee_reserved_stock tracking is no longer needed.\n";
+exit(0);
+
+// ── ORIGINAL CODE BELOW (kept for reference) ──────────────────────────────────
 
 try {
     $db = new Database();
