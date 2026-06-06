@@ -482,12 +482,15 @@ require_once '../../includes/sidebar.php';
           <tr>
             <th class="ps-4">SKU</th>
             <th>Product Name</th>
-            <th class="text-center">A&nbsp;POS</th>
-            <th class="text-center">B&nbsp;POS</th>
-            <th class="text-center">POS Δ</th>
-            <th class="text-center">A&nbsp;Shopee</th>
-            <th class="text-center">B&nbsp;Shopee</th>
-            <th class="text-center">Shopee Δ</th>
+            <th class="text-center" style="background:#f8fafc">A&nbsp;POS</th>
+            <th class="text-center" style="background:#f8fafc">B&nbsp;POS</th>
+            <th class="text-center" style="background:#f8fafc">POS Δ</th>
+            <th class="text-center" style="background:#fdf2f8;border-left:1px solid #e2e8f0">A&nbsp;Shopee</th>
+            <th class="text-center" style="background:#fdf2f8">B&nbsp;Shopee</th>
+            <th class="text-center" style="background:#fdf2f8">Shopee Δ</th>
+            <th class="text-center" style="background:#f1f5f9;border-left:1px solid #e2e8f0">A&nbsp;Total</th>
+            <th class="text-center" style="background:#f1f5f9">B&nbsp;Total</th>
+            <th class="text-center" style="background:#f1f5f9">Total Δ</th>
             <th class="text-center pe-4">Change</th>
           </tr>
         </thead>
@@ -1480,10 +1483,12 @@ document.getElementById('btnCompare').addEventListener('click',async()=>{
     <tr class="diff-${r.change_type}">
       <td class="ps-4"><code class="small">${esc(r.sku||'—')}</code></td>
       <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.product_name)}">${esc(r.product_name||'—')}</td>
-      <td class="text-center">${dN(r.a_pos)}</td><td class="text-center">${dN(r.b_pos)}</td>
-      <td class="text-center">${dDelta(r.pos_diff)}</td>
-      <td class="text-center">${dN(r.a_shopee)}</td><td class="text-center">${dN(r.b_shopee)}</td>
-      <td class="text-center">${dDelta(r.shopee_diff)}</td>
+      <td class="text-center" style="background:#f8fafc">${dN(r.a_pos)}</td><td class="text-center" style="background:#f8fafc">${dN(r.b_pos)}</td>
+      <td class="text-center" style="background:#f8fafc;font-weight:600">${dDelta(r.pos_diff)}</td>
+      <td class="text-center" style="background:#fdf2f8;border-left:1px solid #e2e8f0">${dN(r.a_shopee)}</td><td class="text-center" style="background:#fdf2f8">${dN(r.b_shopee)}</td>
+      <td class="text-center" style="background:#fdf2f8;font-weight:600">${dDelta(r.shopee_diff)}</td>
+      <td class="text-center" style="background:#f1f5f9;border-left:1px solid #e2e8f0">${dN(r.a_total)}</td><td class="text-center" style="background:#f1f5f9">${dN(r.b_total)}</td>
+      <td class="text-center" style="background:#f1f5f9;font-weight:600">${dDelta(r.total_diff)}</td>
       <td class="text-center pe-4"><span class="chip chip-${r.change_type}">${r.change_type.toUpperCase()}</span></td>
     </tr>`).join('');
 });

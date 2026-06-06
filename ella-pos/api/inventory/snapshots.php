@@ -585,6 +585,7 @@ function handleExportComparison(PDO $conn): void
         'SKU', 'Product Name',
         'A POS Stock', 'B POS Stock', 'POS Stock Δ',
         'A Shopee Alloc', 'B Shopee Alloc', 'Shopee Alloc Δ',
+        'A Total Stock', 'B Total Stock', 'Total Stock Δ',
         'Change Type',
     ]);
 
@@ -598,6 +599,9 @@ function handleExportComparison(PDO $conn): void
             $row['a_shopee'] !== null ? $row['a_shopee'] : 'N/A',
             $row['b_shopee'] !== null ? $row['b_shopee'] : 'N/A',
             ($row['shopee_diff'] >= 0 ? '+' : '') . $row['shopee_diff'],
+            $row['a_total']  !== null ? $row['a_total']  : 'N/A',
+            $row['b_total']  !== null ? $row['b_total']  : 'N/A',
+            ($row['total_diff']  >= 0 ? '+' : '') . $row['total_diff'],
             strtoupper($row['change_type']),
         ]);
     }
