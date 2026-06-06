@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `service_fees` (
   `description` TEXT DEFAULT NULL,
   `amount` DECIMAL(10,2) NOT NULL,
   `paid_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  `payment_status` ENUM('pending','partial','paid') NOT NULL DEFAULT 'pending',
+  `payment_status` ENUM('pending','partial','paid','voided') NOT NULL DEFAULT 'pending',
   `due_date` DATE DEFAULT NULL,
   `sale_ref` VARCHAR(50) DEFAULT NULL,
   `notes` TEXT DEFAULT NULL,
