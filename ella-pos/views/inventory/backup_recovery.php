@@ -493,6 +493,14 @@ require_once '../../includes/sidebar.php';
         </thead>
         <tbody id="cmpBody"></tbody>
       </table>
+      <!-- Pagination -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top bg-white d-none" id="cmpPaginationWrap">
+        <div class="small fw-semibold text-muted" id="cmpPageInfo"></div>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-outline-secondary" id="cmpBtnPrev">Previous</button>
+          <button class="btn btn-sm btn-outline-secondary" id="cmpBtnNext">Next</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1434,6 +1442,48 @@ document.getElementById('rsBtn4C').addEventListener('click',async()=>{
 /* ════════════════════════════════════════════════════════════════════
    COMPARISON
 ════════════════════════════════════════════════════════════════════ */
+let cmpDiffData = [];
+let cmpPage = 1;
+const CMP_PER_PAGE = 50;
+
+function renderCmpPage() {
+    const start = (cmpPage - 1) * CMP_PER_PAGE;
+    const end = Math.min(start + CMP_PER_PAGE, cmpDiffData.length);
+    const pageData = cmpDiffData.slice(start, end);
+    
+    const dN=n=>n==null?'<span class="text-muted">—</span>':n;
+    const dDelta=n=>!n?`<span class="d-zero">0</span>`:n>0?`<span class="d-pos">+${n}</span>`:`<span class="d-neg">${n}</span>`;
+    
+    document.getElementById('cmpBody').innerHTML = pageData.map(r=>`
+    <tr class="diff-${r.change_type}">
+      <td class="ps-4"><code class="small">${esc(r.sku||'—')}</code></td>
+      <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.product_name)}">${esc(r.product_name||'—')}</td>
+      <td class="text-center" style="background:#f8fafc">${dN(r.a_pos)}</td><td class="text-center" style="background:#f8fafc">${dN(r.b_pos)}</td>
+      <td class="text-center" style="background:#f8fafc;font-weight:600">${dDelta(r.pos_diff)}</td>
+      <td class="text-center" style="background:#fdf2f8;border-left:1px solid #e2e8f0">${dN(r.a_shopee)}</td><td class="text-center" style="background:#fdf2f8">${dN(r.b_shopee)}</td>
+      <td class="text-center" style="background:#fdf2f8;font-weight:600">${dDelta(r.shopee_diff)}</td>
+      <td class="text-center pe-4"><span class="chip chip-${r.change_type}">${r.change_type.toUpperCase()}</span></td>
+    </tr>`).join('');
+    
+    document.getElementById('cmpPageInfo').textContent = `Showing ${start + 1} to ${end} of ${cmpDiffData.length} differences`;
+    
+    const btnPrev = document.getElementById('cmpBtnPrev');
+    const btnNext = document.getElementById('cmpBtnNext');
+    btnPrev.disabled = cmpPage === 1;
+    btnNext.disabled = end >= cmpDiffData.length;
+    
+    if (cmpDiffData.length > CMP_PER_PAGE) {
+        document.getElementById('cmpPaginationWrap').classList.remove('d-none');
+        document.getElementById('cmpPaginationWrap').classList.add('d-flex');
+    } else {
+        document.getElementById('cmpPaginationWrap').classList.add('d-none');
+        document.getElementById('cmpPaginationWrap').classList.remove('d-flex');
+    }
+}
+
+document.getElementById('cmpBtnPrev')?.addEventListener('click', () => { if(cmpPage > 1) { cmpPage--; renderCmpPage(); } });
+document.getElementById('cmpBtnNext')?.addEventListener('click', () => { if((cmpPage * CMP_PER_PAGE) < cmpDiffData.length) { cmpPage++; renderCmpPage(); } });
+
 document.getElementById('btnCompare').addEventListener('click',async()=>{
     const a=document.getElementById('cmpA').value, b=document.getElementById('cmpB').value;
     if(!a||!b){ showToast('Please select both snapshots.','warning'); return; }
@@ -1474,18 +1524,10 @@ document.getElementById('btnCompare').addEventListener('click',async()=>{
     }
     document.getElementById('cmpEmpty').classList.add('d-none');
     document.getElementById('cmpTableWrap').classList.remove('d-none');
-    const dN=n=>n==null?'<span class="text-muted">—</span>':n;
-    const dDelta=n=>!n?`<span class="d-zero">0</span>`:n>0?`<span class="d-pos">+${n}</span>`:`<span class="d-neg">${n}</span>`;
-    document.getElementById('cmpBody').innerHTML=d.diff.map(r=>`
-    <tr class="diff-${r.change_type}">
-      <td class="ps-4"><code class="small">${esc(r.sku||'—')}</code></td>
-      <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.product_name)}">${esc(r.product_name||'—')}</td>
-      <td class="text-center" style="background:#f8fafc">${dN(r.a_pos)}</td><td class="text-center" style="background:#f8fafc">${dN(r.b_pos)}</td>
-      <td class="text-center" style="background:#f8fafc;font-weight:600">${dDelta(r.pos_diff)}</td>
-      <td class="text-center" style="background:#fdf2f8;border-left:1px solid #e2e8f0">${dN(r.a_shopee)}</td><td class="text-center" style="background:#fdf2f8">${dN(r.b_shopee)}</td>
-      <td class="text-center" style="background:#fdf2f8;font-weight:600">${dDelta(r.shopee_diff)}</td>
-      <td class="text-center pe-4"><span class="chip chip-${r.change_type}">${r.change_type.toUpperCase()}</span></td>
-    </tr>`).join('');
+    
+    cmpDiffData = d.diff;
+    cmpPage = 1;
+    renderCmpPage();
 });
 
 /* ════════════════════════════════════════════════════════════════════
