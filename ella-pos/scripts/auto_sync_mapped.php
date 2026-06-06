@@ -11,40 +11,51 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    // 1. Check and Auto-Refresh Shopee Access Token (if < 15 mins remaining)
+    // 1. Load Shopee config ONCE and initialize ShopeeAPI ONCE.
+    //    fetchLiveShopeeStockAndPrice() uses $shopeeApiCache + $shopeeSharedConfig globals
+    //    so it does NOT re-query shopee_config on every single mapping row.
     $cfgStmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
     $cfgStmt->execute();
     $config = $cfgStmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($config && !empty($config['refresh_token'])) {
-        $expiresAt = strtotime($config['token_expires_at']);
-        $timeRemaining = $expiresAt - time();
+    if (!$config || empty($config['access_token'])) {
+        echo "[Auto Sync] No active Shopee config or missing access token. Exiting.\n";
+        exit;
+    }
 
-        if ($timeRemaining <= 15 * 60) {
-            echo "[Auto Sync] Token expires in less than 15 minutes. Auto-refreshing...\n";
-            require_once __DIR__ . '/../classes/ShopeeAPI.php';
-            $isTest = $config['environment'] === 'test';
-            $shopee = new ShopeeAPI($config['partner_id'], $config['partner_key'], $isTest);
-            $result = $shopee->refreshToken($config['refresh_token'], $config['shop_id']);
+    // 2. Auto-Refresh Access Token once if expiring soon
+    require_once __DIR__ . '/../classes/ShopeeAPI.php';
+    $isTest = $config['environment'] === 'test';
+    $shopeeShared = new ShopeeAPI($config['partner_id'], $config['partner_key'], $isTest);
+    $accessTokenShared = $config['access_token'];
+    $shopIdShared = $config['shop_id'];
 
-            if (isset($result['access_token'])) {
-                $newAccessToken = $result['access_token'];
-                $newRefreshToken = $result['refresh_token'];
-                $expireIn = $result['expire_in'] ?? 14400;
-                $newExpiresAt = date('Y-m-d H:i:s', time() + $expireIn);
-
-                $updStmt = $conn->prepare("UPDATE shopee_config SET access_token = ?, refresh_token = ?, token_expires_at = ?, updated_at = NOW() WHERE is_active = 1");
-                $updStmt->execute([$newAccessToken, $newRefreshToken, $newExpiresAt]);
-                echo "[Auto Sync] Token successfully refreshed! New expiry: {$newExpiresAt}\n";
-                
-                // Token refresh success log removed to prevent background log clutter
-            } else {
-                echo "[Auto Sync Warning] Failed to refresh token: " . json_encode($result) . "\n";
-            }
+    $timeRemaining = strtotime($config['token_expires_at']) - time();
+    if ($timeRemaining <= 15 * 60) {
+        echo "[Auto Sync] Token expires in less than 15 minutes. Auto-refreshing...\n";
+        $result = $shopeeShared->refreshToken($config['refresh_token'], $shopIdShared);
+        if (isset($result['access_token'])) {
+            $accessTokenShared = $result['access_token'];
+            $newRefreshToken = $result['refresh_token'];
+            $expireIn = $result['expire_in'] ?? 14400;
+            $newExpiresAt = date('Y-m-d H:i:s', time() + $expireIn);
+            $conn->prepare("UPDATE shopee_config SET access_token = ?, refresh_token = ?, token_expires_at = ?, updated_at = NOW() WHERE is_active = 1")
+                 ->execute([$accessTokenShared, $newRefreshToken, $newExpiresAt]);
+            $config['access_token'] = $accessTokenShared;
+            echo "[Auto Sync] Token successfully refreshed! New expiry: {$newExpiresAt}\n";
+        } else {
+            echo "[Auto Sync Warning] Failed to refresh token: " . json_encode($result) . "\n";
         }
     }
 
-    // 2. Fetch all mapped IDs
+    // Share config globally so fetchLiveShopeeStockAndPrice() reuses it without DB hits
+    global $shopeeSharedConfig, $shopeeSharedApi, $shopeeSharedToken, $shopeeSharedShopId;
+    $shopeeSharedConfig  = $config;
+    $shopeeSharedApi     = $shopeeShared;
+    $shopeeSharedToken   = $accessTokenShared;
+    $shopeeSharedShopId  = $shopIdShared;
+
+    // 3. Fetch ALL mapped IDs at once
     $stmt = $conn->prepare("SELECT id FROM shopee_product_mappings WHERE mapping_status IN ('mapped', 'auto', 'manual')");
     $stmt->execute();
     $mapped = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -57,19 +68,14 @@ try {
     $ids = array_column($mapped, 'id');
     echo "[Auto Sync] Starting background sync for " . count($ids) . " mapped items...\n";
 
-    // 2. We can utilize the existing fetch_mapped_live_stocks.php logic by making a local HTTP request or including the logic.
-    // Instead of HTTP, we will batch them directly here using the sync_helpers functions.
-    $chunkSize = 15;
+    // 4. Process in batches of 50 (larger chunks = fewer DB round-trips per loop)
+    $chunkSize = 50;
     $chunks = array_chunk($ids, $chunkSize);
     
     $totalSuccess = 0;
     $totalFailed = 0;
 
     foreach ($chunks as $idx => $chunk) {
-        $chunkNum = $idx + 1;
-        // Silenced to prevent massive cron logs on Hostinger:
-        // echo "[Batch {$chunkNum}] Processing " . count($chunk) . " items...\n";
-        
         $placeholders = implode(',', array_fill(0, count($chunk), '?'));
         $mapStmt = $conn->prepare("SELECT id, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name, shopee_variation_sku, shopee_parent_sku, matched_pos_sku, pos_product_id, mapping_status, stock_allocation_ratio, shopee_stock, shopee_price FROM shopee_product_mappings WHERE id IN ($placeholders)");
         $mapStmt->execute($chunk);
@@ -108,26 +114,19 @@ try {
                 }
 
                 // NOTE: Do NOT call propagateStockToPos here.
-                // The background cron should ONLY refresh the shopee_stock cache value in
-                // shopee_product_mappings (done above). POS inventory (store_id 1 & 2)
-                // must only change when the user explicitly clicks "Save & Sync" in the
-                // allocation edit modal (via update_allocation.php).
-                // Calling propagateStockToPos here caused stock to fluctuate every minute
-                // because the cron overwrites the user's set POS allocation with the raw
-                // live Shopee stock, causing the stock counts to revert back to Shopee's
-                // live value instead of keeping the user's intended allocation.
+                // POS inventory (store_id 1 & 2) must only change when the user
+                // explicitly clicks "Save & Sync" in the allocation edit modal.
                 
                 $totalSuccess++;
-                // Silenced to prevent massive cron logs on Hostinger:
-                // echo " - [Success] ID {$mapId}: Allocated -> {$allocatedStock} (Live: {$liveStock}, Reserved: {$reservedQty})\n";
             } catch (Exception $e) {
                 $totalFailed++;
                 echo " - [Error] ID {$mapId}: " . $e->getMessage() . "\n";
             }
         }
         
-        // Sleep slightly to respect Shopee API limits
-        usleep(500000); // 0.5s
+        // Short sleep to respect Shopee API rate limits (item_id results are cached,
+        // so actual API calls = unique item_ids per batch, not all 50 rows)
+        usleep(100000); // 0.1s between batches (was 0.5s — 5x faster)
     }
 
     echo "[Auto Sync] Completed! Success: {$totalSuccess}, Failed: {$totalFailed}\n";
