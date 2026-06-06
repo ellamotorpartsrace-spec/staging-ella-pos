@@ -180,6 +180,14 @@ try {
                         </a>
                     </li>
                 <?php endif; ?>
+                <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/backup_recovery.php"
+                            class="<?= $current_page === 'backup_recovery.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-shield-halved"></i> <span class="nav-text">Backup &amp; Recovery</span>
+                        </a>
+                    </li>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
