@@ -1314,16 +1314,13 @@ if (isset($_GET['id'])) {
         renderSearchResults(products) {
             const container = document.getElementById('modal-search-results');
             const query = document.getElementById('modal-search-input').value.trim();
-            const safeQuery = query ? query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').split(/\s+/).filter(Boolean) : [];
+            const safeQuery = query ? query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').split(/\s+/).filter(Boolean).sort((a, b) => b.length - a.length) : [];
             const highlight = (text) => {
                 if (!text) return '';
                 let hlText = this.escapeHtml(text);
                 if (safeQuery.length === 0) return hlText;
-                safeQuery.forEach(q => {
-                    const regex = new RegExp(`(${q})`, 'gi');
-                    hlText = hlText.replace(regex, '<mark class="bg-warning bg-opacity-50 p-0 rounded text-dark">$1</mark>');
-                });
-                return hlText;
+                const regex = new RegExp(`(${safeQuery.join('|')})`, 'gi');
+                return hlText.replace(regex, '<mark class="bg-warning bg-opacity-50 p-0 rounded text-dark">$1</mark>');
             };
 
             if (!products || products.length === 0) {
