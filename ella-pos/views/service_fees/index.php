@@ -1067,6 +1067,7 @@ require_once '../../includes/sidebar.php';
         }
 
         data.forEach((item, idx) => {
+            const canSettle = item.payment_status !== 'paid' && item.payment_status !== 'voided';
             const badge = getStatusBadge(item.status_label);
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -1088,11 +1089,11 @@ require_once '../../includes/sidebar.php';
                 <td data-label="Status">${badge}</td>
                 <td class="text-end">
                     <div class="d-flex gap-2 justify-content-end">
-                        <button class="btn btn-sm ${item.payment_status === 'paid' ? 'btn-outline-secondary' : 'btn-primary'}" 
+                        <button class="btn btn-sm ${canSettle ? 'btn-primary' : 'btn-outline-secondary'}"
                                 onclick="openPaymentModal(${item.fee_id})" 
-                                title="${item.payment_status === 'paid' ? 'View Details' : 'Settle Payment'}"
+                                title="${canSettle ? 'Settle Payment' : 'View History'}"
                                 style="border-radius: 8px;">
-                            <i class="fas ${item.payment_status === 'paid' ? 'fa-eye' : 'fa-wallet'}"></i> ${item.payment_status === 'paid' ? 'View' : 'Settle'}
+                            <i class="fas ${canSettle ? 'fa-wallet' : 'fa-eye'}"></i> ${canSettle ? 'Settle' : 'History'}
                         </button>
 
                         <button class="btn btn-sm btn-outline-primary"
@@ -1141,9 +1142,10 @@ require_once '../../includes/sidebar.php';
     function updateStats(data) {
         document.getElementById('statTotal').innerText = data.length;
         let pending = 0, overdue = 0;
+        const outstandingStatuses = new Set(['pending', 'partial']);
         data.forEach(d => {
-            if (d.payment_status !== 'paid') pending += parseFloat(d.balance);
-            if (d.status_label === 'overdue') overdue++;
+            if (outstandingStatuses.has(d.payment_status)) pending += parseFloat(d.balance) || 0;
+            if (outstandingStatuses.has(d.payment_status) && d.status_label === 'overdue') overdue++;
         });
         document.getElementById('statPending').innerText = '₱' + formatMoney(pending);
         document.getElementById('statOverdue').innerText = overdue;
@@ -1281,16 +1283,18 @@ require_once '../../includes/sidebar.php';
 
         const fee = allData.find(f => f.fee_id == id);
         if (!fee) return;
+        const canAddPayment = fee.payment_status !== 'paid' && fee.payment_status !== 'voided';
+        const feeBalance = parseFloat(fee.balance) || 0;
 
         document.getElementById('lblBuyerName').innerText = fee.display_name;
         document.getElementById('lblFeeRef').innerText = fee.fee_ref;
         document.getElementById('lblTotal').innerText = formatMoney(fee.amount);
         document.getElementById('lblPaid').innerText = formatMoney(fee.paid_amount);
-        document.getElementById('lblBalance').innerText = formatMoney(fee.balance);
+        document.getElementById('lblBalance').innerText = formatMoney(feeBalance);
         document.getElementById('lblDescription').innerText = fee.description || fee.fee_type.toUpperCase();
 
-        document.getElementById('payAmount').value = parseFloat(fee.balance).toFixed(2);
-        document.getElementById('payAmount').max = parseFloat(fee.balance);
+        document.getElementById('payAmount').value = feeBalance.toFixed(2);
+        document.getElementById('payAmount').max = feeBalance;
 
         // Load History
         const histContainer = document.getElementById('historyContainer');
@@ -1320,7 +1324,19 @@ require_once '../../includes/sidebar.php';
             }
         } catch (e) { histContainer.innerHTML = '<div class="text-danger">Failed to load history</div>'; }
 
-        bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#tab-pay"]')).show();
+        const payTabBtn = document.querySelector('[data-bs-target="#tab-pay"]');
+        const historyTabBtn = document.querySelector('[data-bs-target="#tab-history"]');
+
+        if (canAddPayment) {
+            if (payTabBtn) {
+                payTabBtn.style.display = '';
+                bootstrap.Tab.getOrCreateInstance(payTabBtn).show();
+            }
+        } else {
+            if (payTabBtn) payTabBtn.style.display = 'none';
+            if (historyTabBtn) bootstrap.Tab.getOrCreateInstance(historyTabBtn).show();
+        }
+
         paymentModal.show();
     }
 
@@ -1448,6 +1464,13 @@ require_once '../../includes/sidebar.php';
 
     document.getElementById('addPaymentForm').addEventListener('submit', async function (e) {
         e.preventDefault();
+        const fee = allData.find(f => f.fee_id == currentFeeId);
+
+        if (fee && (fee.payment_status === 'paid' || fee.payment_status === 'voided')) {
+            EllaToast.error('This service fee is closed and cannot receive payments');
+            return;
+        }
+
         const btn = document.getElementById('btnSubmitPayment');
         btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 

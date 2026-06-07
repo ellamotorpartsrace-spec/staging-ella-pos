@@ -60,7 +60,10 @@ try {
                 SELECT sf.*, 
                        COALESCE(b.buyer_name, sf.buyer_name) AS display_name,
                        b.shop_name, b.contact_number,
-                       (sf.amount - sf.paid_amount) as balance,
+                       CASE
+                           WHEN sf.payment_status = 'voided' THEN 0
+                           ELSE (sf.amount - sf.paid_amount)
+                       END as balance,
                        u.full_name as created_by_name
                 FROM service_fees sf
                 LEFT JOIN buyers b ON sf.buyer_id = b.buyer_id
@@ -88,7 +91,10 @@ try {
                        b.shop_name, b.contact_number,
                        sf.fee_type, sf.description,
                        sf.amount, sf.paid_amount,
-                       (sf.amount - sf.paid_amount) as balance,
+                       CASE
+                           WHEN sf.payment_status = 'voided' THEN 0
+                           ELSE (sf.amount - sf.paid_amount)
+                       END as balance,
                        sf.payment_status, sf.due_date, sf.sale_ref, sf.notes,
                        sf.created_at,
                        COALESCE(att.attachment_count, 0) AS attachment_count,
@@ -229,9 +235,17 @@ try {
             }
 
             // Check if new amount is less than already paid amount
-            $stmt = $conn->prepare("SELECT paid_amount FROM service_fees WHERE fee_id = ?");
+            $stmt = $conn->prepare("SELECT paid_amount, payment_status FROM service_fees WHERE fee_id = ?");
             $stmt->execute([$feeId]);
             $fee = $stmt->fetch();
+
+            if (!$fee) {
+                throw new Exception("Service fee record not found");
+            }
+
+            if ($fee['payment_status'] === 'voided') {
+                throw new Exception("Cannot edit a voided service fee");
+            }
 
             if ($fee && $newAmount < floatval($fee['paid_amount'])) {
                 throw new Exception("New amount cannot be less than the already paid amount (₱" . number_format($fee['paid_amount'], 2) . ")");
@@ -276,6 +290,10 @@ try {
 
             if (!$feeRecord) {
                 throw new Exception("Service fee record not found");
+            }
+
+            if ($feeRecord['payment_status'] === 'voided') {
+                throw new Exception("Cannot record payment for a voided service fee");
             }
 
             $currentPaid = floatval($feeRecord['paid_amount']);
