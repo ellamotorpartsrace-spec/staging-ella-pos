@@ -1,6 +1,6 @@
 <?php
 $isShopeeModule = strpos($_SERVER['REQUEST_URI'], '/shopee/') !== false || strpos($_SERVER['PHP_SELF'], '/shopee/') !== false;
-$developerName = $isShopeeModule ? 'LESTER BUCAG' : 'Benedict Ramirez';
+$developerName = $isShopeeModule ? 'Lester Bucag' : 'Benedict Ramirez';
 ?>
 <footer class="text-center text-muted small py-3 mt-auto">
     <!-- Developed by Benedict Ramirez -->
