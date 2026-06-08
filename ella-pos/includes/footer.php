@@ -3,6 +3,7 @@ $isShopeeModule = strpos($_SERVER['REQUEST_URI'], '/shopee/') !== false || strpo
 $developerName = $isShopeeModule ? 'LESTER BUCAG' : 'Benedict Ramirez';
 ?>
 <footer class="text-center text-muted small py-3 mt-auto">
+    <!-- Developed by Benedict Ramirez -->
     &copy; <?= date('Y') ?> Ella Motor Parts | Developed by <?= htmlspecialchars($developerName) ?>
 </footer>
 </div>
