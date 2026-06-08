@@ -870,8 +870,12 @@ $isAdmin = ($_SESSION['role'] === 'admin');
         document.getElementById('edit-search-results').classList.add('d-none');
         document.getElementById('edit-qty-row').classList.remove('d-none');
         document.getElementById('edit-cap-row').classList.remove('d-none');
+        document.getElementById('edit-reference-row').classList.add('d-none');
+        document.getElementById('edit-reference-help').classList.add('d-none');
         document.getElementById('edit-new-qty').required = true;
         document.getElementById('edit-new-cap').required = true;
+        document.getElementById('edit-new-reference').required = false;
+        document.getElementById('edit-info-text').textContent = 'Original record is preserved in the audit log. Inventory will be updated.';
 
         fetch(`../../api/inventory/get_stockin_movement.php?movement_id=${movementId}`)
             .then(res => res.json())
@@ -891,6 +895,8 @@ $isAdmin = ($_SESSION['role'] === 'admin');
                     const cap = parseFloat(mov.capital_cost).toFixed(2);
                     document.getElementById('edit-old-cap').value = cap;
                     document.getElementById('edit-new-cap').value = cap;
+                    document.getElementById('edit-old-reference').value = mov.reference || 'No Reference';
+                    document.getElementById('edit-new-reference').value = mov.reference || '';
                     
                     document.getElementById('edit-reason').value = '';
                     document.getElementById('edit-notes').value = '';
@@ -916,6 +922,10 @@ $isAdmin = ($_SESSION['role'] === 'admin');
             document.getElementById('edit-action-type').value = 'swap';
             document.getElementById('edit-reason').value = 'Wrong Item';
             document.getElementById('edit-product-search').focus();
+            document.getElementById('edit-reference-row').classList.add('d-none');
+            document.getElementById('edit-reference-help').classList.add('d-none');
+            document.getElementById('edit-new-reference').required = false;
+            document.getElementById('edit-info-text').textContent = 'Original record is preserved in the audit log. Inventory will be updated.';
             
             // Re-enable in case they clicked void before
             document.getElementById('edit-qty-row').classList.remove('d-none');
@@ -926,6 +936,21 @@ $isAdmin = ($_SESSION['role'] === 'admin');
             container.classList.add('d-none');
             document.getElementById('edit-action-type').value = 'edit';
         }
+    }
+
+    function startReferenceCorrection() {
+        document.getElementById('edit-action-type').value = 'reference';
+        document.getElementById('edit-reason').value = 'Reference Number Correction';
+        document.getElementById('edit-product-search-container').classList.add('d-none');
+        document.getElementById('edit-reference-row').classList.remove('d-none');
+        document.getElementById('edit-reference-help').classList.remove('d-none');
+        document.getElementById('edit-qty-row').classList.add('d-none');
+        document.getElementById('edit-cap-row').classList.add('d-none');
+        document.getElementById('edit-new-qty').required = false;
+        document.getElementById('edit-new-cap').required = false;
+        document.getElementById('edit-new-reference').required = true;
+        document.getElementById('edit-info-text').textContent = 'Reference correction updates the receipt links only. Inventory quantities and costs are not changed.';
+        document.getElementById('edit-new-reference').focus();
     }
 
     function selectNewProduct(p) {
@@ -947,6 +972,10 @@ $isAdmin = ($_SESSION['role'] === 'admin');
         document.getElementById('edit-reason').value = 'Item Returned/Removed';
         document.getElementById('edit-new-qty').required = false;
         document.getElementById('edit-new-cap').required = false;
+        document.getElementById('edit-new-reference').required = false;
+        document.getElementById('edit-reference-row').classList.add('d-none');
+        document.getElementById('edit-reference-help').classList.add('d-none');
+        document.getElementById('edit-info-text').textContent = 'Original record is preserved in the audit log. Inventory will be updated.';
         
         // Hide search
         document.getElementById('edit-product-search-container').classList.add('d-none');
@@ -1062,8 +1091,15 @@ $isAdmin = ($_SESSION['role'] === 'admin');
             const new_variation_id = document.getElementById('edit-new-variation-id').value;
             const new_quantity = document.getElementById('edit-new-qty').value ? parseInt(document.getElementById('edit-new-qty').value) : 0;
             const new_capital = document.getElementById('edit-new-cap').value ? parseFloat(document.getElementById('edit-new-cap').value) : 0;
+            const new_reference = document.getElementById('edit-new-reference').value.trim();
             const reason = document.getElementById('edit-reason').value;
             const notes = document.getElementById('edit-notes').value;
+
+            if (action_type === 'reference' && !new_reference) {
+                if (typeof EllaToast !== 'undefined') EllaToast.warning('Enter the corrected reference number.');
+                else alert('Enter the corrected reference number.');
+                return;
+            }
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Saving...';
@@ -1072,7 +1108,7 @@ $isAdmin = ($_SESSION['role'] === 'admin');
                 const res = await fetch('../../api/inventory/update_stockin_record.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ movement_id, action_type, new_variation_id, new_quantity, new_capital, reason, notes })
+                    body: JSON.stringify({ movement_id, action_type, new_variation_id, new_quantity, new_capital, new_reference, reason, notes })
                 });
 
                 const data = await res.json();
@@ -1199,7 +1235,7 @@ $isAdmin = ($_SESSION['role'] === 'admin');
                     <input type="hidden" id="edit-new-variation-id" name="new_variation_id" value="">
                     
                     <div class="alert alert-info small py-2 mb-3 border-0">
-                        <i class="fa-solid fa-circle-info me-1"></i> Original record is preserved in the audit log. Inventory will be updated.
+                        <i class="fa-solid fa-circle-info me-1"></i> <span id="edit-info-text">Original record is preserved in the audit log. Inventory will be updated.</span>
                     </div>
 
                     <div class="mb-3 bg-light p-3 rounded border position-relative">
@@ -1252,6 +1288,20 @@ $isAdmin = ($_SESSION['role'] === 'admin');
                         </div>
                     </div>
 
+                    <div class="row g-3 mb-2 d-none" id="edit-reference-row">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">Old Reference</label>
+                            <input type="text" id="edit-old-reference" class="form-control bg-light text-muted" readonly>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-primary">New Reference <span class="text-danger">*</span></label>
+                            <input type="text" id="edit-new-reference" name="new_reference" class="form-control fw-bold border-primary" maxlength="100">
+                        </div>
+                    </div>
+                    <div class="alert alert-warning small py-2 mb-3 d-none" id="edit-reference-help">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> This updates all stock-in lines, purchase order links, and receipt photos under the same reference.
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Reason for Correction <span class="text-danger">*</span></label>
                         <select name="reason" id="edit-reason" class="form-select border-warning" required>
@@ -1259,6 +1309,7 @@ $isAdmin = ($_SESSION['role'] === 'admin');
                             <option value="Wrong Item">Wrong Item Selected</option>
                             <option value="Wrong Quantity">Wrong Quantity Entered</option>
                             <option value="Price Correction">Capital Price Correction</option>
+                            <option value="Reference Number Correction">Reference Number Correction</option>
                             <option value="Supplier Invoice Correction">Supplier Invoice Correction</option>
                             <option value="Data Entry Error">Data Entry Error</option>
                             <option value="Item Returned/Removed">Item Returned/Removed</option>
@@ -1272,9 +1323,14 @@ $isAdmin = ($_SESSION['role'] === 'admin');
                     </div>
                 </div>
                 <div class="modal-footer border-0 bg-light d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmVoidRecord()">
-                        <i class="fa-solid fa-trash-can me-1"></i>Void Entry
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="startReferenceCorrection()">
+                            <i class="fa-solid fa-hashtag me-1"></i>Correct Reference
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmVoidRecord()">
+                            <i class="fa-solid fa-trash-can me-1"></i>Void Entry
+                        </button>
+                    </div>
                     <div>
                         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-warning btn-sm fw-bold shadow-sm" id="btn-save-edit">

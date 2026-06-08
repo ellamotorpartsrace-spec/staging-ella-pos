@@ -14,6 +14,7 @@ require_once '../../includes/sidebar.php';
 require_once '../../config/database.php';
 require_once '../../includes/reference_attachment_storage.php';
 require_once '../../includes/payable_reference_sync.php';
+require_once '../../includes/stockin_adjustment_log.php';
 
 $ref = $_GET['ref'] ?? null;
 $from = $_GET['from'] ?? 'movements';
@@ -88,6 +89,7 @@ $sqlLogs = "
 ";
 $adjLogs = [];
 try {
+    ensureStockinAdjustmentLogTable($conn);
     $stmtLogs = $conn->prepare($sqlLogs);
     $stmtLogs->execute([$ref]);
     $adjLogs = $stmtLogs->fetchAll(PDO::FETCH_ASSOC);
@@ -274,6 +276,8 @@ if (!empty($variationIds)) {
                                                                     Voided Transaction (Previous Total Cost: ₱<?= number_format($log['old_quantity'] * $log['old_capital'], 2) ?>)
                                                                 <?php elseif ($log['action_type'] === 'add_to_ref'): ?>
                                                                     Missed product added manually (Capital: ₱<?= number_format($log['new_capital'], 2) ?>)
+                                                                <?php elseif ($log['action_type'] === 'reference'): ?>
+                                                                    <?= htmlspecialchars($log['notes'] ?: 'Reference number corrected') ?>
                                                                 <?php endif; ?>
                                                             </div>
                                                             <?php if (!empty($log['reason'])): ?>
