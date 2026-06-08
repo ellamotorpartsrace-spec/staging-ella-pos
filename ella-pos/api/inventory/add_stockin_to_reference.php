@@ -5,6 +5,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 require_once '../../includes/payable_reference_sync.php';
+require_once '../../includes/stockin_adjustment_log.php';
 
 // Only accept POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -54,6 +55,7 @@ if ($quantity < 1) {
 try {
     $db = new Database();
     $conn = $db->getConnection();
+    ensureStockinAdjustmentLogTable($conn);
     $conn->beginTransaction();
     $hasMovementStatus = payableReferenceColumnExists($conn, 'stock_movements', 'status');
 
@@ -175,11 +177,19 @@ try {
     }
 
     // 5. Log the adjustment
-    $conn->prepare("
-        INSERT INTO stockin_adjustment_log 
-        (movement_id, adjusted_by, old_quantity, new_quantity, old_capital, new_capital, action_type, reason, notes)
-        VALUES (?, ?, 0, ?, 0, ?, 'add_to_ref', 'Missed product added', ?)
-    ")->execute([$new_movement_id, $user_id, $quantity, $capital_cost, $remarks]);
+    insertStockinAdjustmentLog($conn, [
+        'movement_id' => $new_movement_id,
+        'adjusted_by' => $user_id,
+        'old_quantity' => 0,
+        'new_quantity' => $quantity,
+        'old_capital' => 0,
+        'new_capital' => $capital_cost,
+        'old_variation_id' => null,
+        'new_variation_id' => $variation_id,
+        'action_type' => 'add_to_ref',
+        'reason' => 'Missed product added',
+        'notes' => $remarks,
+    ]);
 
     $conn->commit();
 

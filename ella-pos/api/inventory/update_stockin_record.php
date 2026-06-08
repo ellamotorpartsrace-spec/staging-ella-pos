@@ -5,6 +5,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 require_once '../../includes/payable_reference_sync.php';
+require_once '../../includes/stockin_adjustment_log.php';
 
 // Only accept POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -28,10 +29,11 @@ if (!$input) {
 }
 
 $movement_id  = (int) ($input['movement_id'] ?? 0);
-$action_type  = $input['action_type'] ?? 'edit'; // edit, swap, void
+$action_type  = $input['action_type'] ?? 'edit'; // edit, swap, void, reference
 $new_quantity  = (int) ($input['new_quantity'] ?? 0);
 $new_capital   = (float) ($input['new_capital'] ?? 0);
 $new_variation_id = (int) ($input['new_variation_id'] ?? 0);
+$new_reference = trim((string) ($input['new_reference'] ?? ''));
 $reason        = trim($input['reason'] ?? '');
 $notes         = trim($input['notes'] ?? '');
 $user_id       = $_SESSION['user_id'] ?? 1;
@@ -39,6 +41,10 @@ $user_id       = $_SESSION['user_id'] ?? 1;
 // Validation
 if (!$movement_id) {
     echo json_encode(['success' => false, 'error' => 'Invalid movement ID']);
+    exit;
+}
+if (!in_array($action_type, ['edit', 'swap', 'void', 'reference'], true)) {
+    echo json_encode(['success' => false, 'error' => 'Invalid correction type']);
     exit;
 }
 if ($action_type === 'edit' || $action_type === 'swap') {
@@ -51,6 +57,16 @@ if ($action_type === 'swap' && !$new_variation_id) {
     echo json_encode(['success' => false, 'error' => 'New product variation ID required for swap']);
     exit;
 }
+if ($action_type === 'reference') {
+    if ($new_reference === '') {
+        echo json_encode(['success' => false, 'error' => 'New reference number is required']);
+        exit;
+    }
+    if (strlen($new_reference) > 100) {
+        echo json_encode(['success' => false, 'error' => 'Reference number must be 100 characters or less']);
+        exit;
+    }
+}
 if (empty($reason)) {
     echo json_encode(['success' => false, 'error' => 'Reason is required']);
     exit;
@@ -59,6 +75,7 @@ if (empty($reason)) {
 try {
     $db = new Database();
     $conn = $db->getConnection();
+    ensureStockinAdjustmentLogTable($conn);
     $conn->beginTransaction();
     $hasMovementStatus = payableReferenceColumnExists($conn, 'stock_movements', 'status');
 
@@ -89,6 +106,137 @@ try {
     $old_capital  = (float) $original['effective_capital'];
     $old_variation_id = $original['variation_id'];
     $reference = $original['reference'];
+
+    if ($action_type === 'reference') {
+        $old_reference = trim((string) $reference);
+
+        if ($new_reference === $old_reference) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'error' => 'New reference number is the same as the current reference']);
+            exit;
+        }
+
+        $groupParams = [];
+        if ($old_reference === '') {
+            $groupWhere = 'sm.movement_id = ?';
+            $groupParams[] = $movement_id;
+        } else {
+            $groupWhere = 'sm.reference = ? AND sm.type = \'stock_in\'';
+            $groupParams[] = $old_reference;
+        }
+
+        $stmtGroup = $conn->prepare("
+            SELECT
+                sm.movement_id,
+                sm.quantity,
+                COALESCE(sm.capital_cost, pv.price_capital, 0) as effective_capital,
+                sm.variation_id
+            FROM stock_movements sm
+            LEFT JOIN product_variations pv ON sm.variation_id = pv.variation_id
+            WHERE $groupWhere
+            FOR UPDATE
+        ");
+        $stmtGroup->execute($groupParams);
+        $referenceRows = $stmtGroup->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!$referenceRows) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'error' => 'No stock-in rows found for this reference']);
+            exit;
+        }
+
+        $stmtExistingMovements = $conn->prepare("
+            SELECT COUNT(*)
+            FROM stock_movements
+            WHERE type = 'stock_in'
+              AND reference = ?
+              " . ($old_reference === '' ? 'AND movement_id <> ?' : '') . "
+        ");
+        $existingMovementParams = [$new_reference];
+        if ($old_reference === '') {
+            $existingMovementParams[] = $movement_id;
+        }
+        $stmtExistingMovements->execute($existingMovementParams);
+        if ((int) $stmtExistingMovements->fetchColumn() > 0) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'error' => 'That reference number is already used by another stock-in record']);
+            exit;
+        }
+
+        $oldPo = null;
+        if ($old_reference !== '') {
+            $stmtOldPo = $conn->prepare("SELECT po_id FROM purchase_orders WHERE po_ref = ? FOR UPDATE");
+            $stmtOldPo->execute([$old_reference]);
+            $oldPo = $stmtOldPo->fetch(PDO::FETCH_ASSOC) ?: null;
+        }
+
+        $stmtNewPo = $conn->prepare("SELECT po_id FROM purchase_orders WHERE po_ref = ? FOR UPDATE");
+        $stmtNewPo->execute([$new_reference]);
+        $newPo = $stmtNewPo->fetch(PDO::FETCH_ASSOC) ?: null;
+        if ($newPo && (!$oldPo || (int) $newPo['po_id'] !== (int) $oldPo['po_id'])) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'error' => 'That reference number is already used by another purchase order']);
+            exit;
+        }
+        if ($oldPo && strlen($new_reference) > 50) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'error' => 'Purchase order references must be 50 characters or less']);
+            exit;
+        }
+
+        $stmtExistingAttachments = $conn->prepare("SELECT COUNT(*) FROM reference_attachments WHERE reference_number = ?");
+        $stmtExistingAttachments->execute([$new_reference]);
+        if ((int) $stmtExistingAttachments->fetchColumn() > 0) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'error' => 'That reference number already has receipt attachments']);
+            exit;
+        }
+
+        if ($old_reference === '') {
+            $conn->prepare("UPDATE stock_movements SET reference = ? WHERE movement_id = ?")
+                ->execute([$new_reference, $movement_id]);
+        } else {
+            $conn->prepare("UPDATE stock_movements SET reference = ? WHERE type = 'stock_in' AND reference = ?")
+                ->execute([$new_reference, $old_reference]);
+        }
+
+        if ($oldPo) {
+            $conn->prepare("UPDATE purchase_orders SET po_ref = ? WHERE po_id = ?")
+                ->execute([$new_reference, (int) $oldPo['po_id']]);
+        }
+
+        if ($old_reference !== '') {
+            $conn->prepare("UPDATE reference_attachments SET reference_number = ? WHERE reference_number = ?")
+                ->execute([$new_reference, $old_reference]);
+        }
+
+        $referenceNote = 'Reference changed from "' . ($old_reference !== '' ? $old_reference : 'No Reference') . '" to "' . $new_reference . '".';
+        $logNotes = trim($referenceNote . ($notes !== '' ? ' ' . $notes : ''));
+
+        foreach ($referenceRows as $row) {
+            insertStockinAdjustmentLog($conn, [
+                'movement_id' => (int) $row['movement_id'],
+                'adjusted_by' => $user_id,
+                'old_quantity' => (int) $row['quantity'],
+                'new_quantity' => (int) $row['quantity'],
+                'old_capital' => (float) $row['effective_capital'],
+                'new_capital' => (float) $row['effective_capital'],
+                'old_variation_id' => (int) $row['variation_id'],
+                'new_variation_id' => (int) $row['variation_id'],
+                'action_type' => 'reference',
+                'reason' => $reason,
+                'notes' => $logNotes,
+            ]);
+        }
+
+        $conn->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Reference number updated for ' . count($referenceRows) . ' stock-in line(s).'
+        ]);
+        exit;
+    }
 
     if ($action_type === 'void') {
         $new_quantity = 0;
@@ -299,22 +447,18 @@ try {
     }
 
     // 5. Insert adjustment log
-    $conn->prepare("
-        INSERT INTO stockin_adjustment_log 
-        (movement_id, adjusted_by, old_quantity, new_quantity, old_capital, new_capital, old_variation_id, new_variation_id, action_type, reason, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ")->execute([
-        $movement_id,
-        $user_id,
-        $old_quantity,
-        $new_quantity,
-        $old_capital,
-        $new_capital,
-        $old_variation_id,
-        $new_variation_id,
-        $action_type,
-        $reason,
-        $notes ?: null
+    insertStockinAdjustmentLog($conn, [
+        'movement_id' => $movement_id,
+        'adjusted_by' => $user_id,
+        'old_quantity' => $old_quantity,
+        'new_quantity' => $new_quantity,
+        'old_capital' => $old_capital,
+        'new_capital' => $new_capital,
+        'old_variation_id' => $old_variation_id,
+        'new_variation_id' => $new_variation_id,
+        'action_type' => $action_type,
+        'reason' => $reason,
+        'notes' => $notes ?: null,
     ]);
 
     $conn->commit();
