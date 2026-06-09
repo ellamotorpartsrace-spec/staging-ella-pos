@@ -888,8 +888,8 @@ if (isset($_GET['id'])) {
                     <div class="card-body">
                         <!-- Supplier Selection -->
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Supplier <span class="text-danger">*</span></label>
-                            <select id="batch-supplier" class="form-select" required>
+                            <label class="form-label fw-bold">Supplier</label>
+                            <select id="batch-supplier" class="form-select">
                                 <option value="">-- Select Supplier --</option>
                                 <?php foreach ($suppliers as $s): ?>
                                     <option value="<?= $s['supplier_id'] ?>"
@@ -1859,9 +1859,19 @@ if (isset($_GET['id'])) {
             const reference = document.getElementById('batch-reference').value;
 
             if (!supplierId) {
-                EllaToast.warning('Please select a supplier');
-                document.getElementById('batch-supplier').focus();
-                return;
+                const confirmed = await EllaConfirm.show({
+                    title: 'No Supplier Selected',
+                    message: 'Are you sure you want to proceed without selecting a supplier?',
+                    confirmText: 'Proceed Anyway',
+                    cancelText: 'Cancel',
+                    confirmClass: 'btn-warning',
+                    icon: 'fa-triangle-exclamation',
+                    iconColor: 'text-warning'
+                });
+                if (!confirmed) {
+                    document.getElementById('batch-supplier').focus();
+                    return;
+                }
             }
 
             if (this.items.length === 0) {
@@ -1993,7 +2003,30 @@ if (isset($_GET['id'])) {
             form.addEventListener('change', (e) => this.saveData(form, cacheKey));
 
             // Clear on submit
-            form.addEventListener('submit', () => localStorage.removeItem(cacheKey));
+            form.addEventListener('submit', (e) => {
+                const supplier = form.querySelector('[name="supplier"]').value;
+                if (!supplier && !form.dataset.confirmed) {
+                    e.preventDefault();
+                    EllaConfirm.show({
+                        title: 'No Supplier Selected',
+                        message: 'Are you sure you want to proceed without selecting a supplier?',
+                        confirmText: 'Proceed Anyway',
+                        cancelText: 'Cancel',
+                        confirmClass: 'btn-warning',
+                        icon: 'fa-triangle-exclamation',
+                        iconColor: 'text-warning'
+                    }).then(confirmed => {
+                        if (confirmed) {
+                            form.dataset.confirmed = 'true';
+                            form.submit();
+                        } else {
+                            form.querySelector('[name="supplier"]').focus();
+                        }
+                    });
+                    return;
+                }
+                localStorage.removeItem(cacheKey);
+            });
 
             // ---- Total Calculator ----
             const qtyInput = document.getElementById('single-qty');
