@@ -22,16 +22,31 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    // Get supplier name
-    $stmtSupp = $conn->prepare("SELECT supplier_name FROM suppliers WHERE supplier_id = ?");
-    $stmtSupp->execute([$supplier_id]);
-    $supplier = $stmtSupp->fetch(PDO::FETCH_ASSOC);
+    if ($supplier_id === 'none') {
+        $supplier_name = 'No Supplier / Unknown';
+        $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ?";
+        $params = [
+            "%Restock: Manual Entry%",
+            "%Batch Restock: Unknown Supplier%"
+        ];
+    } else {
+        // Get supplier name
+        $stmtSupp = $conn->prepare("SELECT supplier_name FROM suppliers WHERE supplier_id = ?");
+        $stmtSupp->execute([$supplier_id]);
+        $supplier = $stmtSupp->fetch(PDO::FETCH_ASSOC);
 
-    if (!$supplier) {
-        die("Supplier not found");
+        if (!$supplier) {
+            die("Supplier not found");
+        }
+
+        $supplier_name = $supplier['supplier_name'];
+        $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.reference IN (SELECT po_ref FROM purchase_orders WHERE supplier_id = ?)";
+        $params = [
+            "%Restock: {$supplier_name}%",
+            "%Batch Restock: {$supplier_name}%",
+            $supplier_id
+        ];
     }
-
-    $supplier_name = $supplier['supplier_name'];
 
     // Build query - same logic as get_stockin_records.php but without limit/offset
     $sql = "
@@ -58,18 +73,8 @@ try {
         JOIN products p ON pv.product_id = p.product_id
         LEFT JOIN users u ON sm.created_by = u.id
         WHERE sm.type = 'stock_in'
-        AND (
-            sm.remarks LIKE ? 
-            OR sm.remarks LIKE ?
-            OR sm.reference IN (SELECT po_ref FROM purchase_orders WHERE supplier_id = ?)
-        )
+        AND ( $supplierFilter )
     ";
-
-    $params = [
-        "%Restock: {$supplier_name}%",
-        "%Batch Restock: {$supplier_name}%",
-        $supplier_id
-    ];
 
     if (!empty($date_from)) {
         $sql .= " AND DATE(sm.created_at) >= ?";

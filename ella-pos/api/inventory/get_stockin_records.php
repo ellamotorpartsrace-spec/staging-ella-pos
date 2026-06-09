@@ -25,19 +25,34 @@ try {
     $conn = $db->getConnection();
     ensureReferenceAttachmentBackupColumns($conn);
 
-    // Get supplier name
-    $stmtSupp = $conn->prepare("SELECT supplier_name FROM suppliers WHERE supplier_id = ?");
-    $stmtSupp->execute([$supplier_id]);
-    $supplier = $stmtSupp->fetch(PDO::FETCH_ASSOC);
+    if ($supplier_id === 'none') {
+        $supplier_name = 'No Supplier / Unknown';
+        $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ?";
+        $params = [
+            "%Restock: Manual Entry%",
+            "%Batch Restock: Unknown Supplier%"
+        ];
+    } else {
+        // Get supplier name
+        $stmtSupp = $conn->prepare("SELECT supplier_name FROM suppliers WHERE supplier_id = ?");
+        $stmtSupp->execute([$supplier_id]);
+        $supplier = $stmtSupp->fetch(PDO::FETCH_ASSOC);
 
-    if (!$supplier) {
-        echo json_encode(['success' => false, 'error' => 'Supplier not found']);
-        exit;
+        if (!$supplier) {
+            echo json_encode(['success' => false, 'error' => 'Supplier not found']);
+            exit;
+        }
+
+        $supplier_name = $supplier['supplier_name'];
+        $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.reference IN (SELECT po_ref FROM purchase_orders WHERE supplier_id = ?)";
+        $params = [
+            "%Restock: {$supplier_name}%",
+            "%Batch Restock: {$supplier_name}%",
+            $supplier_id
+        ];
     }
 
-    $supplier_name = $supplier['supplier_name'];
-
-    // Build query - match by remarks containing supplier name
+    // Build query - match by remarks containing supplier name or manual entry
     $sql = "
         SELECT 
             sm.movement_id,
@@ -71,18 +86,8 @@ try {
             GROUP BY reference_number
         ) ra ON sm.reference = ra.reference_number
         WHERE sm.type = 'stock_in'
-        AND (
-            sm.remarks LIKE ? 
-            OR sm.remarks LIKE ?
-            OR sm.reference IN (SELECT po_ref FROM purchase_orders WHERE supplier_id = ?)
-        )
+        AND ( $supplierFilter )
     ";
-
-    $params = [
-        "%Restock: {$supplier_name}%",
-        "%Batch Restock: {$supplier_name}%",
-        $supplier_id
-    ];
 
     if (!empty($date_from)) {
         $sql .= " AND DATE(sm.created_at) >= ?";
@@ -106,7 +111,6 @@ try {
     $stmt->execute($params);
     $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get summary stats
     $statsSql = "
         SELECT 
             COUNT(*) as total_records,
@@ -116,18 +120,22 @@ try {
         FROM stock_movements sm
         JOIN product_variations pv ON sm.variation_id = pv.variation_id
         WHERE sm.type = 'stock_in'
-        AND (
-            sm.remarks LIKE ? 
-            OR sm.remarks LIKE ?
-            OR sm.reference IN (SELECT po_ref FROM purchase_orders WHERE supplier_id = ?)
-        )
+        AND ( $supplierFilter )
     ";
 
-    $statsParams = [
-        "%Restock: {$supplier_name}%",
-        "%Batch Restock: {$supplier_name}%",
-        $supplier_id
-    ];
+    // Reuse the base params from before (we must copy them because we might have appended dates)
+    if ($supplier_id === 'none') {
+        $statsParams = [
+            "%Restock: Manual Entry%",
+            "%Batch Restock: Unknown Supplier%"
+        ];
+    } else {
+        $statsParams = [
+            "%Restock: {$supplier_name}%",
+            "%Batch Restock: {$supplier_name}%",
+            $supplier_id
+        ];
+    }
 
     if (!empty($date_from)) {
         $statsSql .= " AND DATE(sm.created_at) >= ?";

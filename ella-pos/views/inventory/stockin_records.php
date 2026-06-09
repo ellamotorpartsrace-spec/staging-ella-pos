@@ -159,6 +159,7 @@ $isAdmin = ($_SESSION['role'] === 'admin');
                     <label class="form-label small fw-bold text-muted mb-1">SUPPLIER</label>
                     <select name="supplier_id" id="supplier-select" class="form-select" required>
                         <option value="">-- Select Supplier --</option>
+                        <option value="none" <?= $selected_supplier === 'none' ? 'selected' : '' ?>>-- No Supplier / Unknown --</option>
                         <?php foreach ($suppliers as $s): ?>
                             <option value="<?= $s['supplier_id'] ?>" <?= $selected_supplier == $s['supplier_id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($s['supplier_name']) ?>
