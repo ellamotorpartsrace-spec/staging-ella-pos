@@ -21,9 +21,10 @@ $db = new Database();
 $conn = $db->getConnection();
 
 try {
-    $sql = "UPDATE product_variations SET status = 'inactive' WHERE variation_id = ?";
+    $archived_by = $_SESSION['user_id'] ?? null;
+    $sql = "UPDATE product_variations SET status = 'inactive', archived_by = ?, archived_at = CURRENT_TIMESTAMP WHERE variation_id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->execute([$id]);
+    $stmt->execute([$archived_by, $id]);
     $referer = $_SERVER['HTTP_REFERER'] ?? 'index.php';
     if (strpos($referer, '?') !== false) {
         header('Location: ' . $referer . '&msg=deleted');

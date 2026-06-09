@@ -21,7 +21,7 @@ $db = new Database();
 $conn = $db->getConnection();
 
 try {
-    $sql = "UPDATE product_variations SET status = 'active' WHERE variation_id = ?";
+    $sql = "UPDATE product_variations SET status = 'active', archived_by = NULL, archived_at = NULL WHERE variation_id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->execute([$id]);
 

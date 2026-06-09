@@ -28,6 +28,7 @@ $baseSql = "
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
     LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+    LEFT JOIN users u ON v.archived_by = u.id
     WHERE v.status = 'inactive'
 ";
 
@@ -57,6 +58,7 @@ $sqlProducts = "
     SELECT v.variation_id, v.variation_name, v.sku, v.unit_type,
            v.price_capital, v.price_retail, v.status, v.low_stock_threshold,
            p.product_name, p.brand_name, p.image_path,
+           u.full_name as archived_by_name,
            COALESCE(i_phys.quantity, 0) as physical_stock,
            COALESCE(i_online.quantity, 0) as online_stock,
            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock
@@ -222,6 +224,11 @@ $products = $stmt->fetchAll();
                                     <td>
                                         <span class="badge bg-secondary text-white"><i class="fa-solid fa-box-archive"></i>
                                             Archived</span>
+                                        <?php if (!empty($row['archived_by_name'])): ?>
+                                            <div class="small text-muted mt-1" style="font-size: 0.75rem;">
+                                                By: <?= htmlspecialchars($row['archived_by_name']) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
 
                                     <td class="text-end pe-4">
@@ -289,6 +296,11 @@ $products = $stmt->fetchAll();
                                     <div>
                                         <span class="badge bg-secondary text-white"><i class="fa-solid fa-box-archive"></i>
                                             Archived</span>
+                                        <?php if (!empty($row['archived_by_name'])): ?>
+                                            <div class="small text-muted mt-1" style="font-size: 0.75rem;">
+                                                By: <?= htmlspecialchars($row['archived_by_name']) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="d-flex gap-2">
                                         <button onclick="confirmRestore(<?= $row['variation_id'] ?>)"
@@ -480,7 +492,10 @@ $products = $stmt->fetchAll();
                          <span class="text-secondary fw-bold small">₱</span> <span class="fw-bold">${parseFloat(row.price_retail || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                      </td>
                      <td><span class="badge bg-secondary text-white">${qty} ${this.escapeHtml(row.unit_type || '')}</span></td>
-                     <td><span class="badge bg-secondary text-white"><i class="fa-solid fa-box-archive"></i> Archived</span></td>
+                     <td>
+                         <span class="badge bg-secondary text-white"><i class="fa-solid fa-box-archive"></i> Archived</span>
+                         ${row.archived_by_name ? `<div class="small text-muted mt-1" style="font-size: 0.75rem;">By: ${this.escapeHtml(row.archived_by_name)}</div>` : ''}
+                     </td>
                      <td class="text-end pe-4">
                          <div class="d-flex justify-content-end gap-2">
                              <button onclick="confirmRestore(${row.variation_id})" class="btn btn-sm btn-success" title="Restore">
@@ -534,7 +549,10 @@ $products = $stmt->fetchAll();
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-                            <div><span class="badge bg-secondary text-white"><i class="fa-solid fa-box-archive"></i> Archived</span></div>
+                            <div>
+                                <span class="badge bg-secondary text-white"><i class="fa-solid fa-box-archive"></i> Archived</span>
+                                ${row.archived_by_name ? `<div class="small text-muted mt-1" style="font-size: 0.75rem;">By: ${this.escapeHtml(row.archived_by_name)}</div>` : ''}
+                            </div>
                             <div class="d-flex gap-2">
                                 <button onclick="confirmRestore(${row.variation_id})" class="btn btn-sm btn-success" title="Restore">
                                     <i class="fa-solid fa-trash-arrow-up"></i> Restore
