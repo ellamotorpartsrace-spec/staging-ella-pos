@@ -66,7 +66,6 @@ try {
         JOIN products p ON v.product_id = p.product_id
         LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
         LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
-        LEFT JOIN users u ON v.archived_by = u.id
         WHERE v.status = :status
     ";
 
@@ -135,7 +134,6 @@ try {
             p.product_name,
             p.brand_name,
             p.image_path,
-            u.full_name as archived_by_name,
             COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock
             {$relevanceSelect}
         " . $baseSql . "
