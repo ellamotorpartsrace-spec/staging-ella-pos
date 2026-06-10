@@ -1218,7 +1218,7 @@ window.ReceiptPreview = {
             }
 
             allPagesHTML += `
-                <div class="a4-page-chunk" style="position: relative; box-sizing: border-box; width: 100%;">
+                <div class="a4-page-chunk" style="position: relative;">
                     ${watermarkHTML}
                     <div style="width:100%;">
                         <table style="width:100%; border-collapse:collapse;">
@@ -1260,6 +1260,7 @@ window.ReceiptPreview = {
                     page-break-after: always;
                     page-break-inside: avoid;
                     width: 100%;
+                    box-sizing: border-box;
                 }
                 /* Hide empty pages native to chrome bugs */
                 .a4-page-chunk:last-child {
@@ -1271,16 +1272,17 @@ window.ReceiptPreview = {
             @media screen {
                 body { background: #f4f4f4; padding: 20px; }
                 .a4-page-chunk {
-                    min-height: 297mm; /* Screen preview mapping */
-                    width: 100%;
-                    max-width: 210mm;
+                    height: 297mm; /* Exact physical paper height */
+                    width: 210mm;  /* Exact physical paper width */
                     margin: 0 auto 30px auto;
                     background: #fff;
                     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    padding: 40px;
+                    padding: 0.5in; /* Perfectly mirrors @page print margin */
+                    box-sizing: border-box;
                     display: flex;
                     flex-direction: column;
                     justify-content: flex-start;
+                    overflow: hidden; /* Prevent visual stretching beyond physical A4 size */
                 }
             }
         </style>
