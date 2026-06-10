@@ -1001,6 +1001,23 @@ window.ReceiptPreview = {
             const isLastPage = (p === totalPages - 1);
             const chunk = cart.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
 
+            // Smart Fit Logic: Calculate estimated lines to see if we need compact mode
+            let chunkLines = 0;
+            chunk.forEach(i => {
+                chunkLines += 1;
+                if (i.sku) chunkLines += 0.5;
+                if (i.brand || i.variation) chunkLines += 0.5;
+                if (i.unit_id && i.multiplier > 1) chunkLines += 0.5;
+                if (showDiscA4 && i.item_discount && i.item_discount > 0) chunkLines += 0.5;
+                if (i.returned_qty > 0) chunkLines += 0.5;
+            });
+
+            // If we have more than 18 "lines" of content on this page, shrink fonts to fit
+            const isCompact = chunkLines > 18;
+            const fSizeMain = isCompact ? 11 : 13;
+            const fSizeSub = isCompact ? 10 : 12;
+            const padY = isCompact ? 0 : 2;
+
             const itemRowsHTML = chunk.map((i, idxInChunk) => {
                 const idx = p * ITEMS_PER_PAGE + idxInChunk;
                 const hasDiscount = showDiscA4 && i.item_discount && i.item_discount > 0;
@@ -1008,36 +1025,36 @@ window.ReceiptPreview = {
                 const hasUnit = i.unit_id && i.multiplier > 1;
                 const pricePerPc = hasUnit ? (i.price / i.multiplier) : 0;
                 const unitBreakdownA4 = hasUnit
-                    ? `<div style="font-size:12px; color:#555; margin-top:1px; font-style:italic;">
+                    ? `<div style="font-size:${fSizeSub}px; color:#555; margin-top:1px; font-style:italic;">
                            &#8369;${fmt(pricePerPc)}/pc &times; ${i.multiplier} pcs = &#8369;${fmt(i.price)}</div>`
                     : '';
-                const skuSpan = i.sku ? `<span style="font-family: monospace; font-size:12px; color: #555; background:#f3f4f6; padding:0 3px; border-radius:3px; margin-right:4px;">SKU: ${i.sku}</span>` : '';
+                const skuSpan = i.sku ? `<span style="font-family: monospace; font-size:${fSizeSub}px; color: #555; background:#f3f4f6; padding:0 3px; border-radius:3px; margin-right:4px;">SKU: ${i.sku}</span>` : '';
 
                 const netQty = i.qty - i.returned_qty;
                 const isFullyReturned = i.returned_qty >= i.qty;
 
                 return `
                     <tr style="border-bottom:1px solid #eee; ${isFullyReturned ? 'text-decoration:line-through; opacity:0.5; background:#f9f9f9;' : ''}">
-                        <td style="padding:0px 4px; text-align:center; font-size:11px; vertical-align:middle;">
-                            <div style="font-size:12px; color:#111; font-family:monospace; line-height:1; font-style: italic;">#${idx + 1}</div>
+                        <td style="padding:0px 4px; text-align:center; font-size:${fSizeSub - 1}px; vertical-align:middle;">
+                            <div style="font-size:${fSizeSub}px; color:#111; font-family:monospace; line-height:1; font-style: italic;">#${idx + 1}</div>
                         </td>
-                        <td style="padding:0px 4px; text-align:center; font-size:13px; vertical-align:middle;">
-                            <div style="font-weight:600;">${i.qty}</div>
+                        <td style="padding:0px 4px; text-align:center; vertical-align:middle;">
+                            <div style="font-weight:600; font-size:${fSizeMain}px;">${i.qty}</div>
                         </td>
-                        <td style="padding:2px 4px;">
-                            <div style="font-weight:600; font-size:13px; line-height:1.2;">${i.name}</div>
-                            ${i.sku ? `<div style="font-size:10px; font-family:monospace; color:#6b7280; background:#f3f4f6; display:inline-block; padding:1px 5px; border-radius:3px; margin-top:1px; letter-spacing:0.3px;">SKU: ${i.sku}</div>` : ''}
-                            <div style="font-size:12px; color:#374151; line-height:1.2; margin-top:1px;">
+                        <td style="padding:${padY}px 4px;">
+                            <div style="font-weight:600; font-size:${fSizeMain}px; line-height:1.2;">${i.name}</div>
+                            ${i.sku ? `<div style="font-size:${fSizeSub - 1}px; font-family:monospace; color:#6b7280; background:#f3f4f6; display:inline-block; padding:1px 5px; border-radius:3px; margin-top:1px; letter-spacing:0.3px;">SKU: ${i.sku}</div>` : ''}
+                            <div style="font-size:${fSizeSub}px; color:#374151; line-height:1.2; margin-top:1px;">
                                 ${i.brand || ""} ${i.variation || ""} (${i.unit_type || "pc"})
                                 ${hasDiscount ? `<span style="color:#dc2626; margin-left:5px;">(Disc: -₱${fmt(i.item_discount)})</span>` : ''}
                                 ${i.returned_qty > 0 ? `<span style="color:#881337; font-weight:bold; margin-left:5px;">(Returned: ${i.returned_qty})</span>` : ''}
                             </div>
                             ${unitBreakdownA4}
                         </td>
-                        <td style="padding:0px 4px; text-align:right; font-size:13px;">
-                            ${hasDiscount ? `<span style="text-decoration:line-through;color:#999;font-size:12px;">₱${fmt(origPrice)}</span> ` : ''}₱${fmt(i.price)}
+                        <td style="padding:0px 4px; text-align:right; font-size:${fSizeMain}px;">
+                            ${hasDiscount ? `<span style="text-decoration:line-through;color:#999;font-size:${fSizeSub}px;">₱${fmt(origPrice)}</span> ` : ''}₱${fmt(i.price)}
                         </td>
-                        <td style="padding:0px 4px; text-align:right; font-weight:600; font-size:13px;">
+                        <td style="padding:0px 4px; text-align:right; font-weight:600; font-size:${fSizeMain}px;">
                             ₱${fmt(i.qty * i.price)}
                         </td>
                     </tr>`;
