@@ -656,6 +656,9 @@ window.ReceiptPreview = {
                 ${S.receipt_footer_note ? `<div style="margin-bottom:4px;">${S.receipt_footer_note}</div>` : ''}
                 ${S.receipt_footer || 'THANK YOU FOR YOUR PURCHASE!'}
             </div>
+            
+            <!-- Auto-cut feed space to prevent footer from being cut off -->
+            <div style="height: 25mm;"></div>
         </div>
         `;
     } /* REQUIRED COMMA */,
