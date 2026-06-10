@@ -992,34 +992,58 @@ window.ReceiptPreview = {
             }
         }
 
-        const ITEMS_PER_PAGE = 25;
-        const totalPages = Math.ceil(cart.length / ITEMS_PER_PAGE) || 1;
+        // Dynamic Pagination based on estimated lines
+        const MAX_LINES_PER_PAGE = 42; 
+        const pages = [];
+        let currentPage = [];
+        let currentLines = 0;
+
+        cart.forEach((i) => {
+            let itemLines = 1;
+            if (i.sku) itemLines += 0.5;
+            if (i.brand || i.variation) itemLines += 0.5;
+            if (i.unit_id && i.multiplier > 1) itemLines += 0.5;
+            if (showDiscA4 && i.item_discount && i.item_discount > 0) itemLines += 0.5;
+            if (i.returned_qty > 0) itemLines += 0.5;
+
+            // If adding this item exceeds max lines AND we already have items on this page, start new page
+            // We give the last page slightly less capacity to ensure the footer fits comfortably
+            const isLastItem = (i === cart[cart.length - 1]);
+            const effectiveMax = isLastItem ? (MAX_LINES_PER_PAGE - 5) : MAX_LINES_PER_PAGE;
+
+            if (currentLines + itemLines > effectiveMax && currentPage.length > 0) {
+                pages.push({ items: currentPage, lines: currentLines });
+                currentPage = [];
+                currentLines = 0;
+            }
+
+            currentPage.push(i);
+            currentLines += itemLines;
+        });
+
+        if (currentPage.length > 0) {
+            pages.push({ items: currentPage, lines: currentLines });
+        }
+
+        const totalPages = pages.length;
         let allPagesHTML = '';
+        let absoluteItemIndex = 0;
 
         for (let p = 0; p < totalPages; p++) {
             const isFirstPage = (p === 0);
             const isLastPage = (p === totalPages - 1);
-            const chunk = cart.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
+            const chunkInfo = pages[p];
+            const chunk = chunkInfo.items;
+            const chunkLines = chunkInfo.lines;
 
-            // Smart Fit Logic: Calculate estimated lines to see if we need compact mode
-            let chunkLines = 0;
-            chunk.forEach(i => {
-                chunkLines += 1;
-                if (i.sku) chunkLines += 0.5;
-                if (i.brand || i.variation) chunkLines += 0.5;
-                if (i.unit_id && i.multiplier > 1) chunkLines += 0.5;
-                if (showDiscA4 && i.item_discount && i.item_discount > 0) chunkLines += 0.5;
-                if (i.returned_qty > 0) chunkLines += 0.5;
-            });
-
-            // If we have more than 18 "lines" of content on this page, shrink fonts to fit
-            const isCompact = chunkLines > 18;
+            // If we have more than 25 "lines" of content on this page, shrink fonts to fit
+            const isCompact = chunkLines > 25;
             const fSizeMain = isCompact ? 11 : 13;
             const fSizeSub = isCompact ? 10 : 12;
             const padY = isCompact ? 0 : 2;
 
             const itemRowsHTML = chunk.map((i, idxInChunk) => {
-                const idx = p * ITEMS_PER_PAGE + idxInChunk;
+                const idx = absoluteItemIndex++;
                 const hasDiscount = showDiscA4 && i.item_discount && i.item_discount > 0;
                 const origPrice = i.original_price || i.price;
                 const hasUnit = i.unit_id && i.multiplier > 1;
