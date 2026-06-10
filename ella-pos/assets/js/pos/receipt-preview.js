@@ -871,143 +871,175 @@ window.ReceiptPreview = {
         const showDiscA4 = _show('receipt_show_item_discount');
         const fmt = (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-        // Build totals HTML 
-        let totalsHTML = '';
-        if (totalDiscount > 0) {
-            totalsHTML += `
-                <div style="display:flex; justify-content:space-between; padding:1px 0; font-size:10px;">
-                    <span>Subtotal</span>
-                    <span>₱${fmt(subtotal)}</span>
-                </div>`;
+        // Dynamic function to build totals HTML with optional squeeze spacing and font sizes
+        const getTotalsHTML = (isSqueeze) => {
+            const fsMain = isSqueeze ? 11.5 : 13;
+            const fsSub = isSqueeze ? 9 : 10;
+            const fsTitle = isSqueeze ? 12.5 : 14;
+            const padY = isSqueeze ? '1px 0' : '2px 0';
 
-            if (itemDiscountTotal > 0) {
-                totalsHTML += `
-                <div style="display:flex; justify-content:space-between; padding:1px 0; font-size:10px; color:#dc2626;">
-                    <span>Item Discounts</span>
-                    <span>-₱${fmt(itemDiscountTotal)}</span>
-                </div>`;
-            }
-
-            if (globalDiscount > 0) {
-                totalsHTML += `
-                <div style="display:flex; justify-content:space-between; padding:1px 0; font-size:10px; color:#dc2626;">
-                    <span>Transaction Discount</span>
-                    <span>-₱${fmt(globalDiscount)}</span>
-                </div>`;
-            }
-        }
-        totalsHTML += `
-            <div style="
-                display:flex;
-                justify-content:space-between;
-                padding-top:4px;
-                margin-top:2px;
-                border-top:1px solid #111;
-                font-size:14px;
-                font-weight:700;
-            ">
-                <span>TOTAL</span>
-                <span>₱${fmt(grandTotal)}</span>
-            </div>
-            <div style="font-size:9px; text-align:right; font-style:italic; font-weight:600; color:#444; margin-top:3px;">
-                *** ${this.numberToWords(grandTotal)} ***
-            </div>`;
-        if (totalDiscount > 0) {
-            totalsHTML += `
-            <div style="font-size:9px; color:#dc2626; text-align:right; margin-top:1px;">
-                Saved ₱${fmt(totalDiscount)}
-            </div>`;
-        }
-        if (_show('receipt_show_payment_method')) {
-            if (['mix', 'financing', 'home_credit'].includes(payment.method) && payment.mix_details && payment.mix_details.length > 0) {
-                const methodLabelTop = (payment.method === 'home_credit' ? 'FINANCING' : payment.method.toUpperCase());
-                totalsHTML += `
-                    <div style="margin-top:2px; font-size:10px; color:#555; text-align:right;">
-                        Method: ${methodLabelTop} ${payment.financing_provider ? `(${payment.financing_provider})` : ''}
+            let html = '';
+            if (totalDiscount > 0) {
+                html += `
+                    <div style="display:flex; justify-content:space-between; padding:${padY}; font-size:${fsSub}px;">
+                        <span>Subtotal</span>
+                        <span>₱${fmt(subtotal)}</span>
                     </div>`;
-                payment.mix_details.forEach(p => {
-                    let methodLabel = p.method === 'bank_transfer' ? 'BANK' : p.method.toUpperCase();
-                    if (p.ref && p.ref.startsWith('DP-')) {
-                        methodLabel = `DOWNPAYMENT (${methodLabel})`;
-                    } else if (p.method === 'financing') {
-                        methodLabel = `FINANCED AMOUNT`;
-                    }
-                    totalsHTML += `
-                        <div style="font-size:10px; color:#666; text-align:right;">
-                            ${methodLabel}: ₱${fmt(p.amount)}
-                        </div>`;
-                });
 
-                if (['financing', 'home_credit'].includes(payment.method)) {
-                    let dpAmount = 0;
-                    payment.mix_details.forEach(p => {
-                        if (p.ref && p.ref.startsWith('DP-')) {
-                            dpAmount += p.amount;
-                        }
-                    });
-                    if (dpAmount > 0) {
-                        totalsHTML += `
-                            <div style="margin-top:4px; font-size:10px; color:#111; text-align:right; font-style:italic;">
-                                * Note: Downpayment is ₱${fmt(dpAmount)}
-                            </div>`;
-                    }
+                if (itemDiscountTotal > 0) {
+                    html += `
+                    <div style="display:flex; justify-content:space-between; padding:${padY}; font-size:${fsSub}px; color:#dc2626;">
+                        <span>Item Discounts</span>
+                        <span>-₱${fmt(itemDiscountTotal)}</span>
+                    </div>`;
                 }
-            } else {
-                totalsHTML += `
-                    <div style="margin-top:2px; font-size:10px; color:#555; text-align:right;">
-                        Method: ${(payment.method || "cash").toUpperCase()}
-                    </div>`;
-            }
 
-            // Wallet activity lines
-            if ((payment.wallet_supplement || 0) > 0) {
-                totalsHTML += `
-                    <div style="margin-top:2px; font-size:10px; color:#166534; text-align:right;">
-                        Wallet Used: -\u20b1${fmt(payment.wallet_supplement)}
+                if (globalDiscount > 0) {
+                    html += `
+                    <div style="display:flex; justify-content:space-between; padding:${padY}; font-size:${fsSub}px; color:#dc2626;">
+                        <span>Transaction Discount</span>
+                        <span>-₱${fmt(globalDiscount)}</span>
                     </div>`;
+                }
             }
-            if ((payment.paid_by_wallet || 0) > 0) {
-                totalsHTML += `
-                    <div style="margin-top:2px; font-size:10px; color:#1d4ed8; text-align:right;">
-                        Paid by Wallet: -\u20b1${fmt(payment.paid_by_wallet)}
-                    </div>`;
+            html += `
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    padding-top:${isSqueeze ? '2px' : '4px'};
+                    margin-top:${isSqueeze ? '1px' : '2px'};
+                    border-top:1px solid #111;
+                    font-size:${fsTitle}px;
+                    font-weight:700;
+                ">
+                    <span>TOTAL</span>
+                    <span>₱${fmt(grandTotal)}</span>
+                </div>
+                <div style="font-size:${isSqueeze ? '8px' : '9px'}; text-align:right; font-style:italic; font-weight:600; color:#444; margin-top:${isSqueeze ? '1px' : '3px'};">
+                    *** ${this.numberToWords(grandTotal)} ***
+                </div>`;
+            if (totalDiscount > 0) {
+                html += `
+                <div style="font-size:${isSqueeze ? '8px' : '9px'}; color:#dc2626; text-align:right; margin-top:1px;">
+                    Saved ₱${fmt(totalDiscount)}
+                </div>`;
             }
-            if ((payment.shortfall_deducted || 0) > 0) {
-                totalsHTML += `
-                    <div style="margin-top:2px; font-size:10px; color:#92400e; text-align:right;">
-                        Shortfall (Wallet): -\u20b1${fmt(payment.shortfall_deducted)}
-                    </div>`;
+            if (_show('receipt_show_payment_method')) {
+                const fsDetail = isSqueeze ? '9px' : '10px';
+                const marginDetail = isSqueeze ? '1px' : '2px';
+                if (['mix', 'financing', 'home_credit'].includes(payment.method) && payment.mix_details && payment.mix_details.length > 0) {
+                    const methodLabelTop = (payment.method === 'home_credit' ? 'FINANCING' : payment.method.toUpperCase());
+                    html += `
+                        <div style="margin-top:${marginDetail}; font-size:${fsDetail}; color:#555; text-align:right;">
+                            Method: ${methodLabelTop} ${payment.financing_provider ? `(${payment.financing_provider})` : ''}
+                        </div>`;
+                    payment.mix_details.forEach(p => {
+                        let methodLabel = p.method === 'bank_transfer' ? 'BANK' : p.method.toUpperCase();
+                        if (p.ref && p.ref.startsWith('DP-')) {
+                            methodLabel = `DOWNPAYMENT (${methodLabel})`;
+                        } else if (p.method === 'financing') {
+                            methodLabel = `FINANCED AMOUNT`;
+                        }
+                        html += `
+                            <div style="font-size:${fsDetail}; color:#666; text-align:right;">
+                                ${methodLabel}: ₱${fmt(p.amount)}
+                            </div>`;
+                    });
+
+                    if (['financing', 'home_credit'].includes(payment.method)) {
+                        let dpAmount = 0;
+                        payment.mix_details.forEach(p => {
+                            if (p.ref && p.ref.startsWith('DP-')) {
+                                dpAmount += p.amount;
+                            }
+                        });
+                        if (dpAmount > 0) {
+                            html += `
+                                <div style="margin-top:${isSqueeze ? '2px' : '4px'}; font-size:${fsDetail}; color:#111; text-align:right; font-style:italic;">
+                                    * Note: Downpayment is ₱${fmt(dpAmount)}
+                                </div>`;
+                        }
+                    }
+                } else {
+                    html += `
+                        <div style="margin-top:${marginDetail}; font-size:${fsDetail}; color:#555; text-align:right;">
+                            Method: ${(payment.method || "cash").toUpperCase()}
+                        </div>`;
+                }
+
+                // Wallet activity lines
+                if ((payment.wallet_supplement || 0) > 0) {
+                    html += `
+                        <div style="margin-top:${marginDetail}; font-size:${fsDetail}; color:#166534; text-align:right;">
+                            Wallet Used: -\u20b1${fmt(payment.wallet_supplement)}
+                        </div>`;
+                }
+                if ((payment.paid_by_wallet || 0) > 0) {
+                    html += `
+                        <div style="margin-top:${marginDetail}; font-size:${fsDetail}; color:#1d4ed8; text-align:right;">
+                            Paid by Wallet: -\u20b1${fmt(payment.paid_by_wallet)}
+                        </div>`;
+                }
+                if ((payment.shortfall_deducted || 0) > 0) {
+                    html += `
+                        <div style="margin-top:${marginDetail}; font-size:${fsDetail}; color:#92400e; text-align:right;">
+                            Shortfall (Wallet): -\u20b1${fmt(payment.shortfall_deducted)}
+                        </div>`;
+                }
+                if ((payment.shortfall_as_credit || 0) > 0) {
+                    html += `
+                        <div style="margin-top:${marginDetail}; font-size:${fsDetail}; color:#6366f1; text-align:right;">
+                            Balance Due (Credit): \u20b1${fmt(payment.shortfall_as_credit)}
+                        </div>`;
+                }
+                if ((payment.saved_to_wallet || 0) > 0) {
+                    html += `
+                        <div style="margin-top:${marginDetail}; font-size:${fsDetail}; color:#0e7490; text-align:right;">
+                            Change Saved to Wallet: +\u20b1${fmt(payment.saved_to_wallet)}
+                        </div>`;
+                }
             }
-            if ((payment.shortfall_as_credit || 0) > 0) {
-                totalsHTML += `
-                    <div style="margin-top:2px; font-size:10px; color:#6366f1; text-align:right;">
-                        Balance Due (Credit): \u20b1${fmt(payment.shortfall_as_credit)}
-                    </div>`;
+            return html;
+        };
+
+        // Chunk cart dynamically: group up to 25 items, but pull remaining 26/27 items onto the last page
+        const pages = [];
+        let itemIndex = 0;
+        while (itemIndex < cart.length) {
+            const remaining = cart.length - itemIndex;
+            let chunkSize = 25;
+            if (remaining === 26 || remaining === 27) {
+                chunkSize = remaining;
             }
-            if ((payment.saved_to_wallet || 0) > 0) {
-                totalsHTML += `
-                    <div style="margin-top:2px; font-size:10px; color:#0e7490; text-align:right;">
-                        Change Saved to Wallet: +\u20b1${fmt(payment.saved_to_wallet)}
-                    </div>`;
-            }
+            pages.push(cart.slice(itemIndex, itemIndex + chunkSize));
+            itemIndex += chunkSize;
+        }
+        if (pages.length === 0) {
+            pages.push([]);
         }
 
-        const ITEMS_PER_PAGE = 25;
-        const totalPages = Math.ceil(cart.length / ITEMS_PER_PAGE) || 1;
+        const totalPages = pages.length;
         let allPagesHTML = '';
 
         for (let p = 0; p < totalPages; p++) {
             const isFirstPage = (p === 0);
             const isLastPage = (p === totalPages - 1);
-            const chunk = cart.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
+            const chunk = pages[p];
 
-            // Use fixed, readable font sizes 
-            const fSizeMain = 13;
-            const fSizeSub = 12;
-            const padY = 2;
+            // If a page holds more than 25 items, apply a subtle squeeze
+            const isSqueeze = chunk.length > 25;
+            const fSizeMain = isSqueeze ? 11.5 : 13;
+            const fSizeSub = isSqueeze ? 10.5 : 12;
+            const padY = isSqueeze ? 0 : 2;
+
+            // Compute the index offset for items on this page
+            let startIndex = 0;
+            for (let prevPage = 0; prevPage < p; prevPage++) {
+                startIndex += pages[prevPage].length;
+            }
 
             const itemRowsHTML = chunk.map((i, idxInChunk) => {
-                const idx = p * ITEMS_PER_PAGE + idxInChunk;
+                const idx = startIndex + idxInChunk;
                 const hasDiscount = showDiscA4 && i.item_discount && i.item_discount > 0;
                 const origPrice = i.original_price || i.price;
                 const hasUnit = i.unit_id && i.multiplier > 1;
@@ -1057,22 +1089,22 @@ window.ReceiptPreview = {
                                 justify-content:space-between;
                                 align-items:flex-start;
                                 border-bottom:1px solid #111;
-                                padding: 5px 0 10px 0;
+                                padding: ${isSqueeze ? '3px 0 5px 0' : '5px 0 10px 0'};
                             ">
                                 <div>
-                                    ${_show('receipt_show_store_name') ? `<div style="font-size:17px; font-weight:700;">${S.store_name || 'ELLA MOTOR PARTS'}</div>` : ''}
-                                    <div style="font-size:11px; color:#555; margin-top:2px; line-height:1.2;">
+                                    ${_show('receipt_show_store_name') ? `<div style="font-size:${isSqueeze ? '15px' : '17px'}; font-weight:700;">${S.store_name || 'ELLA MOTOR PARTS'}</div>` : ''}
+                                    <div style="font-size:${isSqueeze ? '10px' : '11px'}; color:#555; margin-top:${isSqueeze ? '1px' : '2px'}; line-height:1.2;">
                                         ${_show('receipt_show_address') ? `${S.store_address || '#79 Don Jose Canciller Ave. Cauayan City, Isabela'}<br>` : ''}
                                         ${_show('receipt_show_facebook') && S.store_facebook ? 'Follow Us On Facebook: ' + S.store_facebook + '<br>' : ''}
                                         ${_show('receipt_show_contact') && S.store_contact ? 'Contact No: ' + S.store_contact : ''}${_show('receipt_show_tax_id') && S.store_tax_id ? ' &bull; Non-VAT Reg: ' + S.store_tax_id : ''}
-                                        ${S.receipt_header_text ? `<br><span style="font-size:10px;">${S.receipt_header_text}</span>` : ''}
+                                        ${S.receipt_header_text ? `<br><span style="font-size:9px;">${S.receipt_header_text}</span>` : ''}
                                     </div>
                                 </div>
                                 <div style="text-align:right;">
-                                    <div style="font-size: 17px; font-weight: 700; color: #9ca3af;">INVOICE</div>
-                                    <div style="font-size: 11px; color: #555;">Ref #: ${ref} &bull; ${data.date ? new Date(data.date).toLocaleString() : new Date().toLocaleString()}</div>
-                                    <div style="margin-top:2px; font-size:11px; font-weight:600; color:#555;">PAGE: ${p + 1} of ${totalPages}</div>
-                                    <div style="margin-top:5px; font-size:11px; color:#333; text-align:right;">
+                                    <div style="font-size: ${isSqueeze ? '15px' : '17px'}; font-weight: 700; color: #9ca3af;">INVOICE</div>
+                                    <div style="font-size: ${isSqueeze ? '10px' : '11px'}; color: #555;">Ref #: ${ref} &bull; ${data.date ? new Date(data.date).toLocaleString() : new Date().toLocaleString()}</div>
+                                    <div style="margin-top:${isSqueeze ? '1px' : '2px'}; font-size:${isSqueeze ? '10px' : '11px'}; font-weight:600; color:#555;">PAGE: ${p + 1} of ${totalPages}</div>
+                                    <div style="margin-top:${isSqueeze ? '2px' : '5px'}; font-size:${isSqueeze ? '10px' : '11px'}; color:#333; text-align:right;">
                                         ${_show('receipt_show_customer') ? `<div>BILL TO: <strong>${buyer.name || "Walk-in Customer"}</strong></div>` : ''}
                                         ${_show('receipt_show_cashier') ? `<div>CASHIER: <strong>${window.CURRENT_USER_NAME || "Staff"}</strong></div>` : ''}
                                     </div>
@@ -1083,36 +1115,36 @@ window.ReceiptPreview = {
 
             headerHTML += `
                     <tr style="background:#111; color:#fff;">
-                        <th style="padding:4px; text-align:center; font-size:11px; width:30px;">#</th>
-                        <th style="padding:4px; text-align:center; font-size:13px; width:35px;">QTY</th>
-                        <th style="padding:4px; text-align:left; font-size:13px;">DESCRIPTION</th>
-                        <th style="padding:4px; text-align:right; font-size:13px; width:80px;">UNIT PRICE</th>
-                        <th style="padding:4px; text-align:right; font-size:13px; width:80px;">AMOUNT</th>
+                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:center; font-size:${isSqueeze ? '10px' : '11px'}; width:30px;">#</th>
+                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:center; font-size:${isSqueeze ? '11.5px' : '13px'}; width:35px;">QTY</th>
+                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:left; font-size:${isSqueeze ? '11.5px' : '13px'};">DESCRIPTION</th>
+                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:right; font-size:${isSqueeze ? '11.5px' : '13px'}; width:80px;">UNIT PRICE</th>
+                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:right; font-size:${isSqueeze ? '11.5px' : '13px'}; width:80px;">AMOUNT</th>
                     </tr>
                 </thead>`;
 
             let totalsAndSignatureHTML = '';
             if (isLastPage) {
                 totalsAndSignatureHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:${isSqueeze ? '8px' : '20px'};">
                         <div style="display:flex; gap:24px;">
                             <div style="width:140px; text-align:center;">
-                                <div style="border-top:1px solid #111; margin-bottom:2px; height:20px;"></div>
-                                <div style="font-size:10px; font-weight:600;">Customer Signature</div>
+                                <div style="border-top:1px solid #111; margin-bottom:2px; height:${isSqueeze ? '12px' : '20px'};"></div>
+                                <div style="font-size:${isSqueeze ? '9px' : '10px'}; font-weight:600;">Customer Signature</div>
                             </div>
                             <div style="width:140px; text-align:center;">
-                                <div style="border-top:1px solid #111; margin-bottom:2px; height:20px;"></div>
-                                <div style="font-size:10px; font-weight:600;">Checked By</div>
+                                <div style="border-top:1px solid #111; margin-bottom:2px; height:${isSqueeze ? '12px' : '20px'};"></div>
+                                <div style="font-size:${isSqueeze ? '9px' : '10px'}; font-weight:600;">Checked By</div>
                             </div>
                         </div>
                         <div style="width:250px;">
-                            ${totalsHTML}
+                            ${getTotalsHTML(isSqueeze)}
                         </div>
                     </div>
                 `;
             } else {
                 totalsAndSignatureHTML = `
-                    <div style="text-align:right; font-size:10px; font-style:italic; margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
+                    <div style="text-align:right; font-size:10px; font-style:italic; margin-top:${isSqueeze ? '8px' : '20px'}; border-top:1px solid #eee; padding-top:10px;">
                         Continued on next page...
                     </div>
                 `;
@@ -1128,7 +1160,7 @@ window.ReceiptPreview = {
                                 ${isFirstPage ? `
                                 <tr>
                                     <td colspan="5" style="padding:0; text-align:left;">
-                                        <div style="display:flex; justify-content:flex-end; gap:16px; margin-top:5px; margin-bottom: 5px; font-size:12px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                                        <div style="display:flex; justify-content:flex-end; gap:16px; margin-top:${isSqueeze ? '2px' : '5px'}; margin-bottom: ${isSqueeze ? '2px' : '5px'}; font-size:${isSqueeze ? '11px' : '12px'}; border-bottom:1px solid #eee; padding-bottom:${isSqueeze ? '2px' : '5px'};">
                                             <div><strong>LINES:</strong> ${cart.length}</div>
                                             <div><strong>ITEMS:</strong> ${itemCount}</div>
                                         </div>
