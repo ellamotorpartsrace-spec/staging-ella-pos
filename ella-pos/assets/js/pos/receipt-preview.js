@@ -868,15 +868,42 @@ window.ReceiptPreview = {
 
         const S = window.STORE_SETTINGS || {};
         const _show = (key) => S[key] !== '0';
-        const showDiscA4 = _show('receipt_show_item_discount');
-        const fmt = (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const showDiscA4 = _sh        // Dynamic function to build totals HTML with optional squeeze spacing and font sizes
+        const getTotalsHTML = (chunkLength) => {
+            let fsMain = 13;
+            let fsSub = 10;
+            let fsTitle = 14;
+            let padY = '2px 0';
+            let marginDetail = '2px';
+            let fsDetail = '10px';
+            let marginNote = '4px';
+            let marginTopTotal = '2px';
+            let paddingTopTotal = '4px';
+            let marginTopTotalWords = '3px';
 
-        // Dynamic function to build totals HTML with optional squeeze spacing and font sizes
-        const getTotalsHTML = (isSqueeze) => {
-            const fsMain = isSqueeze ? 11.5 : 13;
-            const fsSub = isSqueeze ? 9 : 10;
-            const fsTitle = isSqueeze ? 12.5 : 14;
-            const padY = isSqueeze ? '1px 0' : '2px 0';
+            if (chunkLength === 26) {
+                fsMain = 12.5;
+                fsSub = 9.5;
+                fsTitle = 13.5;
+                padY = '1.5px 0';
+                marginDetail = '1.5px';
+                fsDetail = '9.5px';
+                marginNote = '3px';
+                marginTopTotal = '1.5px';
+                paddingTopTotal = '3px';
+                marginTopTotalWords = '2px';
+            } else if (chunkLength >= 27) {
+                fsMain = 12;
+                fsSub = 9;
+                fsTitle = 13;
+                padY = '1px 0';
+                marginDetail = '1px';
+                fsDetail = '9px';
+                marginNote = '2px';
+                marginTopTotal = '1px';
+                paddingTopTotal = '2px';
+                marginTopTotalWords = '1px';
+            }
 
             let html = '';
             if (totalDiscount > 0) {
@@ -906,8 +933,8 @@ window.ReceiptPreview = {
                 <div style="
                     display:flex;
                     justify-content:space-between;
-                    padding-top:${isSqueeze ? '2px' : '4px'};
-                    margin-top:${isSqueeze ? '1px' : '2px'};
+                    padding-top:${paddingTopTotal};
+                    margin-top:${marginTopTotal};
                     border-top:1px solid #111;
                     font-size:${fsTitle}px;
                     font-weight:700;
@@ -915,18 +942,16 @@ window.ReceiptPreview = {
                     <span>TOTAL</span>
                     <span>₱${fmt(grandTotal)}</span>
                 </div>
-                <div style="font-size:${isSqueeze ? '8px' : '9px'}; text-align:right; font-style:italic; font-weight:600; color:#444; margin-top:${isSqueeze ? '1px' : '3px'};">
+                <div style="font-size:${fsSub - 1}px; text-align:right; font-style:italic; font-weight:600; color:#444; margin-top:${marginTopTotalWords};">
                     *** ${this.numberToWords(grandTotal)} ***
                 </div>`;
             if (totalDiscount > 0) {
                 html += `
-                <div style="font-size:${isSqueeze ? '8px' : '9px'}; color:#dc2626; text-align:right; margin-top:1px;">
+                <div style="font-size:${fsSub - 1}px; color:#dc2626; text-align:right; margin-top:1px;">
                     Saved ₱${fmt(totalDiscount)}
                 </div>`;
             }
             if (_show('receipt_show_payment_method')) {
-                const fsDetail = isSqueeze ? '9px' : '10px';
-                const marginDetail = isSqueeze ? '1px' : '2px';
                 if (['mix', 'financing', 'home_credit'].includes(payment.method) && payment.mix_details && payment.mix_details.length > 0) {
                     const methodLabelTop = (payment.method === 'home_credit' ? 'FINANCING' : payment.method.toUpperCase());
                     html += `
@@ -955,7 +980,7 @@ window.ReceiptPreview = {
                         });
                         if (dpAmount > 0) {
                             html += `
-                                <div style="margin-top:${isSqueeze ? '2px' : '4px'}; font-size:${fsDetail}; color:#111; text-align:right; font-style:italic;">
+                                <div style="margin-top:${marginNote}; font-size:${fsDetail}; color:#111; text-align:right; font-style:italic;">
                                     * Note: Downpayment is ₱${fmt(dpAmount)}
                                 </div>`;
                         }
@@ -1026,11 +1051,50 @@ window.ReceiptPreview = {
             const isLastPage = (p === totalPages - 1);
             const chunk = pages[p];
 
-            // If a page holds more than 25 items, apply a subtle squeeze
-            const isSqueeze = chunk.length > 25;
-            const fSizeMain = isSqueeze ? 11.5 : 13;
-            const fSizeSub = isSqueeze ? 10.5 : 12;
-            const padY = isSqueeze ? 0 : 2;
+            // Dynamic scale calculations based on exact item count to prevent over-squeezing
+            let fSizeMain = 13;
+            let fSizeSub = 12;
+            let padY = 2;
+            let headerPadding = '5px 0 10px 0';
+            let linesMargin = '5px';
+            let totalsMarginTop = '20px';
+            let signatureHeight = '20px';
+            let fsStoreName = 17;
+            let fsHeaderMeta = 11;
+            let marginHeaderBill = '5px';
+            let thPadding = '4px';
+            let thFontSizeMain = '13px';
+            let thFontSizeSub = '11px';
+
+            if (chunk.length === 26) {
+                fSizeMain = 12.5;
+                fSizeSub = 11.5;
+                padY = 1.5;
+                headerPadding = '4px 0 8px 0';
+                linesMargin = '4px';
+                totalsMarginTop = '15px';
+                signatureHeight = '16px';
+                fsStoreName = 16;
+                fsHeaderMeta = 10.5;
+                marginHeaderBill = '3px';
+                thPadding = '3px 4px';
+                thFontSizeMain = '12.5px';
+                thFontSizeSub = '10.5px';
+            } else if (chunk.length >= 27) {
+                fSizeMain = 12;
+                fSizeSub = 11;
+                padY = 1;
+                headerPadding = '3px 0 6px 0';
+                linesMargin = '3px';
+                totalsMarginTop = '10px';
+                signatureHeight = '12px';
+                fsStoreName = 15;
+                fsHeaderMeta = 10;
+                marginHeaderBill = '2px';
+                thPadding = '2px 4px';
+                thFontSizeMain = '12px';
+                thFontSizeSub = '10px';
+            }
 
             // Compute the index offset for items on this page
             let startIndex = 0;
@@ -1089,22 +1153,22 @@ window.ReceiptPreview = {
                                 justify-content:space-between;
                                 align-items:flex-start;
                                 border-bottom:1px solid #111;
-                                padding: ${isSqueeze ? '3px 0 5px 0' : '5px 0 10px 0'};
+                                padding: ${headerPadding};
                             ">
                                 <div>
-                                    ${_show('receipt_show_store_name') ? `<div style="font-size:${isSqueeze ? '15px' : '17px'}; font-weight:700;">${S.store_name || 'ELLA MOTOR PARTS'}</div>` : ''}
-                                    <div style="font-size:${isSqueeze ? '10px' : '11px'}; color:#555; margin-top:${isSqueeze ? '1px' : '2px'}; line-height:1.2;">
+                                    ${_show('receipt_show_store_name') ? `<div style="font-size:${fsStoreName}px; font-weight:700;">${S.store_name || 'ELLA MOTOR PARTS'}</div>` : ''}
+                                    <div style="font-size:${fsHeaderMeta}px; color:#555; margin-top:${chunk.length === 26 ? '1.5px' : (chunk.length >= 27 ? '1px' : '2px')}; line-height:1.2;">
                                         ${_show('receipt_show_address') ? `${S.store_address || '#79 Don Jose Canciller Ave. Cauayan City, Isabela'}<br>` : ''}
                                         ${_show('receipt_show_facebook') && S.store_facebook ? 'Follow Us On Facebook: ' + S.store_facebook + '<br>' : ''}
                                         ${_show('receipt_show_contact') && S.store_contact ? 'Contact No: ' + S.store_contact : ''}${_show('receipt_show_tax_id') && S.store_tax_id ? ' &bull; Non-VAT Reg: ' + S.store_tax_id : ''}
-                                        ${S.receipt_header_text ? `<br><span style="font-size:9px;">${S.receipt_header_text}</span>` : ''}
+                                        ${S.receipt_header_text ? `<br><span style="font-size:${chunk.length === 26 ? '9.5px' : (chunk.length >= 27 ? '9px' : '10px')};">${S.receipt_header_text}</span>` : ''}
                                     </div>
                                 </div>
                                 <div style="text-align:right;">
-                                    <div style="font-size: ${isSqueeze ? '15px' : '17px'}; font-weight: 700; color: #9ca3af;">INVOICE</div>
-                                    <div style="font-size: ${isSqueeze ? '10px' : '11px'}; color: #555;">Ref #: ${ref} &bull; ${data.date ? new Date(data.date).toLocaleString() : new Date().toLocaleString()}</div>
-                                    <div style="margin-top:${isSqueeze ? '1px' : '2px'}; font-size:${isSqueeze ? '10px' : '11px'}; font-weight:600; color:#555;">PAGE: ${p + 1} of ${totalPages}</div>
-                                    <div style="margin-top:${isSqueeze ? '2px' : '5px'}; font-size:${isSqueeze ? '10px' : '11px'}; color:#333; text-align:right;">
+                                    <div style="font-size: ${fsStoreName}px; font-weight: 700; color: #9ca3af;">INVOICE</div>
+                                    <div style="font-size: ${fsHeaderMeta}px; color: #555;">Ref #: ${ref} &bull; ${data.date ? new Date(data.date).toLocaleString() : new Date().toLocaleString()}</div>
+                                    <div style="margin-top:${chunk.length === 26 ? '1.5px' : (chunk.length >= 27 ? '1px' : '2px')}; font-size:${fsHeaderMeta}px; font-weight:600; color:#555;">PAGE: ${p + 1} of ${totalPages}</div>
+                                    <div style="margin-top:${marginHeaderBill}; font-size:${fsHeaderMeta}px; color:#333; text-align:right;">
                                         ${_show('receipt_show_customer') ? `<div>BILL TO: <strong>${buyer.name || "Walk-in Customer"}</strong></div>` : ''}
                                         ${_show('receipt_show_cashier') ? `<div>CASHIER: <strong>${window.CURRENT_USER_NAME || "Staff"}</strong></div>` : ''}
                                     </div>
@@ -1115,36 +1179,36 @@ window.ReceiptPreview = {
 
             headerHTML += `
                     <tr style="background:#111; color:#fff;">
-                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:center; font-size:${isSqueeze ? '10px' : '11px'}; width:30px;">#</th>
-                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:center; font-size:${isSqueeze ? '11.5px' : '13px'}; width:35px;">QTY</th>
-                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:left; font-size:${isSqueeze ? '11.5px' : '13px'};">DESCRIPTION</th>
-                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:right; font-size:${isSqueeze ? '11.5px' : '13px'}; width:80px;">UNIT PRICE</th>
-                        <th style="padding:${isSqueeze ? '2px 4px' : '4px'}; text-align:right; font-size:${isSqueeze ? '11.5px' : '13px'}; width:80px;">AMOUNT</th>
+                        <th style="padding:${thPadding}; text-align:center; font-size:${thFontSizeSub}; width:30px;">#</th>
+                        <th style="padding:${thPadding}; text-align:center; font-size:${thFontSizeMain}; width:35px;">QTY</th>
+                        <th style="padding:${thPadding}; text-align:left; font-size:${thFontSizeMain};">DESCRIPTION</th>
+                        <th style="padding:${thPadding}; text-align:right; font-size:${thFontSizeMain}; width:80px;">UNIT PRICE</th>
+                        <th style="padding:${thPadding}; text-align:right; font-size:${thFontSizeMain}; width:80px;">AMOUNT</th>
                     </tr>
                 </thead>`;
 
             let totalsAndSignatureHTML = '';
             if (isLastPage) {
                 totalsAndSignatureHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:${isSqueeze ? '8px' : '20px'};">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:${totalsMarginTop};">
                         <div style="display:flex; gap:24px;">
                             <div style="width:140px; text-align:center;">
-                                <div style="border-top:1px solid #111; margin-bottom:2px; height:${isSqueeze ? '12px' : '20px'};"></div>
-                                <div style="font-size:${isSqueeze ? '9px' : '10px'}; font-weight:600;">Customer Signature</div>
+                                <div style="border-top:1px solid #111; margin-bottom:2px; height:${signatureHeight};"></div>
+                                <div style="font-size:${chunk.length === 26 ? '9.5px' : (chunk.length >= 27 ? '9px' : '10px')}; font-weight:600;">Customer Signature</div>
                             </div>
                             <div style="width:140px; text-align:center;">
-                                <div style="border-top:1px solid #111; margin-bottom:2px; height:${isSqueeze ? '12px' : '20px'};"></div>
-                                <div style="font-size:${isSqueeze ? '9px' : '10px'}; font-weight:600;">Checked By</div>
+                                <div style="border-top:1px solid #111; margin-bottom:2px; height:${signatureHeight};"></div>
+                                <div style="font-size:${chunk.length === 26 ? '9.5px' : (chunk.length >= 27 ? '9px' : '10px')}; font-weight:600;">Checked By</div>
                             </div>
                         </div>
                         <div style="width:250px;">
-                            ${getTotalsHTML(isSqueeze)}
+                            ${getTotalsHTML(chunk.length)}
                         </div>
                     </div>
                 `;
             } else {
                 totalsAndSignatureHTML = `
-                    <div style="text-align:right; font-size:10px; font-style:italic; margin-top:${isSqueeze ? '8px' : '20px'}; border-top:1px solid #eee; padding-top:10px;">
+                    <div style="text-align:right; font-size:10px; font-style:italic; margin-top:${totalsMarginTop}; border-top:1px solid #eee; padding-top:10px;">
                         Continued on next page...
                     </div>
                 `;
@@ -1160,7 +1224,7 @@ window.ReceiptPreview = {
                                 ${isFirstPage ? `
                                 <tr>
                                     <td colspan="5" style="padding:0; text-align:left;">
-                                        <div style="display:flex; justify-content:flex-end; gap:16px; margin-top:${isSqueeze ? '2px' : '5px'}; margin-bottom: ${isSqueeze ? '2px' : '5px'}; font-size:${isSqueeze ? '11px' : '12px'}; border-bottom:1px solid #eee; padding-bottom:${isSqueeze ? '2px' : '5px'};">
+                                        <div style="display:flex; justify-content:flex-end; gap:16px; margin-top:${linesMargin}; margin-bottom: ${linesMargin}; font-size:${fSizeSub}px; border-bottom:1px solid #eee; padding-bottom:${linesMargin};">
                                             <div><strong>LINES:</strong> ${cart.length}</div>
                                             <div><strong>ITEMS:</strong> ${itemCount}</div>
                                         </div>
