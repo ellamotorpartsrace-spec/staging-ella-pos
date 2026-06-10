@@ -868,7 +868,10 @@ window.ReceiptPreview = {
 
         const S = window.STORE_SETTINGS || {};
         const _show = (key) => S[key] !== '0';
-        const showDiscA4 = _sh        // Dynamic function to build totals HTML with optional squeeze spacing and font sizes
+        const showDiscA4 = _show('receipt_show_item_discount');
+        const fmt = (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Dynamic function to build totals HTML with optional squeeze spacing and font sizes
         const getTotalsHTML = (chunkLength) => {
             let fsMain = 13;
             let fsSub = 10;
