@@ -316,10 +316,13 @@ function displayStoreStockValue($value): int
         ];
         foreach ($stat_items as $stat):
             $count = 0;
+            $total_qty = 0;
             // Count from our results
             foreach ($movements as $m) {
-                if ($m['type'] === $stat['type'])
+                if ($m['type'] === $stat['type']) {
                     $count++;
+                    $total_qty += abs((int)$m['quantity']);
+                }
             }
             ?>
             <div class="col-6 col-lg-3">
@@ -330,8 +333,9 @@ function displayStoreStockValue($value): int
                                 <i class="fa-solid <?= $stat['icon'] ?> text-<?= $stat['color'] ?> fa-lg"></i>
                             </div>
                             <div>
-                                <div class="h4 fw-bold mb-0 text-<?= $stat['color'] ?>"><?= $count ?></div>
-                                <small class="text-muted"><?= $stat['label'] ?></small>
+                                <div class="h5 fw-bold mb-0 text-<?= $stat['color'] ?>"><?= number_format($total_qty) ?> items</div>
+                                <small class="text-muted fw-bold d-block"><?= $stat['label'] ?></small>
+                                <small class="text-muted" style="font-size: 0.7rem;"><?= number_format($count) ?> transactions</small>
                             </div>
                         </div>
                     </div>
@@ -812,20 +816,16 @@ function displayStoreStockValue($value): int
         updateView();
         window.addEventListener('resize', updateView);
 
-        // Submit search only after the user pauses typing.
+        // Manual search submission (Enter key)
         const searchInput = document.getElementById('movements-search');
-        const spinner = document.getElementById('movements-search-spinner');
         const filterForm = searchInput?.closest('form');
-        let searchTimeout = null;
         let lastSubmittedSearch = searchInput ? searchInput.value.trim() : '';
-        const searchDebounceDelay = 800;
 
         if (searchInput && filterForm) {
             const submitSearch = () => {
                 const currentSearch = searchInput.value.trim();
 
                 if (currentSearch === lastSubmittedSearch) {
-                    spinner?.classList.add('d-none');
                     return;
                 }
 
@@ -833,24 +833,10 @@ function displayStoreStockValue($value): int
                 filterForm.submit();
             };
 
-            searchInput.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                const currentSearch = searchInput.value.trim();
-
-                if (currentSearch === lastSubmittedSearch) {
-                    spinner?.classList.add('d-none');
-                    return;
-                }
-
-                spinner?.classList.remove('d-none');
-                searchTimeout = setTimeout(submitSearch, searchDebounceDelay);
-            });
-
             // Immediate search on Enter
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    clearTimeout(searchTimeout);
                     submitSearch();
                 }
             });
