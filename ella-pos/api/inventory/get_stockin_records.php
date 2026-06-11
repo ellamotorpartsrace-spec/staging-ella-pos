@@ -63,6 +63,7 @@ try {
             sm.reference,
             sm.remarks,
             sm.created_at,
+            sm.status,
             pv.variation_name,
             pv.sku,
             pv.barcode,
