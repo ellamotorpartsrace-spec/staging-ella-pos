@@ -95,7 +95,11 @@ try {
 
             // Also get reference images (from restock)
             $refStmt = $conn->prepare("
-                SELECT COALESCE(NULLIF(image_path, ''), CONCAT('api/inventory/reference_attachment_image.php?id=', id)) as image_path
+                SELECT CASE
+                           WHEN image_data IS NOT NULL AND OCTET_LENGTH(image_data) > 0
+                               THEN CONCAT('api/inventory/reference_attachment_image.php?id=', id)
+                           ELSE NULLIF(image_path, '')
+                       END as image_path
                 FROM reference_attachments 
                 WHERE reference_number = ?
                 ORDER BY created_at DESC

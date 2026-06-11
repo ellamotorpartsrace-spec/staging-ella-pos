@@ -80,7 +80,15 @@ try {
         LEFT JOIN users u ON sm.created_by = u.id
         LEFT JOIN (
             SELECT reference_number, 
-                   GROUP_CONCAT(CONCAT(id, ':', COALESCE(NULLIF(image_path, ''), CONCAT('api/inventory/reference_attachment_image.php?id=', id))) ORDER BY id ASC) as all_images_data,
+                   GROUP_CONCAT(CONCAT(
+                       id,
+                       ':',
+                       CASE
+                           WHEN image_data IS NOT NULL AND OCTET_LENGTH(image_data) > 0
+                               THEN CONCAT('api/inventory/reference_attachment_image.php?id=', id)
+                           ELSE NULLIF(image_path, '')
+                       END
+                   ) ORDER BY id ASC) as all_images_data,
                    COUNT(*) as attachment_count 
             FROM reference_attachments 
             GROUP BY reference_number
