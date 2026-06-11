@@ -331,14 +331,18 @@ $isAdmin = ($_SESSION['role'] === 'admin');
 <script>
     const BASE_URL = '<?= BASE_URL ?>';
     const isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
+    const LAST_SUPPLIER_KEY = 'stockin_records_last_supplier_id';
     let currentPage = 1;
 
     document.addEventListener('DOMContentLoaded', function () {
         updateView();
         window.addEventListener('resize', updateView);
 
-        // Auto-load if supplier is pre-selected
-        const supplierId = document.getElementById('supplier-select').value;
+        const supplierSelect = document.getElementById('supplier-select');
+        restoreLastSupplierSelection(supplierSelect);
+
+        // Auto-load if supplier is pre-selected or restored
+        const supplierId = supplierSelect.value;
         if (supplierId) {
             loadRecords();
         }
@@ -351,13 +355,29 @@ $isAdmin = ($_SESSION['role'] === 'admin');
         });
 
         // Auto-load on supplier change
-        document.getElementById('supplier-select').addEventListener('change', function () {
+        supplierSelect.addEventListener('change', function () {
             if (this.value) {
                 currentPage = 1;
                 loadRecords();
+            } else {
+                localStorage.removeItem(LAST_SUPPLIER_KEY);
             }
         });
     });
+
+    function restoreLastSupplierSelection(selectEl) {
+        if (!selectEl || selectEl.value) return;
+
+        const savedSupplierId = localStorage.getItem(LAST_SUPPLIER_KEY);
+        if (!savedSupplierId) return;
+
+        const hasSavedOption = Array.from(selectEl.options).some(option => option.value === savedSupplierId);
+        if (hasSavedOption) {
+            selectEl.value = savedSupplierId;
+        } else {
+            localStorage.removeItem(LAST_SUPPLIER_KEY);
+        }
+    }
 
     function updateView() {
         const isMobile = window.innerWidth < 992;
@@ -396,6 +416,7 @@ $isAdmin = ($_SESSION['role'] === 'admin');
             const data = await res.json();
 
             if (data.success) {
+                localStorage.setItem(LAST_SUPPLIER_KEY, supplierId);
                 renderStats(data.stats);
                 renderDesktopTable(data.records);
                 renderMobileCards(data.records);
@@ -692,6 +713,7 @@ $isAdmin = ($_SESSION['role'] === 'admin');
         document.getElementById('supplier-select').value = '';
         document.getElementById('date-from').value = '';
         document.getElementById('date-to').value = '';
+        localStorage.removeItem(LAST_SUPPLIER_KEY);
         document.getElementById('stats-row').classList.add('d-none');
         document.getElementById('pagination-footer').classList.add('d-none');
         document.getElementById('records-title').textContent = 'Stock-In Records';
