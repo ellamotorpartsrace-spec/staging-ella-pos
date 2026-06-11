@@ -44,11 +44,29 @@ try {
         }
 
         $supplier_name = $supplier['supplier_name'];
-        $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.reference IN (SELECT po_ref FROM purchase_orders WHERE supplier_id = ?)";
+        $supplierFilter = "
+            sm.remarks LIKE ? 
+            OR sm.remarks LIKE ? 
+            OR (
+                sm.reference IN (SELECT po_ref FROM purchase_orders WHERE supplier_id = ?)
+                AND NOT (
+                    sm.remarks LIKE 'Restock: %' 
+                    AND sm.remarks != 'Restock: Manual Entry' 
+                    AND sm.remarks NOT LIKE ?
+                )
+                AND NOT (
+                    sm.remarks LIKE 'Batch Restock: %' 
+                    AND sm.remarks != 'Batch Restock: Unknown Supplier' 
+                    AND sm.remarks NOT LIKE ?
+                )
+            )
+        ";
         $params = [
             "%Restock: {$supplier_name}%",
             "%Batch Restock: {$supplier_name}%",
-            $supplier_id
+            $supplier_id,
+            "%Restock: {$supplier_name}%",
+            "%Batch Restock: {$supplier_name}%"
         ];
     }
 
@@ -142,7 +160,9 @@ try {
         $statsParams = [
             "%Restock: {$supplier_name}%",
             "%Batch Restock: {$supplier_name}%",
-            $supplier_id
+            $supplier_id,
+            "%Restock: {$supplier_name}%",
+            "%Batch Restock: {$supplier_name}%"
         ];
     }
 
