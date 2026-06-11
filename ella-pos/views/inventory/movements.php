@@ -40,6 +40,8 @@ $sql = "
         pv.variation_name,
         pv.sku,
         pv.barcode,
+        COALESCE(sm.capital_cost, pv.price_capital) as price_capital,
+        pv.price_retail,
         p.product_name,
         p.brand_name,
         u.full_name as created_by_name,
@@ -104,18 +106,73 @@ $sql .= " ORDER BY sm.created_at DESC LIMIT 500";
 
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
-$movements = $stmt->fetchAll();
+$movements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Stats
-$stats_sql = "
-    SELECT 
-        type,
-        COUNT(*) as count
-    FROM stock_movements
-    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-    GROUP BY type
-";
-$stats = $conn->query($stats_sql)->fetchAll(PDO::FETCH_KEY_PAIR);
+// ==========================================
+// DATA PROCESSING FOR ENHANCEMENTS
+// ==========================================
+
+$daily_trends = [];
+$summary_data = [];
+
+// Initialize types for chart
+$chart_types = ['sales', 'stock_in', 'stock_out', 'return'];
+
+foreach ($movements as $m) {
+    // 1. Grouped Summary Data
+    $vid = $m['variation_id'];
+    if (!isset($summary_data[$vid])) {
+        $summary_data[$vid] = [
+            'product_name' => $m['product_name'],
+            'brand_name' => $m['brand_name'],
+            'variation_name' => $m['variation_name'],
+            'sku' => $m['sku'],
+            'total_sales_qty' => 0,
+            'total_sales_revenue' => 0,
+            'total_restock_qty' => 0,
+            'total_restock_cost' => 0,
+            'current_stock' => $m['new_stock'] // approx
+        ];
+    }
+    
+    $qty = abs((int)$m['quantity']);
+    $capital = (float)($m['price_capital'] ?? 0);
+    $retail = (float)($m['price_retail'] ?? 0);
+    
+    // Approximate revenue if it's a sale (since true sale price is in order_items)
+    // We use price_retail as an estimate for revenue
+    if ($m['type'] === 'sales' || $m['type'] === 'online_sale') {
+        $summary_data[$vid]['total_sales_qty'] += $qty;
+        $summary_data[$vid]['total_sales_revenue'] += ($qty * $retail);
+    } elseif ($m['type'] === 'stock_in') {
+        $summary_data[$vid]['total_restock_qty'] += $qty;
+        $summary_data[$vid]['total_restock_cost'] += ($qty * $capital);
+    }
+    
+    // Update current stock to the latest movement's new_stock (assuming ordered by created_at DESC)
+    if (!isset($summary_data[$vid]['_latest_seen'])) {
+        $summary_data[$vid]['current_stock'] = $m['new_stock'];
+        $summary_data[$vid]['_latest_seen'] = true;
+    }
+
+    // 2. Daily Trends Data
+    $date = date('Y-m-d', strtotime($m['created_at']));
+    if (!isset($daily_trends[$date])) {
+        $daily_trends[$date] = array_fill_keys($chart_types, 0);
+    }
+    if (in_array($m['type'], $chart_types)) {
+        $daily_trends[$date][$m['type']] += $qty;
+    }
+}
+
+// Sort daily trends by date ascending for Chart.js
+ksort($daily_trends);
+
+$chart_labels = json_encode(array_keys($daily_trends));
+$chart_sales = json_encode(array_column($daily_trends, 'sales'));
+$chart_stockin = json_encode(array_column($daily_trends, 'stock_in'));
+$chart_stockout = json_encode(array_column($daily_trends, 'stock_out'));
+$chart_returns = json_encode(array_column($daily_trends, 'return'));
 
 // Type labels and colors
 $type_config = [
@@ -298,6 +355,13 @@ function displayStoreStockValue($value): int
             <p class="text-muted mb-0 small">Track all inventory changes and transactions</p>
         </div>
         <div class="d-flex gap-2">
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="view_mode" id="btn-timeline" autocomplete="off" checked onchange="toggleViewMode('timeline')">
+                <label class="btn btn-outline-primary" for="btn-timeline"><i class="fa-solid fa-list me-1"></i>Timeline</label>
+
+                <input type="radio" class="btn-check" name="view_mode" id="btn-summary" autocomplete="off" onchange="toggleViewMode('summary')">
+                <label class="btn btn-outline-primary" for="btn-summary"><i class="fa-solid fa-table-cells-large me-1"></i>Summary</label>
+            </div>
             <a href="restock.php" class="btn btn-success">
                 <i class="fa-solid fa-plus me-1"></i><span class="d-none d-sm-inline">New Stock In</span>
             </a>
@@ -312,16 +376,22 @@ function displayStoreStockValue($value): int
             ['type' => 'sales', 'label' => 'Sales', 'icon' => 'fa-shopping-cart', 'color' => 'primary'],
             ['type' => 'stock_out', 'label' => 'Stock Out', 'icon' => 'fa-arrow-up', 'color' => 'danger'],
             ['type' => 'adjustment', 'label' => 'Adjustments', 'icon' => 'fa-sliders', 'color' => 'warning'],
-            ['type' => 'allocation_to_online', 'label' => 'Allocations', 'icon' => 'fa-right-left', 'color' => 'info']
         ];
         foreach ($stat_items as $stat):
             $count = 0;
             $total_qty = 0;
+            $total_value = 0;
             // Count from our results
             foreach ($movements as $m) {
                 if ($m['type'] === $stat['type']) {
                     $count++;
-                    $total_qty += abs((int)$m['quantity']);
+                    $qty = abs((int)$m['quantity']);
+                    $total_qty += $qty;
+                    if ($stat['type'] === 'sales') {
+                        $total_value += ($qty * (float)($m['price_retail'] ?? 0));
+                    } elseif ($stat['type'] === 'stock_in') {
+                        $total_value += ($qty * (float)($m['price_capital'] ?? 0));
+                    }
                 }
             }
             ?>
@@ -334,7 +404,13 @@ function displayStoreStockValue($value): int
                             </div>
                             <div>
                                 <div class="h5 fw-bold mb-0 text-<?= $stat['color'] ?>"><?= number_format($total_qty) ?> items</div>
-                                <small class="text-muted fw-bold d-block"><?= $stat['label'] ?></small>
+                                <?php if ($stat['type'] === 'sales'): ?>
+                                    <small class="text-primary fw-bold d-block" style="font-size: 0.75rem;">Est. Rev: ₱<?= number_format($total_value, 2) ?></small>
+                                <?php elseif ($stat['type'] === 'stock_in'): ?>
+                                    <small class="text-success fw-bold d-block" style="font-size: 0.75rem;">Est. Cost: ₱<?= number_format($total_value, 2) ?></small>
+                                <?php else: ?>
+                                    <small class="text-muted fw-bold d-block"><?= $stat['label'] ?></small>
+                                <?php endif; ?>
                                 <small class="text-muted" style="font-size: 0.7rem;"><?= number_format($count) ?> transactions</small>
                             </div>
                         </div>
@@ -410,13 +486,82 @@ function displayStoreStockValue($value): int
         </div>
     <?php endif; ?>
 
+    <!-- Daily Trends Chart -->
+    <div class="card shadow-sm border-0 mb-4" id="chart-container">
+        <div class="card-body p-3">
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-line text-primary me-2"></i>Daily Movement Trends</h6>
+            <div style="height: 250px;">
+                <canvas id="dailyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Results -->
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm border-0" id="results-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="mb-0 fw-bold">
-                <i class="fa-solid fa-list text-primary me-2"></i>Movement History
+                <i class="fa-solid fa-list text-primary me-2" id="results-icon"></i><span id="results-title">Movement History</span>
             </h6>
-            <span class="badge bg-secondary"><?= count($movements) ?> records</span>
+            <span class="badge bg-secondary" id="results-count"><?= count($movements) ?> records</span>
+        </div>
+
+        <!-- Summary Table View (Hidden by default) -->
+        <div class="card-body p-0 view-summary" style="display: none;">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Product</th>
+                            <th class="text-center">Current Stock</th>
+                            <th class="text-center">Total Sales Qty</th>
+                            <th class="text-end">Est. Sales Rev</th>
+                            <th class="text-center">Total Restock Qty</th>
+                            <th class="text-end pe-4">Est. Restock Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (count($summary_data) > 0): ?>
+                            <?php foreach ($summary_data as $vid => $s): ?>
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">
+                                            <a href="history.php?id=<?= $vid ?>" class="text-dark text-decoration-none">
+                                                <?= htmlspecialchars($s['product_name']) ?>
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">
+                                            <?= htmlspecialchars($s['brand_name']) ?> | <?= htmlspecialchars($s['variation_name']) ?>
+                                            <?php if ($s['sku']): ?> | SKU: <?= htmlspecialchars($s['sku']) ?><?php endif; ?>
+                                        </small>
+                                    </td>
+                                    <td class="text-center fw-bold fs-5">
+                                        <?= max(0, $s['current_stock']) ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary-subtle text-primary fs-6"><?= $s['total_sales_qty'] ?></span>
+                                    </td>
+                                    <td class="text-end fw-bold text-success">
+                                        ₱<?= number_format($s['total_sales_revenue'], 2) ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success fs-6"><?= $s['total_restock_qty'] ?></span>
+                                    </td>
+                                    <td class="text-end fw-bold text-danger pe-4">
+                                        ₱<?= number_format($s['total_restock_cost'], 2) ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <i class="fa-solid fa-inbox fa-3x text-muted opacity-25 mb-3"></i>
+                                    <h6 class="text-muted">No summary data</h6>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Desktop Table View -->
@@ -800,47 +945,122 @@ function displayStoreStockValue($value): int
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Show appropriate view based on screen size
-        function updateView() {
-            const isMobile = window.innerWidth < 992;
-            document.querySelectorAll('.mobile-cards').forEach(el => {
-                el.style.display = isMobile ? 'block' : 'none';
-            });
-            document.querySelectorAll('.desktop-table').forEach(el => {
-                el.style.display = isMobile ? 'none' : 'block';
-            });
-        }
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // View Mode Toggle
+            window.toggleViewMode = function(mode) {
+                const isMobile = window.innerWidth < 992;
+                const desktopTimeline = document.querySelector('.desktop-table');
+                const mobileTimeline = document.querySelector('.mobile-cards');
+                const summaryView = document.querySelector('.view-summary');
+                const title = document.getElementById('results-title');
+                const icon = document.getElementById('results-icon');
+                const countBadge = document.getElementById('results-count');
 
-        updateView();
-        window.addEventListener('resize', updateView);
-
-        // Manual search submission (Enter key)
-        const searchInput = document.getElementById('movements-search');
-        const filterForm = searchInput?.closest('form');
-        let lastSubmittedSearch = searchInput ? searchInput.value.trim() : '';
-
-        if (searchInput && filterForm) {
-            const submitSearch = () => {
-                const currentSearch = searchInput.value.trim();
-
-                if (currentSearch === lastSubmittedSearch) {
-                    return;
+                if (mode === 'summary') {
+                    desktopTimeline.style.display = 'none';
+                    mobileTimeline.style.display = 'none';
+                    summaryView.style.display = 'block';
+                    title.textContent = 'Product Summary';
+                    icon.className = 'fa-solid fa-table-cells-large text-primary me-2';
+                    countBadge.textContent = '<?= count($summary_data) ?> products';
+                } else {
+                    summaryView.style.display = 'none';
+                    desktopTimeline.style.display = isMobile ? 'none' : 'block';
+                    mobileTimeline.style.display = isMobile ? 'block' : 'none';
+                    title.textContent = 'Movement History';
+                    icon.className = 'fa-solid fa-list text-primary me-2';
+                    countBadge.textContent = '<?= count($movements) ?> records';
                 }
-
-                lastSubmittedSearch = currentSearch;
-                filterForm.submit();
             };
 
-            // Immediate search on Enter
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    submitSearch();
+            // Responsive updates
+            function updateView() {
+                const isMobile = window.innerWidth < 992;
+                const mode = document.getElementById('btn-summary').checked ? 'summary' : 'timeline';
+                
+                if (mode === 'timeline') {
+                    document.querySelectorAll('.mobile-cards').forEach(el => {
+                        el.style.display = isMobile ? 'block' : 'none';
+                    });
+                    document.querySelectorAll('.desktop-table').forEach(el => {
+                        el.style.display = isMobile ? 'none' : 'block';
+                    });
                 }
-            });
-        }
+            }
+
+            updateView();
+            window.addEventListener('resize', updateView);
+
+            // Manual search submission (Enter key)
+            const searchInput = document.getElementById('movements-search');
+            const filterForm = searchInput?.closest('form');
+            let lastSubmittedSearch = searchInput ? searchInput.value.trim() : '';
+
+            if (searchInput && filterForm) {
+                const submitSearch = () => {
+                    const currentSearch = searchInput.value.trim();
+                    if (currentSearch === lastSubmittedSearch) return;
+                    lastSubmittedSearch = currentSearch;
+                    filterForm.submit();
+                };
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitSearch();
+                    }
+                });
+            }
+
+            // Initialize Chart.js
+            const ctx = document.getElementById('dailyTrendChart');
+            if (ctx) {
+                const labels = <?= $chart_labels ?>;
+                if (labels.length > 0) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Sales Qty',
+                                    data: <?= $chart_sales ?>,
+                                    borderColor: '#0d6efd',
+                                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                                    tension: 0.3,
+                                    fill: true
+                                },
+                                {
+                                    label: 'Stock In Qty',
+                                    data: <?= $chart_stockin ?>,
+                                    borderColor: '#198754',
+                                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                                    tension: 0.3,
+                                    fill: true
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                            plugins: {
+                                legend: { position: 'top' }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                } else {
+                    ctx.parentElement.innerHTML = '<div class="h-100 d-flex align-items-center justify-content-center text-muted">No trend data available for this period.</div>';
+                }
+            }
 
         // Handle Retroactive Upload Form
         document.getElementById('uploadForm')?.addEventListener('submit', async function (e) {
