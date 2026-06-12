@@ -4,9 +4,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 // Auth Check
-// Auth Check
-requireLogin();
-if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
+if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman']))) {
     denyAccess("You do not have permission to access restocking.");
 }
 
@@ -584,6 +582,32 @@ if (isset($_GET['id'])) {
 
 <div class="container-fluid p-3 p-lg-4 restock-page">
 
+    <div class="alert alert-warning shadow-sm border-0 d-flex align-items-center mb-4">
+        <i class="fa-solid fa-shield-halved fa-2x me-3 text-warning opacity-75"></i>
+        <div>
+            <h6 class="mb-0 fw-bold">Admin Approval Required</h6>
+            <small>All submitted restocks will be sent to the Admin queue for review and approval before they take effect.</small>
+        </div>
+    </div>
+
+    <?php if (isset($_GET['success'])): ?>
+        <?php if ($_GET['success'] === 'pending'): ?>
+            <div class="alert alert-info shadow-sm border-0 mb-4">
+                <i class="fa-solid fa-clock me-2"></i> Restock request successfully submitted and is pending approval.
+            </div>
+        <?php else: ?>
+            <div class="alert alert-success shadow-sm border-0 mb-4">
+                <i class="fa-solid fa-check-circle me-2"></i> Restock processed successfully.
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+    
+    <?php if (isset($_GET['error'])): ?>
+        <div class="alert alert-danger shadow-sm border-0 mb-4">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> <?= htmlspecialchars($_GET['error']) ?>
+        </div>
+    <?php endif; ?>
+
     <!-- Page Header -->
     <div class="restock-hero p-3 p-lg-4 mb-4">
         <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
@@ -1007,7 +1031,7 @@ if (isset($_GET['id'])) {
                                 <div class="h4 fw-bold mb-0" id="summary-qty">0</div>
                                 <small class="opacity-75">Total Qty</small>
                             </div>
-                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
                                 <div class="col-4">
                                     <div class="h5 fw-bold mb-0" id="summary-cost">₱0.00</div>
                                     <small class="opacity-75">Total Cost</small>
@@ -1201,6 +1225,7 @@ if (isset($_GET['id'])) {
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     // Toggle due date visibility for single mode
     function toggleDueDate(selectElem) {
@@ -1797,9 +1822,13 @@ if (isset($_GET['id'])) {
             document.getElementById('batch-count').textContent = `${totalItems} items`;
             document.getElementById('summary-items').textContent = totalItems;
             document.getElementById('summary-qty').textContent = totalQty;
-            document.getElementById('summary-cost').textContent = '₱' + totalCost.toLocaleString(undefined, {
-                minimumFractionDigits: 2
-            });
+            
+            const summaryCostEl = document.getElementById('summary-cost');
+            if (summaryCostEl) {
+                summaryCostEl.textContent = '₱' + totalCost.toLocaleString(undefined, {
+                    minimumFractionDigits: 2
+                });
+            }
             this.updateTermsTotal(); // Update scheduled amount warning
         },
 
@@ -1879,7 +1908,33 @@ if (isset($_GET['id'])) {
                 return;
             }
 
-            if (!confirm(`Process batch restock of ${this.items.length} items?`)) return;
+            const confirmBatch = await Swal.fire({
+                title: '<i class="fa-solid fa-shield-halved text-warning me-2"></i>Admin Approval Required',
+                html: `
+                    <div class="mt-2">
+                        <p class="mb-3 text-muted">You are about to submit <strong>${this.items.length} items</strong> for restocking.</p>
+                        <div class="alert alert-warning border-warning bg-warning bg-opacity-10 py-2 px-3 d-flex align-items-center mb-0 text-start" style="border-radius: 8px;">
+                            <i class="fa-solid fa-clock-rotate-left fa-lg text-warning me-3"></i>
+                            <div>
+                                <strong class="d-block text-dark">Sent to Pending Queue</strong>
+                                <small class="text-muted">This batch will not take effect until an Admin approves it.</small>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                cancelButtonText: '<span class="text-dark fw-bold">Cancel</span>',
+                confirmButtonText: '<i class="fa-solid fa-paper-plane me-2"></i>Submit for Approval',
+                customClass: {
+                    popup: 'rounded-4 shadow-lg border-0',
+                    title: 'fs-4',
+                    confirmButton: 'btn btn-success btn-lg px-4 shadow-sm rounded-3',
+                    cancelButton: 'btn btn-light btn-lg px-4 border shadow-sm rounded-3 me-2'
+                },
+                buttonsStyling: false
+            });
+
+            if (!confirmBatch.isConfirmed) return;
 
             const btn = document.getElementById('btn-process-batch');
             btn.disabled = true;
@@ -2003,28 +2058,69 @@ if (isset($_GET['id'])) {
             form.addEventListener('change', (e) => this.saveData(form, cacheKey));
 
             // Clear on submit
+            // Intercept submit for confirmation
             form.addEventListener('submit', (e) => {
-                const supplier = form.querySelector('[name="supplier"]').value;
-                if (!supplier && !form.dataset.confirmed) {
+                if (!form.dataset.confirmedAll) {
                     e.preventDefault();
-                    EllaConfirm.show({
-                        title: 'No Supplier Selected',
-                        message: 'Are you sure you want to proceed without selecting a supplier?',
-                        confirmText: 'Proceed Anyway',
-                        cancelText: 'Cancel',
-                        confirmClass: 'btn-warning',
-                        icon: 'fa-triangle-exclamation',
-                        iconColor: 'text-warning'
-                    }).then(confirmed => {
-                        if (confirmed) {
-                            form.dataset.confirmed = 'true';
+
+                    const supplier = form.querySelector('[name="supplier"]');
+                    const hasSupplier = supplier && supplier.value;
+
+                    if (!hasSupplier && !form.dataset.confirmedSupplier) {
+                        EllaConfirm.show({
+                            title: 'No Supplier Selected',
+                            message: 'Are you sure you want to proceed without selecting a supplier?',
+                            confirmText: 'Proceed Anyway',
+                            cancelText: 'Cancel',
+                            confirmClass: 'btn-warning',
+                            icon: 'fa-triangle-exclamation',
+                            iconColor: 'text-warning'
+                        }).then(confirmed => {
+                            if (confirmed) {
+                                form.dataset.confirmedSupplier = 'true';
+                                // Trigger submit again to hit the next check
+                                form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                            } else {
+                                if (supplier) supplier.focus();
+                            }
+                        });
+                        return;
+                    }
+
+                    // Final confirmation before submitting single mode
+                    Swal.fire({
+                        title: '<i class="fa-solid fa-shield-halved text-warning me-2"></i>Admin Approval Required',
+                        html: `
+                            <div class="mt-2">
+                                <p class="mb-3 text-muted">You are about to submit this product for restocking.</p>
+                                <div class="alert alert-warning border-warning bg-warning bg-opacity-10 py-2 px-3 d-flex align-items-center mb-0 text-start" style="border-radius: 8px;">
+                                    <i class="fa-solid fa-clock-rotate-left fa-lg text-warning me-3"></i>
+                                    <div>
+                                        <strong class="d-block text-dark">Sent to Pending Queue</strong>
+                                        <small class="text-muted">This restock will not take effect until an Admin approves it.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        cancelButtonText: '<span class="text-dark fw-bold">Cancel</span>',
+                        confirmButtonText: '<i class="fa-solid fa-paper-plane me-2"></i>Submit for Approval',
+                        customClass: {
+                            popup: 'rounded-4 shadow-lg border-0',
+                            title: 'fs-4',
+                            confirmButton: 'btn btn-success btn-lg px-4 shadow-sm rounded-3',
+                            cancelButton: 'btn btn-light btn-lg px-4 border shadow-sm rounded-3 me-2'
+                        },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.dataset.confirmedAll = 'true';
                             form.submit();
-                        } else {
-                            form.querySelector('[name="supplier"]').focus();
                         }
                     });
                     return;
                 }
+                
                 localStorage.removeItem(cacheKey);
             });
 

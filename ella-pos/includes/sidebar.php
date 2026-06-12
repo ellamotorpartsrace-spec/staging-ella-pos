@@ -133,6 +133,14 @@ try {
                             <i class="fa-solid fa-truck-ramp-box"></i> <span class="nav-text">Stocks</span>
                         </a>
                     </li>
+                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/inventory/pending_approvals.php"
+                            class="<?= $current_page === 'pending_approvals.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-clipboard-check"></i> <span class="nav-text">Pending Approvals</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/inventory/adjustment.php"
                             class="<?= $current_page === 'adjustment.php' ? 'active' : '' ?>">

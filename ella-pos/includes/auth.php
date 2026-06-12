@@ -182,4 +182,6 @@ function requirePermission(string $slug): void
         denyAccess("You do not have permission to perform this action. (Requires: " . htmlspecialchars($slug) . ")");
     }
 }
+
+
 ?>

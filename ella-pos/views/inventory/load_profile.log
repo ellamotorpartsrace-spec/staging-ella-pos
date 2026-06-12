@@ -225,3 +225,98 @@ After config.php: 1.11ms
 After sidebar.php: 40.38ms
 After sqlStats: 62.19ms
 After sqlProducts: 103.58ms
+Start index.php
+After config.php: 1.37ms
+After sidebar.php: 31.01ms
+After sqlStats: 76.7ms
+After sqlProducts: 115.76ms
+Start index.php
+After config.php: 0.91ms
+After sidebar.php: 41.7ms
+After sqlStats: 75.59ms
+After sqlProducts: 123.46ms
+Start index.php
+After config.php: 0.7ms
+After sidebar.php: 9.55ms
+After sqlStats: 45.08ms
+After sqlProducts: 76.85ms
+Start index.php
+After config.php: 0.7ms
+After sidebar.php: 18.84ms
+After sqlStats: 49.91ms
+After sqlProducts: 80.54ms
+Start index.php
+After config.php: 3.14ms
+After sidebar.php: 11.97ms
+After sqlStats: 46.6ms
+After sqlProducts: 76.46ms
+Start index.php
+After config.php: 32.87ms
+After sidebar.php: 105.29ms
+After sqlStats: 143.93ms
+After sqlProducts: 172.82ms
+Start index.php
+After config.php: 27.26ms
+After sidebar.php: 43.67ms
+After sqlStats: 62.4ms
+After sqlProducts: 92.01ms
+Start index.php
+After config.php: 14.94ms
+After sidebar.php: 61.7ms
+After sqlStats: 110.77ms
+After sqlProducts: 139.87ms
+Start index.php
+After config.php: 0.98ms
+After sidebar.php: 10.18ms
+After sqlStats: 61.71ms
+After sqlProducts: 94.83ms
+Start index.php
+After config.php: 1.02ms
+After sidebar.php: 48.51ms
+After sqlStats: 83.48ms
+After sqlProducts: 113.88ms
+Start index.php
+After config.php: 0.73ms
+After sidebar.php: 52.69ms
+After sqlStats: 63.15ms
+After sqlProducts: 72.2ms
+Start index.php
+After config.php: 0.81ms
+After sidebar.php: 42.09ms
+After sqlStats: 66.99ms
+After sqlProducts: 76.26ms
+Start index.php
+After config.php: 1.31ms
+After sidebar.php: 20.53ms
+After sqlStats: 29.51ms
+After sqlProducts: 39ms
+Start index.php
+After config.php: 0.8ms
+After sidebar.php: 48.99ms
+After sqlStats: 91.35ms
+After sqlProducts: 120.65ms
+Start index.php
+After config.php: 1.14ms
+After sidebar.php: 60.74ms
+After sqlStats: 122.29ms
+After sqlProducts: 155.27ms
+Start index.php
+After config.php: 1.21ms
+After sidebar.php: 9.44ms
+After sqlStats: 30.34ms
+After sqlProducts: 41.8ms
+Start index.php
+After config.php: 0.66ms
+After sidebar.php: 35.18ms
+After sqlStats: 57.56ms
+After sqlProducts: 66.51ms
+Start index.php
+After config.php: 0.89ms
+After sidebar.php: 47.91ms
+After sqlStats: 89.54ms
+After sqlProducts: 123.89ms
+Start index.php
+After config.php: 1.33ms
+After sidebar.php: 30.84ms
+After sqlStats: 59.64ms
+After sqlProducts: 89.48ms

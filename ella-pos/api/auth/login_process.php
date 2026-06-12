@@ -32,7 +32,7 @@ try {
     }
 
     // 3. Find User
-    $stmt = $conn->prepare("SELECT id, username, password, role, full_name, status FROM users WHERE username = :user LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, username, password, role, full_name, status, can_approve_restocks FROM users WHERE username = :user LIMIT 1");
     $stmt->execute([':user' => $username]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -107,6 +107,7 @@ try {
         $_SESSION['role'] = $user['role'];
         $_SESSION['session_token'] = $session_token; // We need this for logout later
         $_SESSION['ip_address'] = $ip_address; // Bind session to login IP for security
+        $_SESSION['can_approve_restocks'] = (bool) $user['can_approve_restocks'];
 
         // E2. Load Permissions
         $permissions = [];
