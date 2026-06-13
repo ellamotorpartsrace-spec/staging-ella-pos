@@ -214,7 +214,7 @@ if (!empty($variationIds)) {
                                 </div>
                             </div>
                         <?php endif; ?>
-                        <?php if (in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                        <?php if (in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])): ?>
                             <button class="btn btn-primary btn-sm" onclick="openAddItemModal()">
                                 <i class="fa-solid fa-plus me-1"></i> Add Item
                             </button>
@@ -378,7 +378,7 @@ if (!empty($variationIds)) {
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold mb-0"><i class="fa-solid fa-paperclip me-2"></i>Attachment</h6>
-                    <?php if (in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                    <?php if (in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])): ?>
                         <button type="button" class="btn btn-sm btn-success"
                             onclick="document.getElementById('retroactive-upload').click()">
                             <i class="fa-solid fa-plus me-1"></i> Add Photo
@@ -415,7 +415,7 @@ if (!empty($variationIds)) {
                                                     class="btn btn-sm btn-primary">
                                                     <i class="fa-solid fa-expand me-1"></i> View Full Size
                                                 </a>
-                                                <?php if (in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                                                <?php if (in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])): ?>
                                                     <button type="button" class="btn btn-sm btn-outline-danger"
                                                         onclick="deleteAttachment(<?= $att['id'] ?>, '<?= htmlspecialchars($att['image_path'] ?? '', ENT_QUOTES) ?>', this)">
                                                         <i class="fa-solid fa-trash me-1"></i> Delete

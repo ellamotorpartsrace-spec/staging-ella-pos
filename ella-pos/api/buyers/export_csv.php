@@ -6,7 +6,7 @@ require_once '../../config/database.php';
 
 // Auth Check
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && !in_array($_SESSION['role'], ['manager'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])) {
     http_response_code(403);
     echo json_encode(['error' => 'Permission denied']);
     exit;

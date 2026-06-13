@@ -1031,7 +1031,7 @@ if (isset($_GET['id'])) {
                                 <div class="h4 fw-bold mb-0" id="summary-qty">0</div>
                                 <small class="opacity-75">Total Qty</small>
                             </div>
-                            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])): ?>
                                 <div class="col-4">
                                     <div class="h5 fw-bold mb-0" id="summary-cost">₱0.00</div>
                                     <small class="opacity-75">Total Cost</small>

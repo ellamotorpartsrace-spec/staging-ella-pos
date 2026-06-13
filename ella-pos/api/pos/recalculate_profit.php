@@ -8,7 +8,7 @@ require_once '../../includes/auth.php';
 // 1. Auth & Permission Check
 // Only Admin and Manager should be able to recalculate profit
 requireLogin();
-if (!in_array($_SESSION['role'], ['admin', 'manager'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;

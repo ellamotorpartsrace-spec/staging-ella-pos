@@ -625,3 +625,18 @@ After config.php: 1.45ms
 After sidebar.php: 60.23ms
 After sqlStats: 99.92ms
 After sqlProducts: 131.88ms
+Start index.php
+After config.php: 1.13ms
+After sidebar.php: 30.93ms
+After sqlStats: 68ms
+After sqlProducts: 99.99ms
+Start index.php
+After config.php: 1.04ms
+After sidebar.php: 25.44ms
+After sqlStats: 43.71ms
+After sqlProducts: 52.96ms
+Start index.php
+After config.php: 0.81ms
+After sidebar.php: 32.41ms
+After sqlStats: 43.69ms
+After sqlProducts: 56.07ms

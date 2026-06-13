@@ -901,7 +901,7 @@ function displayStoreStockValue($value): int
             </div>
             <div class="modal-footer border-0 pt-0 justify-content-between">
                 <div>
-                    <?php if (in_array($_SESSION['role'], ['admin', 'manager'])): ?>
+                    <?php if (in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])): ?>
                         <button type="button" class="btn btn-sm btn-outline-danger" id="btn-delete-attachment"
                             onclick="deleteCurrentAttachment()">
                             <i class="fa-solid fa-trash me-1"></i>Delete Photo

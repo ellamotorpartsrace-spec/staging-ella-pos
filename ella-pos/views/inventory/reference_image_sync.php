@@ -4,7 +4,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 requireLogin();
-if (($_SESSION['role'] ?? '') !== 'admin') {
+if (!in_array($_SESSION['role'] ?? '', ['admin', 'super_admin'])) {
     denyAccess("Admin access is required to sync reference image backups.");
 }
 

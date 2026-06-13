@@ -10,7 +10,7 @@ require_once '../../config/database.php';
 requireLogin();
 
 // Only admins or managers can make manual wallet adjustments
-if (!in_array($_SESSION['role'], ['admin', 'manager'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])) {
     echo json_encode(['success' => false, 'message' => 'Insufficient permissions.']);
     exit;
 }

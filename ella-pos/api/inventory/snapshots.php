@@ -27,7 +27,7 @@ require_once __DIR__ . '/snapshot_helpers.php';
 requireLogin();
 
 // ── Admin-only guard ─────────────────────────────────────────────────────────
-if (($_SESSION['role'] ?? '') !== 'admin') {
+if (!in_array($_SESSION['role'] ?? '', ['admin', 'super_admin'])) {
     if (!headers_sent()) header('Content-Type: application/json');
     echo json_encode(['success' => false, 'error' => 'Admin access required.']);
     exit;

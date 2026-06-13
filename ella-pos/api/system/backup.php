@@ -15,7 +15,7 @@ require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 
 // Admin check
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'super_admin'])) {
     header('Content-Type: application/json');
     ob_clean();
     http_response_code(403);

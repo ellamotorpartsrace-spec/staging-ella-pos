@@ -52,7 +52,7 @@ if ($wholesale !== '' && $dealer !== '') {
 }
 
 // Security: Admins and managers can set capital directly
-$canSetCapital = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager']);
+$canSetCapital = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin', 'manager']);
 if ($canSetCapital && $_POST['price_capital'] !== '') {
     $capital = $_POST['price_capital'];
 } else {

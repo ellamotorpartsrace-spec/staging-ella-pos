@@ -56,7 +56,7 @@ try {
         $old_dealer = (float) $oldData['price_dealer'];
 
         // Enforce Permissions: Override submitted prices with old prices if not admin or manager
-        $canSetCapital = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'manager']);
+        $canSetCapital = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin', 'manager']);
         if (!$canSetCapital) {
             $capital = $old_capital;
         } elseif ($_POST['price_capital'] === '') {

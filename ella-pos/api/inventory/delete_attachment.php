@@ -7,7 +7,7 @@ require_once '../../config/database.php';
 header('Content-Type: application/json');
 
 // Only allow admin/manager
-if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'manager'])) {
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])) {
     echo json_encode(['success' => false, 'error' => 'Unauthorized. Admin/Manager access required to delete attachments.']);
     exit;
 }

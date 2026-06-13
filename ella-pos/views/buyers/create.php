@@ -5,7 +5,7 @@ require_once '../../includes/auth.php';
 
 // Auth Check
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && !in_array($_SESSION['role'], ['manager'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])) {
     denyAccess("You do not have permission to manage buyers.");
 }
 
