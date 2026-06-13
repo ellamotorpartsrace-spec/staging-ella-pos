@@ -5,7 +5,7 @@ require_once '../../includes/auth.php';
 
 // Auth Check
 requireLogin();
-if ($_SESSION['role'] !== 'admin') {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin'])) {
     denyAccess("You do not have permission to access mass updates.");
 }
 
