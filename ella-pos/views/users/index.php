@@ -598,7 +598,7 @@ foreach ($users as $u) {
                     <div class="user-card-main">
                         <div class="user-card-header">
                             <div class="user-avatar <?= $role ?>">
-                                <?= $role === 'super_admin' ? 'SA' : strtoupper(substr($username, 0, 1)) ?>
+                                <?= strtoupper(substr($fullname ?: $username, 0, 1)) ?>
                                 <?php if ($online == 1 && $row['status'] === 'active'): ?>
                                     <div class="online-indicator" title="Active now"></div>
                                 <?php endif; ?>

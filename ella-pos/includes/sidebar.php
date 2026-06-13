@@ -496,7 +496,7 @@ try {
                 </div>
                 <div class="<?= $role !== 'super_admin' ? 'bg-primary' : '' ?> text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
                     style="width: 40px; height: 40px; <?= $role === 'super_admin' ? 'background: linear-gradient(135deg, #8b5cf6, #5b21b6);' : '' ?>">
-                    <?= $role === 'super_admin' ? 'SA' : strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)) ?>
+                    <?= strtoupper(substr($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'U', 0, 1)) ?>
                 </div>
             </div>
         </div>
