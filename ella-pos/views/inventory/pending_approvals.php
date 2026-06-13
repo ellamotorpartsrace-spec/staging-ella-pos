@@ -6,60 +6,125 @@ require_once '../../includes/auth.php';
 require_once '../../config/database.php';
 
 requireLogin();
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'super_admin'])) {
     denyAccess("Only admins can access the Pending Approvals page.");
 }
 
-$db = new Database();
-$conn = $db->getConnection();
-
-// --- PASSWORD PROTECTION FOR PAGE ACCESS ---
-if (isset($_POST['access_password'])) {
-    $stmtAuth = $conn->prepare("SELECT password FROM users WHERE id = ?");
-    $stmtAuth->execute([$_SESSION['user_id']]);
-    $user = $stmtAuth->fetch(PDO::FETCH_ASSOC);
-
-    if ($user && password_verify($_POST['access_password'], $user['password'])) {
-        $_SESSION['pending_approvals_unlocked'] = true;
-        header("Location: pending_approvals.php");
-        exit;
-    } else {
-        $access_error = "Incorrect password. Please try again.";
-    }
-}
-
-// Check if session is unlocked
-if (!isset($_SESSION['pending_approvals_unlocked']) || $_SESSION['pending_approvals_unlocked'] !== true) {
+// Restricted UI for regular admins
+if ($_SESSION['role'] === 'admin') {
     require_once '../../includes/header.php';
     require_once '../../includes/sidebar.php';
     ?>
-    <div class="container-fluid p-3 p-lg-4 d-flex justify-content-center align-items-center" style="min-height: 70vh;">
-        <div class="card border-0 shadow-sm" style="max-width: 400px; width: 100%;">
-            <div class="card-body p-4 text-center">
-                <i class="fa-solid fa-lock fa-3x text-primary mb-3"></i>
-                <h4 class="fw-bold mb-3">Restricted Access</h4>
-                <p class="text-muted small mb-4">Please enter your admin password to view pending restock approvals.</p>
-                
-                <?php if (isset($access_error)): ?>
-                    <div class="alert alert-danger small py-2"><?= htmlspecialchars($access_error) ?></div>
-                <?php endif; ?>
-
-                <form method="POST" action="">
-                    <div class="mb-3">
-                        <input type="password" name="access_password" class="form-control form-control-lg text-center" placeholder="Admin Password" required autofocus>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">
-                        <i class="fa-solid fa-unlock me-2"></i>Unlock Page
-                    </button>
-                </form>
+    ?>
+    <style>
+        .restricted-wrapper {
+            min-height: calc(100vh - 120px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f8fafc;
+        }
+        .restricted-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 3.5rem 3rem;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            position: relative;
+            overflow: hidden;
+        }
+        .restricted-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, #ef4444, #f87171);
+        }
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: #fef2f2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ef4444;
+            font-size: 2.2rem;
+            transition: transform 0.3s ease;
+        }
+        .restricted-card:hover .icon-circle {
+            transform: scale(1.05);
+            background: #fee2e2;
+        }
+        .restricted-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+        }
+        .restricted-text {
+            color: #64748b;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .restricted-text strong {
+            color: #334155;
+            font-weight: 600;
+        }
+        .btn-return {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            text-decoration: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn-return:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+    
+    <div class="restricted-wrapper">
+        <div class="restricted-card">
+            <div class="icon-circle">
+                <i class="fa-solid fa-lock"></i>
             </div>
+            <h4 class="restricted-title">Access Restricted</h4>
+            <p class="restricted-text">
+                Only <strong>Super Admins</strong> have the necessary clearance to view and approve restock requests.
+            </p>
+            <a href="<?= BASE_URL ?>views/dashboard/index.php" class="btn-return">
+                <i class="fa-solid fa-arrow-left me-2"></i>Return to Dashboard
+            </a>
         </div>
     </div>
     <?php
     require_once '../../includes/footer.php';
     exit;
 }
-// --- END PASSWORD PROTECTION ---
+
+$db = new Database();
+$conn = $db->getConnection();
+
+// Removed redundant password protection since page is now strictly role-based.
 
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
@@ -296,48 +361,40 @@ function viewDetails(batchId, requestId, groupId) {
     });
 }
 
-function promptPassword(actionText, confirmColor, callback) {
+function approveRequest(batchId, requestId) {
     Swal.fire({
-        title: actionText,
-        text: "Please enter your admin password to confirm.",
-        input: 'password',
-        inputAttributes: {
-            autocapitalize: 'off',
-            autocorrect: 'off'
-        },
+        title: 'Approve Restock?',
+        text: "Are you sure you want to approve this request?",
+        icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: confirmColor,
+        confirmButtonColor: '#198754',
         cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Confirm',
-        showLoaderOnConfirm: true,
-        preConfirm: (password) => {
-            if (!password) {
-                Swal.showValidationMessage('Password is required');
-                return false;
-            }
-            return password;
-        }
+        confirmButtonText: 'Yes, approve it!'
     }).then((result) => {
         if (result.isConfirmed) {
-            callback(result.value);
+            processAction('../../api/inventory/approve_restock.php', batchId, requestId);
         }
-    });
-}
-
-function approveRequest(batchId, requestId) {
-    promptPassword('Approve Restock?', '#198754', (password) => {
-        processAction('../../api/inventory/approve_restock.php', batchId, requestId, password);
     });
 }
 
 function rejectRequest(batchId, requestId) {
-    promptPassword('Reject Restock?', '#dc3545', (password) => {
-        processAction('../../api/inventory/reject_restock.php', batchId, requestId, password);
+    Swal.fire({
+        title: 'Reject Restock?',
+        text: "Are you sure you want to reject this request?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, reject it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            processAction('../../api/inventory/reject_restock.php', batchId, requestId);
+        }
     });
 }
 
-function processAction(url, batchId, requestId, password) {
-    let payload = { password: password };
+function processAction(url, batchId, requestId) {
+    let payload = {};
     if (batchId) payload.batch_id = batchId;
     else payload.request_id = requestId;
     

@@ -14,9 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 requireLogin();
 
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Only admins can reject restocks.']);
+    echo json_encode(['success' => false, 'error' => 'Only super admins can reject restocks.']);
     exit;
 }
 
@@ -29,26 +29,9 @@ if (!$request_id && !$batch_id) {
     exit;
 }
 
-$password = $input['password'] ?? '';
-
-if (empty($password)) {
-    echo json_encode(['success' => false, 'error' => 'Password is required.']);
-    exit;
-}
-
 try {
     $db = new Database();
     $conn = $db->getConnection();
-
-    // Verify Password
-    $stmtAuth = $conn->prepare("SELECT password FROM users WHERE id = ?");
-    $stmtAuth->execute([$_SESSION['user_id']]);
-    $user = $stmtAuth->fetch(PDO::FETCH_ASSOC);
-
-    if (!$user || !password_verify($password, $user['password'])) {
-        echo json_encode(['success' => false, 'error' => 'Incorrect password.']);
-        exit;
-    }
     
     $user_id = $_SESSION['user_id'] ?? 1;
 

@@ -72,7 +72,7 @@ function isMaintenanceMode(): bool
         return $is_active;
 
     // 1. Bypass check: If user is logged in as admin, they can see the site
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+    if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])) {
         return $is_active = false;
     }
 

@@ -12,8 +12,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: ../../views/inventory/adjustment.php");
     exit;
 }
+
+// Check Password Verification if not super_admin
+if ($_SESSION['role'] !== 'super_admin') {
+    $verification_password = $_POST['verification_password'] ?? '';
+    if (empty($verification_password)) {
+        $_SESSION['error'] = 'Super Admin override password is required.';
+        header("Location: ../../views/inventory/adjustment.php" . (isset($_POST['variation_id']) ? "?id=" . urlencode($_POST['variation_id']) : ""));
+        exit;
+    }
+
+    if ($verification_password !== '1217') {
+        $_SESSION['error'] = 'Incorrect override password. Stock adjustment aborted.';
+        header("Location: ../../views/inventory/adjustment.php" . (isset($_POST['variation_id']) ? "?id=" . urlencode($_POST['variation_id']) : ""));
+        exit;
+    }
+}
+
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_stock')) {
     $_SESSION['error'] = 'Permission Denied';
     header("Location: ../../views/inventory/adjustment.php");
     exit;

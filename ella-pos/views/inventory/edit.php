@@ -103,6 +103,13 @@ if (!$creatorInfo) {
     $stmtFallback->execute([':id' => $variation_id]);
     $creatorInfo = $stmtFallback->fetch(PDO::FETCH_ASSOC);
 }
+
+// 6. Determine Return URL
+$return_url = $_GET['return_url'] ?? $_SERVER['HTTP_REFERER'] ?? 'index.php';
+// Prevent infinite loops where Cancel button points back to edit or update
+if (strpos($return_url, 'edit.php') !== false || strpos($return_url, 'update_product.php') !== false) {
+    $return_url = 'index.php';
+}
 ?>
 
 <div class="container-fluid p-4">
@@ -117,7 +124,7 @@ if (!$creatorInfo) {
             <a href="history.php?id=<?= $variation_id ?>" class="btn btn-info text-white me-2">
                 <i class="fa-solid fa-clock-rotate-left"></i> View Full History
             </a>
-            <a href="<?= htmlspecialchars($_SERVER['HTTP_REFERER'] ?? 'index.php') ?>"
+            <a href="<?= htmlspecialchars($return_url) ?>"
                 class="btn btn-outline-secondary">
                 <i class="fa-solid fa-arrow-left"></i> Cancel
             </a>
@@ -130,8 +137,8 @@ if (!$creatorInfo) {
         </div>
     <?php endif; ?>
 
-    <form action="../../api/inventory/update_product.php" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="return_url" value="<?= htmlspecialchars($_SERVER['HTTP_REFERER'] ?? 'index.php') ?>">
+    <form action="../../api/inventory/update_product.php" method="POST" enctype="multipart/form-data" id="editProductForm" onsubmit="return submitEditWithPassword(event)">
+        <input type="hidden" name="return_url" value="<?= htmlspecialchars($return_url) ?>">
         <input type="hidden" name="product_id" value="<?= $product['product_id'] ?>">
         <input type="hidden" name="variation_id" value="<?= $product['variation_id'] ?>">
 
@@ -269,13 +276,13 @@ if (!$creatorInfo) {
                         <hr class="text-muted opacity-25">
 
                         <div class="row mb-4">
-                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                 <div class="col-md-3">
                                     <label class="form-label text-muted small">Capital (Cost)</label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light">₱</span>
                                         <input type="number" step="0.01" name="price_capital" class="form-control"
-                                            value="<?= $product['price_capital'] ?>" placeholder="Leave blank for auto"
+                                            value="<?= $product['price_capital'] ?>" data-original="<?= $product['price_capital'] ?>" placeholder="Leave blank for auto"
                                             <?= !hasPermission('adjust_prices') ? 'readonly' : '' ?>>
                                     </div>
                                 </div>
@@ -288,7 +295,7 @@ if (!$creatorInfo) {
                                 <div class="input-group">
                                     <span class="input-group-text bg-primary text-white">₱</span>
                                     <input type="number" step="0.01" name="price_retail" class="form-control fw-bold"
-                                        value="<?= $product['price_retail'] ?>" required
+                                        value="<?= $product['price_retail'] ?>" data-original="<?= $product['price_retail'] ?>" required
                                         <?= !hasPermission('adjust_prices') ? 'readonly' : '' ?>>
                                 </div>
                             </div>
@@ -298,7 +305,7 @@ if (!$creatorInfo) {
                                 <div class="input-group">
                                     <span class="input-group-text bg-light">₱</span>
                                     <input type="number" step="0.01" name="price_wholesale" class="form-control"
-                                        value="<?= $product['price_wholesale'] ?>" <?= !hasPermission('adjust_prices') ? 'readonly' : '' ?>>
+                                        value="<?= $product['price_wholesale'] ?>" data-original="<?= $product['price_wholesale'] ?>" <?= !hasPermission('adjust_prices') ? 'readonly' : '' ?>>
                                 </div>
                             </div>
 
@@ -307,7 +314,7 @@ if (!$creatorInfo) {
                                 <div class="input-group">
                                     <span class="input-group-text bg-light">₱</span>
                                     <input type="number" step="0.01" name="price_dealer" class="form-control"
-                                        value="<?= $product['price_dealer'] ?>" <?= !hasPermission('adjust_prices') ? 'readonly' : '' ?>>
+                                        value="<?= $product['price_dealer'] ?>" data-original="<?= $product['price_dealer'] ?>" <?= !hasPermission('adjust_prices') ? 'readonly' : '' ?>>
                                 </div>
                             </div>
                         </div>
@@ -326,6 +333,7 @@ if (!$creatorInfo) {
                                             </div>
                                         </div>
                                         
+                                        <?php if (in_array($_SESSION['role'], ['admin', 'super_admin']) || hasPermission('adjust_stock')): ?>
                                         <div class="bg-light p-2 rounded border">
                                             <label class="small fw-bold text-dark mb-2 d-block"><i class="fa-solid fa-bolt text-warning"></i> Quick Stock Adjustment</label>
                                             <div class="row g-2">
@@ -344,6 +352,7 @@ if (!$creatorInfo) {
                                                 </div>
                                             </div>
                                         </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -396,7 +405,7 @@ if (!$creatorInfo) {
                                                 <td class="ps-3"><?= date('M d, Y', strtotime($log['changed_at'])) ?></td>
                                                 <td>
                                                     <?php if ($log['old_capital'] != $log['new_capital']): ?>
-                                                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                                        <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                                             <span
                                                                 class="text-decoration-line-through text-muted">₱<?= $log['old_capital'] ?></span>
                                                             <i class="fa-solid fa-arrow-right text-muted mx-1"
@@ -460,5 +469,83 @@ if (!$creatorInfo) {
         </div>
     </form>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function submitEditWithPassword(e) {
+        const adjType = document.querySelector('select[name="stock_adj_type"]')?.value;
+        const adjQty = parseFloat(document.querySelector('input[name="stock_adj_qty"]')?.value || 0);
+
+        let priceChanged = false;
+        ['price_capital', 'price_retail', 'price_wholesale', 'price_dealer'].forEach(name => {
+            const el = document.querySelector(`input[name="${name}"]`);
+            if (el) {
+                const orig = parseFloat(el.getAttribute('data-original') || 0);
+                const curr = parseFloat(el.value || 0);
+                if (orig !== curr) priceChanged = true;
+            }
+        });
+
+        // If no stock adjustment is being made and no prices changed, submit normally
+        if ((!adjType || adjQty <= 0) && !priceChanged) {
+            return true;
+        }
+
+        <?php if ($_SESSION['role'] !== 'super_admin'): ?>
+            e.preventDefault();
+            Swal.fire({
+                background: '#ffffff',
+                width: '460px',
+                html: `
+                    <div class="mt-1 mb-0">
+                        <div class="d-flex align-items-center justify-content-center mb-4">
+                            <div class="d-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-circle me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+                                <i class="fa-solid fa-shield-halved fs-4"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-0 text-start" style="font-size: 1.3rem;">Super Admin Override</h4>
+                        </div>
+                        
+                        <div class="rounded-3 mb-2 d-flex align-items-center px-3 py-2 mx-auto text-start" style="background-color: #fff3cd; border: 1px solid #ffeeba;">
+                            <i class="fa-solid fa-circle-exclamation me-2 align-self-start mt-1" style="color: #856404; font-size: 1rem;"></i>
+                            <span style="color: #856404; font-size: 0.85rem; font-weight: 500; line-height: 1.4;">This action modifies sensitive stock data. Please ask a <strong>Super Admin</strong> for the 4-digit PIN.</span>
+                        </div>
+                    </div>
+                `,
+                input: 'password',
+                inputPlaceholder: '••••',
+                inputAttributes: { 
+                    required: 'true',
+                    maxlength: '4',
+                    autocapitalize: 'off',
+                    autocorrect: 'off',
+                    style: 'text-align: center; font-size: 2rem; letter-spacing: 0.25rem; text-indent: 0.25rem; width: 140px; height: 50px; margin: 15px auto 10px auto; border-radius: 8px; border: 2px solid #ffc107; box-shadow: none; font-weight: bold; color: #333; outline: none; padding: 0;'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Authorize',
+                cancelButtonText: 'Cancel',
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'rounded-4 shadow-lg border-0 border-top border-warning border-4 p-4',
+                    actions: 'gap-3 mt-2 mb-0',
+                    confirmButton: 'btn btn-warning fw-bold px-4 rounded-pill text-dark m-0',
+                    cancelButton: 'btn btn-light fw-bold px-4 rounded-pill border m-0'
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    let form = document.getElementById('editProductForm');
+                    let input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'verification_password';
+                    input.value = result.value;
+                    form.appendChild(input);
+                    form.submit();
+                }
+            });
+            return false;
+        <?php else: ?>
+            return true;
+        <?php endif; ?>
+    }
+</script>
 
 <?php require_once '../../includes/footer.php'; ?>

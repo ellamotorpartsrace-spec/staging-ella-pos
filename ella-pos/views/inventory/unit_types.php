@@ -395,7 +395,7 @@ function highlightQuery($text, $query) {
                                             'wholesale' => (float) ($row['price_wholesale'] ?? 0),
                                             'dealer' => (float) ($row['price_dealer'] ?? 0)
                                         ];
-                                        if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+                                        if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])) {
                                             $pricesDataPayload['capital'] = (float) ($row['price_capital'] ?? 0);
                                         }
                                         $pricesData = htmlspecialchars(json_encode($pricesDataPayload), ENT_QUOTES, 'UTF-8');
@@ -551,7 +551,7 @@ function highlightQuery($text, $query) {
                         </div>
 
                         <div class="row g-2">
-                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                 <!-- Capital: always auto-calculated, no lock needed -->
                                 <div class="col-12">
                                     <label class="form-label text-secondary small mb-1">Capital Cost <span

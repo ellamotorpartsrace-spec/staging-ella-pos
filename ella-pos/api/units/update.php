@@ -26,7 +26,7 @@ $price_wholesale = isset($_POST['price_wholesale']) ? (float) $_POST['price_whol
 $price_dealer = isset($_POST['price_dealer']) ? (float) $_POST['price_dealer'] : 0.00;
 
 // Security check: We will override this later if user lacks permission
-$isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+$isAdmin = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin']);
 
 if ($id <= 0 || empty($unit_name) || $multiplier < 1) {
     echo json_encode(['success' => false, 'message' => 'Invalid input data.']);

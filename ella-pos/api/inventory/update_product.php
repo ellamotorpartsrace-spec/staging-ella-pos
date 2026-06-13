@@ -87,6 +87,17 @@ try {
             $old_wholesale != $wholesale ||
             $old_dealer != $dealer
         ) {
+            if ($_SESSION['role'] !== 'super_admin') {
+                $verification_password = $_POST['verification_password'] ?? '';
+                if (empty($verification_password)) {
+                    throw new Exception("Super Admin override password is required to update prices.");
+                }
+                
+                if ($verification_password !== '1217') {
+                    throw new Exception("Incorrect override password. Price update aborted.");
+                }
+            }
+
             // 3. Insert into History Table
             $sqlHistory = "INSERT INTO product_price_history 
                 (variation_id, user_id, 
@@ -180,6 +191,21 @@ try {
     }
 
     if ($adj_type && $adj_qty > 0) {
+        if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_stock')) {
+            throw new Exception("You do not have permission to perform quick stock adjustments.");
+        }
+
+        if ($_SESSION['role'] !== 'super_admin') {
+            $verification_password = $_POST['verification_password'] ?? '';
+            if (empty($verification_password)) {
+                throw new Exception("Super Admin override password is required for stock adjustments.");
+            }
+            
+            if ($verification_password !== '1217') {
+                throw new Exception("Incorrect override password. Stock adjustment aborted.");
+            }
+        }
+
         // 1. Fetch current stock
         $stmtStock = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
         $stmtStock->execute([$var_id]);
@@ -208,10 +234,14 @@ try {
     // H. Final Redirect (Preserving Search State)
     // ---------------------------------------------------------
     $return_url = $_POST['return_url'] ?? '../../views/inventory/index.php';
+    
+    // Remove existing highlight_id if present to avoid duplication
+    $return_url = preg_replace('/(&|\?)highlight_id=\d+/', '', $return_url);
+
     if (strpos($return_url, '?') !== false) {
-        $return_url .= "&success=updated";
+        $return_url .= "&success=updated&highlight_id=" . $var_id;
     } else {
-        $return_url .= "?success=updated";
+        $return_url .= "?success=updated&highlight_id=" . $var_id;
     }
 
     header("Location: " . $return_url);
@@ -220,6 +250,8 @@ try {
     if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
-    header("Location: " . BASE_URL . "views/inventory/edit.php?id=$var_id&error=" . urlencode($e->getMessage()));
+    
+    $return_url = $_POST['return_url'] ?? '../../views/inventory/index.php';
+    header("Location: " . BASE_URL . "views/inventory/edit.php?id=$var_id&error=" . urlencode($e->getMessage()) . "&return_url=" . urlencode($return_url));
 }
 ?>

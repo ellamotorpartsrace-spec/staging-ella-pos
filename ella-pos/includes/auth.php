@@ -166,7 +166,7 @@ function hasPermission(string $slug): bool
 {
     if (!isset($_SESSION['user_id']))
         return false;
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin')
+    if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'super_admin'))
         return true;
 
     if (isset($_SESSION['permissions']) && is_array($_SESSION['permissions'])) {

@@ -61,6 +61,7 @@ $dynamicRoles = $rolesStmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Role / Position</label>
                                 <select name="role" class="form-select" required>
+                                    <option value="super_admin">Super Admin (Highest Access)</option>
                                     <option value="admin">Administrator (Full Access)</option>
                                     <?php foreach ($dynamicRoles as $r): ?>
                                         <option value="<?= htmlspecialchars($r['role_slug']) ?>">

@@ -16,7 +16,7 @@ if (!$buyer_id && $walkin_name === '') {
 $page_title = 'Buyer Ledger — Ella POS';
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
-$isAdmin = ($_SESSION['role'] === 'admin' || hasPermission('view_profit'));
+$isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']) || hasPermission('view_profit'));
 ?>
 
 <style>

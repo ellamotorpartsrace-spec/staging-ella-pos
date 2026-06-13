@@ -26,7 +26,7 @@ $price_wholesale = isset($_POST['price_wholesale']) ? (float) $_POST['price_whol
 $price_dealer = isset($_POST['price_dealer']) ? (float) $_POST['price_dealer'] : 0.00;
 
 // Security check: Ignore frontend capital if user is not admin
-$isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+$isAdmin = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin']);
 if (!$isAdmin) {
     $price_capital = 0.00; // Will be calculated after fetching base capital
 }

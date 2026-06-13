@@ -159,7 +159,7 @@ $products = $stmt->fetchAll();
                     <thead class="bg-light">
                         <tr>
                             <th class="ps-4">Product Detail</th>
-                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                 <th>Cost (Capital)</th>
                             <?php endif; ?>
                             <th>SRP (Retail)</th>
@@ -201,7 +201,7 @@ $products = $stmt->fetchAll();
                                         </div>
                                     </td>
 
-                                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                    <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                         <td>
                                             <span class="text-muted small">₱</span> <?= number_format($row['price_capital'], 2) ?>
                                         </td>
@@ -473,7 +473,7 @@ $products = $stmt->fetchAll();
                              </div>
                          </div>
                      </td>
-                     ${!<?= json_encode(isset($_SESSION['role']) && $_SESSION['role'] === 'admin') ?> ? '' : `<td>
+                     ${!<?= json_encode(isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])) ?> ? '' : `<td>
                          <span class="text-muted small">₱</span> ${parseFloat(row.price_capital || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                      </td>`}
                      <td>

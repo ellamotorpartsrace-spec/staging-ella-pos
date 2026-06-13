@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 requireLogin();
 
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Access denied.']);
     exit;

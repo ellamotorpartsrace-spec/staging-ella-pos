@@ -247,6 +247,10 @@ foreach ($users as $u) {
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     }
 
+    .user-avatar.super_admin {
+        background: linear-gradient(135deg, #8b5cf6, #5b21b6);
+    }
+
     .user-avatar.admin {
         background: linear-gradient(135deg, #ef4444, #b91c1c);
     }
@@ -348,6 +352,11 @@ foreach ($users as $u) {
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.8px;
+    }
+
+    .role-badge.super_admin {
+        background: rgba(139, 92, 246, 0.15);
+        color: #8b5cf6;
     }
 
     .role-badge.admin {
@@ -589,7 +598,7 @@ foreach ($users as $u) {
                     <div class="user-card-main">
                         <div class="user-card-header">
                             <div class="user-avatar <?= $role ?>">
-                                <?= strtoupper(substr($username, 0, 1)) ?>
+                                <?= $role === 'super_admin' ? 'SA' : strtoupper(substr($username, 0, 1)) ?>
                                 <?php if ($online == 1 && $row['status'] === 'active'): ?>
                                     <div class="online-indicator" title="Active now"></div>
                                 <?php endif; ?>
@@ -608,7 +617,7 @@ foreach ($users as $u) {
                             </div>
                         </div>
                         <div class="user-card-body">
-                            <span class="role-badge <?= $role ?>"><?= ucfirst($role) ?></span>
+                            <span class="role-badge <?= $role ?>"><?= $role === 'super_admin' ? 'Super Admin' : ucfirst($role) ?></span>
                             <div class="last-login">
                                 <?php if ($last_log): ?>
                                     <div class="last-login-label">Last Activity</div>

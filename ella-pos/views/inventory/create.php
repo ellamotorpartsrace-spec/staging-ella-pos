@@ -123,7 +123,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY category_name ASC")->fet
                         <hr class="text-muted opacity-25">
 
                         <div class="row mb-4">
-                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                 <div class="col-md-3">
                                     <label class="form-label text-muted small">Capital (Cost)</label>
                                     <div class="input-group">

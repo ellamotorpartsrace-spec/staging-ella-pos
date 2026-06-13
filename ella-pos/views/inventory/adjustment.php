@@ -4,9 +4,8 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 // Auth Check
-// Auth Check
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_stock')) {
     denyAccess("You do not have permission to adjust inventory.");
 }
 
@@ -400,7 +399,7 @@ if (isset($_GET['id'])) {
                         <?php endif; ?>
 
                         <form action="../../api/inventory/process_adjustment.php" method="POST" id="adjustmentForm"
-                            onsubmit="return validateForm()">
+                            onsubmit="submitWithPassword(event)">
                             <input type="hidden" name="variation_id" value="<?= $selected_product['variation_id'] ?>">
                             <input type="hidden" name="current_stock" value="<?= $phys ?>">
 
@@ -482,6 +481,7 @@ if (isset($_GET['id'])) {
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     function updateUI() {
         const action = document.querySelector('input[name="action_type"]:checked').value;
@@ -533,9 +533,66 @@ if (isset($_GET['id'])) {
             }
         }
 
-        // Ensure updateUI is called one last time to set the hidden field
         updateUI();
         return true;
+    }
+
+    function submitWithPassword(e) {
+        e.preventDefault();
+        if (!validateForm()) return false;
+
+        <?php if ($_SESSION['role'] !== 'super_admin'): ?>
+            Swal.fire({
+                background: '#ffffff',
+                width: '460px',
+                html: `
+                    <div class="mt-1 mb-0">
+                        <div class="d-flex align-items-center justify-content-center mb-4">
+                            <div class="d-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-circle me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+                                <i class="fa-solid fa-shield-halved fs-4"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-0 text-start" style="font-size: 1.3rem;">Super Admin Override</h4>
+                        </div>
+                        
+                        <div class="rounded-3 mb-2 d-flex align-items-center px-3 py-2 mx-auto text-start" style="background-color: #fff3cd; border: 1px solid #ffeeba;">
+                            <i class="fa-solid fa-circle-exclamation me-2 align-self-start mt-1" style="color: #856404; font-size: 1rem;"></i>
+                            <span style="color: #856404; font-size: 0.85rem; font-weight: 500; line-height: 1.4;">This action modifies sensitive stock data. Please ask a <strong>Super Admin</strong> for the 4-digit PIN.</span>
+                        </div>
+                    </div>
+                `,
+                input: 'password',
+                inputPlaceholder: '••••',
+                inputAttributes: { 
+                    required: 'true',
+                    maxlength: '4',
+                    autocapitalize: 'off',
+                    autocorrect: 'off',
+                    style: 'text-align: center; font-size: 2rem; letter-spacing: 0.25rem; text-indent: 0.25rem; width: 140px; height: 50px; margin: 15px auto 10px auto; border-radius: 8px; border: 2px solid #ffc107; box-shadow: none; font-weight: bold; color: #333; outline: none; padding: 0;'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Authorize',
+                cancelButtonText: 'Cancel',
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'rounded-4 shadow-lg border-0 border-top border-warning border-4 p-4',
+                    actions: 'gap-3 mt-2 mb-0',
+                    confirmButton: 'btn btn-warning fw-bold px-4 rounded-pill text-dark m-0',
+                    cancelButton: 'btn btn-light fw-bold px-4 rounded-pill border m-0'
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    let form = document.getElementById('adjustmentForm');
+                    let input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'verification_password';
+                    input.value = result.value;
+                    form.appendChild(input);
+                    form.submit();
+                }
+            });
+        <?php else: ?>
+            document.getElementById('adjustmentForm').submit();
+        <?php endif; ?>
     }
 
     // Listen for input changes

@@ -258,6 +258,17 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
         padding: 0;
         border-radius: 6px;
     }
+
+    @keyframes highlightFade {
+        0% { background-color: rgba(255, 193, 7, 0.4) !important; }
+        100% { background-color: transparent !important; }
+    }
+    .highlight-updated {
+        animation: highlightFade 3s ease-out forwards;
+    }
+    .highlight-updated td, .highlight-updated .card-body {
+        animation: highlightFade 3s ease-out forwards;
+    }
 </style>
 
 <div class="container-fluid p-4">
@@ -273,7 +284,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
             </div>
         </div>
 
-        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+        <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
             <div class="col-md-4 capital-col">
                 <div class="card shadow-sm border-start border-4 border-success h-100">
                     <div class="card-body">
@@ -342,7 +353,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 <a href="archived.php" class="btn btn-outline-secondary" title="View Archived Products">
                     <i class="fa-solid fa-box-archive"></i> Archived
                 </a>
-                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                     <a href="mass_update.php" class="btn btn-outline-warning" title="Mass Update Products">
                         <i class="fa-solid fa-pen-to-square"></i> Mass Update
                     </a>
@@ -351,7 +362,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                     class="btn btn-outline-success" id="export-csv-btn" title="Export to CSV">
                     <i class="fa-solid fa-file-export"></i> Export
                 </a>
-                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                     <button class="btn btn-outline-secondary" id="btnToggleCost" title="Show/Hide Capital Cost">
                         <i class="fa-solid fa-eye-slash"></i>
                     </button>
@@ -379,7 +390,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                     <thead style="background: var(--bg-surface); border-bottom: 2px solid var(--border-color);">
                         <tr>
                             <th class="ps-4" style="color: var(--text-primary); min-width: 350px;">Product Detail</th>
-                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                 <th class="capital-col text-nowrap" style="color: var(--text-primary);">Cost (Capital)</th>
                             <?php endif; ?>
                             <th class="text-nowrap" style="color: var(--text-primary);">SRP (Retail)</th>
@@ -391,7 +402,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                     <tbody>
                         <?php if (count($products) > 0): ?>
                             <?php foreach ($products as $row): ?>
-                                <tr>
+                                <tr id="product-row-<?= $row['variation_id'] ?>">
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center">
                                             <div class="rounded d-flex align-items-center justify-content-center me-3 overflow-hidden border"
@@ -423,7 +434,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                         </div>
                                     </td>
 
-                                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                    <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                         <td class="capital-col text-nowrap">
                                             <div class="d-inline-flex align-items-center gap-2">
                                                 <span><span class="text-muted small">&#8369;</span> <?= number_format($row['price_capital'], 2) ?></span>
@@ -515,7 +526,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                         if ($row['status'] !== 'active')
                             $statusClass = 'status-inactive';
                         ?>
-                        <div class="card inventory-card <?= $statusClass ?> border-0 shadow-sm">
+                        <div id="product-card-<?= $row['variation_id'] ?>" class="card inventory-card <?= $statusClass ?> border-0 shadow-sm">
                             <div class="card-body p-3">
                                 <div class="d-flex mb-3">
                                     <!-- Image -->
@@ -979,7 +990,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                              </div>
                          </div>
                      </td>
-                     ${!<?= json_encode(isset($_SESSION['role']) && $_SESSION['role'] === 'admin') ?> ? '' : `<td class="capital-col text-nowrap ${isHidden ? 'd-none' : ''}">
+                     ${!<?= json_encode(isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])) ?> ? '' : `<td class="capital-col text-nowrap ${isHidden ? 'd-none' : ''}">
                          <div class="d-inline-flex align-items-center gap-2">
                              <span><span class="text-muted small">&#8369;</span> ${parseFloat(row.price_capital || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                              <button type="button" class="btn btn-outline-secondary btn-sm capital-copy-btn"
@@ -1135,8 +1146,32 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
         window.addEventListener('resize', updateView);
 
         InventorySearch.init();
+
+        // Highlight product if returning from an update
+        const urlParams = new URLSearchParams(window.location.search);
+        const highlightId = urlParams.get('highlight_id');
+        if (highlightId) {
+            setTimeout(() => {
+                const row = document.getElementById(`product-row-${highlightId}`);
+                const card = document.getElementById(`product-card-${highlightId}`);
+                
+                let targetEl = null;
+                if (window.innerWidth >= 992 && row) targetEl = row;
+                else if (window.innerWidth < 992 && card) targetEl = card;
+                else if (row) targetEl = row;
+                else if (card) targetEl = card;
+
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetEl.classList.add('highlight-updated');
+                    
+                    // Clean up URL without reloading
+                    const newUrl = window.location.pathname + window.location.search.replace(/(&|\?)highlight_id=\d+/, '').replace(/(&|\?)success=updated/, '');
+                    window.history.replaceState({}, document.title, newUrl || window.location.pathname);
+                }
+            }, 300); // slight delay to allow layout to settle
+        }
     });
 </script>
-
 
 <?php require_once '../../includes/footer.php'; ?>

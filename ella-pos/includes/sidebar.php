@@ -5,13 +5,13 @@ require_once __DIR__ . '/settings_helper.php';
 
 $role = $_SESSION['role'] ?? 'cashier';
 $current_page = basename($_SERVER['PHP_SELF']);
-$canManageInventory = $role === 'admin' || hasPermission('adjust_prices') || in_array($role, ['manager', 'stockman']);
+$canManageInventory = in_array($role, ['admin', 'super_admin']) || hasPermission('adjust_prices') || in_array($role, ['manager', 'stockman']);
 $canViewInventory = $canManageInventory || hasPermission('view_product_history');
 $canViewShopee = true; // Open for all logged in users
 $canViewSales = hasPermission('make_sales') || hasPermission('view_sales');
 $canViewCustomers = hasPermission('view_buyers') || hasPermission('view_wallet_ledger') || hasPermission('view_receivables');
 $canViewFinance = hasPermission('view_finance') || hasPermission('view_payables') || hasPermission('view_expenses') || hasPermission('manage_service_fees');
-$canViewAdmin = $role === 'admin' || hasPermission('manage_users') || hasPermission('manage_settings');
+$canViewAdmin = in_array($role, ['admin', 'super_admin']) || hasPermission('manage_users') || hasPermission('manage_settings');
 
 // Load store name from settings
 try {
@@ -63,7 +63,7 @@ try {
             </a>
         </li>
 
-        <?php if ($role === 'admin' || hasPermission('view_profit') || in_array($role, ['manager'])): ?>
+        <?php if (in_array($role, ['admin', 'super_admin']) || hasPermission('view_profit') || in_array($role, ['manager'])): ?>
             <li>
                 <a href="<?= BASE_URL ?>views/dashboard/statistics.php"
                     class="<?= $current_page === 'statistics.php' ? 'active' : '' ?>">
@@ -133,7 +133,7 @@ try {
                             <i class="fa-solid fa-truck-ramp-box"></i> <span class="nav-text">Stocks</span>
                         </a>
                     </li>
-                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/inventory/pending_approvals.php"
                             class="<?= $current_page === 'pending_approvals.php' ? 'active' : '' ?>">
@@ -159,7 +159,7 @@ try {
                             <i class="fa-solid fa-file-invoice"></i> <span class="nav-text">Stock-In Records</span>
                         </a>
                     </li>
-                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                         <li>
                             <a href="<?= BASE_URL ?>views/inventory/reference_image_sync.php"
                                 class="<?= $current_page === 'reference_image_sync.php' ? 'active' : '' ?>">
@@ -188,7 +188,7 @@ try {
                         </a>
                     </li>
                 <?php endif; ?>
-                <?php if ($_SESSION['role'] === 'admin'): ?>
+                <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/inventory/backup_recovery.php"
                             class="<?= $current_page === 'backup_recovery.php' ? 'active' : '' ?>">
@@ -239,7 +239,7 @@ try {
                         </a>
                     </li>
                     <?php endif; ?>
-                    <?php if ($role === 'admin'): ?>
+                    <?php if (in_array($role, ['admin', 'super_admin'])): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/shopee/logs.php"
                             class="<?= $current_page === 'logs.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
@@ -247,7 +247,7 @@ try {
                         </a>
                     </li>
                     <?php endif; ?>
-                    <?php if ($role === 'admin'): ?>
+                    <?php if (in_array($role, ['admin', 'super_admin'])): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/shopee/settings.php"
                             class="<?= $current_page === 'settings.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
@@ -369,7 +369,7 @@ try {
                 <i class="fa-solid fa-chevron-down small transition-transform" id="adminChevron"></i>
             </div>
             <div class="collapse show" id="adminCollapse">
-                <?php if ($role === 'admin' || hasPermission('manage_users')): ?>
+                <?php if (in_array($role, ['admin', 'super_admin']) || hasPermission('manage_users')): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/users/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'users') !== false ? 'active' : '' ?>">
@@ -378,7 +378,7 @@ try {
                     </li>
                 <?php endif; ?>
 
-                <?php if ($role === 'admin'): ?>
+                <?php if (in_array($role, ['admin', 'super_admin'])): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/pos/admin_drafts.php"
                             class="<?= $current_page === 'admin_drafts.php' ? 'active' : '' ?>">
@@ -399,7 +399,7 @@ try {
                     </li>
                 <?php endif; ?>
 
-                <?php if ($role === 'admin' || hasPermission('manage_settings')): ?>
+                <?php if (in_array($role, ['admin', 'super_admin']) || hasPermission('manage_settings')): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/system/settings.php"
                             class="<?= $current_page === 'settings.php' && strpos($_SERVER['REQUEST_URI'], 'system') !== false ? 'active' : '' ?>">
@@ -420,7 +420,7 @@ try {
                     </li>
                 <?php endif; ?>
 
-                <?php if ($role === 'admin'): ?>
+                <?php if (in_array($role, ['admin', 'super_admin'])): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/system/receipt_templates.php"
                             class="<?= $current_page === 'receipt_templates.php' ? 'active' : '' ?>">
@@ -492,11 +492,11 @@ try {
                     <span class="d-block fw-bold text-dark">
                         <?= htmlspecialchars($_SESSION['full_name'] ?? 'User') ?>
                     </span>
-                    <small class="text-muted"><?= ucfirst($role) ?></small>
+                    <small class="text-muted"><?= $role === 'super_admin' ? 'Super Admin' : ucfirst($role) ?></small>
                 </div>
-                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                    style="width: 40px; height: 40px;">
-                    <i class="fa-solid fa-user"></i>
+                <div class="<?= $role !== 'super_admin' ? 'bg-primary' : '' ?> text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                    style="width: 40px; height: 40px; <?= $role === 'super_admin' ? 'background: linear-gradient(135deg, #8b5cf6, #5b21b6);' : '' ?>">
+                    <?= $role === 'super_admin' ? 'SA' : strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)) ?>
                 </div>
             </div>
         </div>

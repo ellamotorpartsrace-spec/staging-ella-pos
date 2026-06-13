@@ -74,6 +74,7 @@ if (!$user) {
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Role / Position</label>
                         <select name="role" class="form-select">
+                            <option value="super_admin" <?= $user['role'] === 'super_admin' ? 'selected' : '' ?>>Super Admin (Highest Access)</option>
                             <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Administrator (Full
                                 Access)</option>
                             <?php foreach ($dynamicRoles as $r): ?>

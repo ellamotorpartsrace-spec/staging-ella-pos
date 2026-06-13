@@ -71,7 +71,7 @@ $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
                             <tr>
                                 <th class="ps-3">Product / SKU</th>
                                 <th>Variation</th>
-                                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                     <th>Cost</th>
                                 <?php endif; ?>
                                 <th class="text-end pe-3">SRP</th>
@@ -86,7 +86,7 @@ $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
                                             <small class="text-muted font-monospace"><?= $i['sku'] ?></small>
                                         </td>
                                         <td><?= $i['variation_name'] ?></td>
-                                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                        <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                             <td class="text-primary fw-bold">₱<?= number_format($i['price_capital'], 2) ?></td>
                                         <?php endif; ?>
                                         <td class="text-end pe-3 fw-bold">₱<?= number_format($i['price_retail'], 2) ?></td>

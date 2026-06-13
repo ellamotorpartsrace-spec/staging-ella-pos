@@ -32,7 +32,7 @@ class Database
             $this->password = "elladbPogisiBen";
         } else {
             // --- ONLINE SETTINGS (PRODUCTION) ---
-            $this->host = "127.0.0.1";
+            $this->host = "localhost";
             $this->dbname = "u296077208_ella_parts_db";
             $this->username = "u296077208_BenzEllaMotor";
             $this->password = "elladbPogisiBen13";

@@ -585,7 +585,7 @@ if (isset($_GET['id'])) {
     <div class="alert alert-warning shadow-sm border-0 d-flex align-items-center mb-4">
         <i class="fa-solid fa-shield-halved fa-2x me-3 text-warning opacity-75"></i>
         <div>
-            <h6 class="mb-0 fw-bold">Admin Approval Required</h6>
+            <h6 class="mb-0 fw-bold">Super Admin Approval Required</h6>
             <small>All submitted restocks will be sent to the Admin queue for review and approval before they take effect.</small>
         </div>
     </div>
@@ -760,7 +760,7 @@ if (isset($_GET['id'])) {
                                             class="form-control form-control-lg border-success fw-bold" placeholder="0"
                                             min="1" required autofocus>
                                     </div>
-                                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                    <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Capital Price (Per Unit)</label>
                                             <div class="input-group">
@@ -774,7 +774,7 @@ if (isset($_GET['id'])) {
                                         <input type="hidden" name="new_capital" id="single-capital"
                                             value="<?= $selected_product['price_capital'] ?>">
                                     <?php endif; ?>
-                                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                    <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                         <!-- Total Cost Summary -->
                                         <div class="col-12">
                                             <div class="single-total-card p-3" id="single-total-card">
@@ -863,7 +863,7 @@ if (isset($_GET['id'])) {
                                             </div>
                                             <div class="summary-label">New Stock</div>
                                         </div>
-                                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                        <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                                             <div class="summary-item">
                                                 <div class="summary-value" id="sf-total-cost">₱0.00</div>
                                                 <div class="summary-label">Total Cost</div>
@@ -1909,7 +1909,7 @@ if (isset($_GET['id'])) {
             }
 
             const confirmBatch = await Swal.fire({
-                title: '<i class="fa-solid fa-shield-halved text-warning me-2"></i>Admin Approval Required',
+                title: '<i class="fa-solid fa-shield-halved text-warning me-2"></i> Super Admin Approval Required',
                 html: `
                     <div class="mt-2">
                         <p class="mb-3 text-muted">You are about to submit <strong>${this.items.length} items</strong> for restocking.</p>
@@ -2089,7 +2089,7 @@ if (isset($_GET['id'])) {
 
                     // Final confirmation before submitting single mode
                     Swal.fire({
-                        title: '<i class="fa-solid fa-shield-halved text-warning me-2"></i>Admin Approval Required',
+                        title: '<i class="fa-solid fa-shield-halved text-warning me-2"></i>Super Admin Approval Required',
                         html: `
                             <div class="mt-2">
                                 <p class="mb-3 text-muted">You are about to submit this product for restocking.</p>

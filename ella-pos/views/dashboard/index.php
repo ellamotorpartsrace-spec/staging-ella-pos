@@ -244,7 +244,7 @@ require_once '../../includes/sidebar.php';
             </div>
         <?php endif; ?>
 
-        <?php if ($_SESSION['role'] === 'admin'): ?>
+        <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
             <div class="col-md-4">
                 <a href="<?= BASE_URL ?>views/pos/receipts.php" class="card dashboard-card bg-white h-100 text-decoration-none">
                     <div class="card-body">

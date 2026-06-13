@@ -22,7 +22,7 @@ $suppliers = $conn->query("SELECT supplier_id, supplier_name FROM suppliers ORDE
 $selected_supplier = $_GET['supplier_id'] ?? '';
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
-$isAdmin = ($_SESSION['role'] === 'admin');
+$isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
 ?>
 
 <style>

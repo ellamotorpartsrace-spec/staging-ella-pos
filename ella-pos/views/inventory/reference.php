@@ -36,7 +36,7 @@ $db = new Database();
 $conn = $db->getConnection();
 
 $payableSyncError = null;
-if ($_SESSION['role'] === 'admin' || hasPermission('view_payables')) {
+if (in_array($_SESSION['role'], ['admin', 'super_admin']) || hasPermission('view_payables')) {
     try {
         $conn->beginTransaction();
         syncSupplierPayableForReference($conn, (string) $ref);
