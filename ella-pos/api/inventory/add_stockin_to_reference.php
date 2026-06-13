@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 requireLogin();
 
 // Admin/Manager/Stockman only
-if (!in_array($_SESSION['role'], ['admin', 'manager', 'stockman'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin', 'manager', 'stockman'])) {
     echo json_encode(['success' => false, 'error' => 'Permission denied']);
     exit;
 }

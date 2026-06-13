@@ -6,7 +6,7 @@ require_once '../../includes/auth.php';
 
 requireLogin();
 
-if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
     die("Permission denied.");
 }
 

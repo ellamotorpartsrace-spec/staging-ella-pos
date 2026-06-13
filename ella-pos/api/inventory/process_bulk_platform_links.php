@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 requireLogin();
-if (!hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['admin', 'manager', 'stockman'])) {
+if (!hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['admin', 'super_admin', 'manager', 'stockman'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Permission Denied']);
     exit;

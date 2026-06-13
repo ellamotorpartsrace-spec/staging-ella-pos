@@ -3,7 +3,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 requireLogin();
-if (!hasPermission('manage_settings') && $_SESSION['role'] !== 'admin') {
+if (!hasPermission('manage_settings') && !in_array($_SESSION['role'], ['admin', 'super_admin'])) {
     denyAccess("Admin privileges required to view all user drafts.");
 }
 

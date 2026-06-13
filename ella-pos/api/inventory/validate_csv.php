@@ -5,7 +5,7 @@ require_once '../../includes/auth.php';
 
 // Auth Check
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
     http_response_code(403);
     echo json_encode(['error' => 'Permission denied']);
     exit;

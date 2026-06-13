@@ -12,7 +12,7 @@ require_once '../../includes/logger.php';
 
 requireLogin();
 
-if ($_SESSION['role'] !== 'admin' && !hasPermission('view_profit') && !in_array($_SESSION['role'], ['manager'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('view_profit') && !in_array($_SESSION['role'], ['manager'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Permission denied']);
     exit;

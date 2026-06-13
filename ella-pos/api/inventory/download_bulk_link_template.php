@@ -9,7 +9,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 requireLogin();
-if (!hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['admin', 'manager', 'stockman'])) {
+if (!hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['admin', 'super_admin', 'manager', 'stockman'])) {
     http_response_code(403);
     die("Permission Denied");
 }

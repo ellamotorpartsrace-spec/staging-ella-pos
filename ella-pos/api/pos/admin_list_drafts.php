@@ -8,7 +8,7 @@ require_once '../../includes/auth.php';
 
 // Must be logged in and admin
 requireLogin();
-if (!hasPermission('manage_settings') && $_SESSION['role'] !== 'admin') {
+if (!hasPermission('manage_settings') && !in_array($_SESSION['role'], ['admin', 'super_admin'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Admin privileges required']);
     exit;

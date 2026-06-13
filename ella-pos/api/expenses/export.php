@@ -10,7 +10,7 @@ require_once '../../includes/logger.php';
 
 requireLogin();
 
-if ($_SESSION['role'] !== 'admin' && !hasPermission('view_profit') && $_SESSION['role'] !== 'manager') {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin', 'manager']) && !hasPermission('view_profit')) {
     die("Unauthorized access");
 }
 

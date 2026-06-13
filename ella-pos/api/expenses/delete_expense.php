@@ -10,7 +10,7 @@ require_once '../../includes/logger.php';
 requireLogin();
 
 // Only admin/manager can delete
-if (!hasPermission('manage_settings') && $_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'manager') {
+if (!hasPermission('manage_settings') && !in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;

@@ -5,7 +5,7 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 requireLogin();
-if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && !hasPermission('view_profit') && !in_array($_SESSION['role'], ['manager', 'accountant']))) {
+if (!isset($_SESSION['role']) || (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('view_profit') && !in_array($_SESSION['role'], ['manager', 'accountant']))) {
     http_response_code(403);
     echo json_encode(['error' => 'Permission denied']);
     exit;

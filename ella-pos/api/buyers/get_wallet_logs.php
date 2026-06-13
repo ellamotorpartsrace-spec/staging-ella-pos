@@ -8,7 +8,7 @@ require_once '../../config/database.php';
 
 requireLogin();
 
-if ($_SESSION['role'] !== 'admin' && !in_array($_SESSION['role'], ['manager']) && !hasPermission('view_profit')) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !in_array($_SESSION['role'], ['manager']) && !hasPermission('view_profit')) {
     echo json_encode(['success' => false, 'error' => 'Permission denied']);
     exit;
 }

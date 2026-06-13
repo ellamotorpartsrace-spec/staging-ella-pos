@@ -8,7 +8,7 @@ require_once '../../includes/reference_attachment_storage.php';
 header('Content-Type: application/json');
 
 // Only allow admin/manager/stockman
-if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'manager', 'stockman'])) {
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'super_admin', 'manager', 'stockman'])) {
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;
 }

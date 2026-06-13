@@ -6,7 +6,7 @@ require_once '../../includes/auth.php';
 // Admin only
 // Admin only
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && !hasPermission('manage_settings')) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('manage_settings')) {
     header('Location: ' . BASE_URL . 'views/dashboard/index.php');
     exit;
 }

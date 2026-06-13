@@ -5,7 +5,7 @@ require_once '../../includes/auth.php';
 
 // Auth Check
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && !hasPermission('manage_settings') && !in_array($_SESSION['role'], ['manager', 'stockman', 'cashier'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('manage_settings') && !in_array($_SESSION['role'], ['manager', 'stockman', 'cashier'])) {
     denyAccess("You do not have permission to view suppliers.");
 }
 

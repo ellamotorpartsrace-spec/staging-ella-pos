@@ -11,7 +11,7 @@ header('Content-Type: application/json');
 
 requireLogin();
 
-if (($_SESSION['role'] ?? '') !== 'admin') {
+if (!in_array($_SESSION['role'] ?? '', ['admin', 'super_admin'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Unauthorized. Admin access required.']);
     exit;

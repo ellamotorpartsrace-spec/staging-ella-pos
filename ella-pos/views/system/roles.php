@@ -4,7 +4,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && !hasPermission('manage_settings')) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('manage_settings')) {
     denyAccess("You do not have permission to manage roles.");
 }
 
