@@ -4,7 +4,7 @@ $page_title = 'Shopee Sync — Settings';
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
-requireRole(['admin']);
+requireRole(['admin', 'super_admin']);
 $isAdmin = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin']);
 
 require_once '../../includes/header.php';

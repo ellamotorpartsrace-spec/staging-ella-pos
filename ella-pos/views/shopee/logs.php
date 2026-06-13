@@ -3,7 +3,7 @@
 $page_title = 'Shopee Sync — Sync Logs';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
-requireRole(['admin']);
+requireRole(['admin', 'super_admin']);
 
 $db = new Database();
 $conn = $db->getConnection();

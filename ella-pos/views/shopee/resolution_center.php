@@ -4,7 +4,7 @@ $page_title = 'Shopee Sync — Resolution Center';
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
-requireRole(['admin']);
+requireRole(['admin', 'super_admin']);
 
 $db = new Database();
 $conn = $db->getConnection();
