@@ -19,7 +19,7 @@ require_once '../../includes/stock_guard.php';
 requireLogin();
 
 // Permission check - usually admin or manager
-if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'manager') {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Permission denied']);
     exit;

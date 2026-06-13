@@ -4,7 +4,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 requireLogin();
-if ($_SESSION['role'] !== 'admin') {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin'])) {
     http_response_code(403);
     die("Permission Denied");
 }

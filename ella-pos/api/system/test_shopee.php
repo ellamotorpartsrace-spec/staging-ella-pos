@@ -9,7 +9,7 @@ require_once '../../includes/auth.php';
 require_once '../../classes/ShopeeAPI.php';
 
 requireLogin();
-if ($_SESSION['role'] !== 'admin') {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Permission Denied']);
     exit;

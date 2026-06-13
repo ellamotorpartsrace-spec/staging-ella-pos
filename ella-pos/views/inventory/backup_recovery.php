@@ -3,7 +3,7 @@ $page_title = 'Inventory Backup & Recovery';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 requireLogin();
-if ($_SESSION['role'] !== 'admin') { denyAccess('Admin access required.'); }
+if (!in_array($_SESSION['role'], ['admin', 'super_admin'])) { denyAccess('Admin access required.'); }
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 ?>

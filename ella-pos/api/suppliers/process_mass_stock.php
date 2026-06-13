@@ -10,7 +10,7 @@ header('Content-Type: application/json');
 
 // 1. Check Permissions
 requireLogin();
-if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'manager') {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin', 'manager'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit;
 }

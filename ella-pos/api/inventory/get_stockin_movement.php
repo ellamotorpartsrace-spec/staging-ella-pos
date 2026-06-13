@@ -9,7 +9,7 @@ require_once '../../includes/stockin_adjustment_log.php';
 requireLogin();
 
 // Admin only
-if ($_SESSION['role'] !== 'admin') {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin'])) {
     echo json_encode(['success' => false, 'error' => 'Permission denied']);
     exit;
 }
