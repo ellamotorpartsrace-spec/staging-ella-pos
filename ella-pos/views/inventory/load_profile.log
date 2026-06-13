@@ -640,3 +640,13 @@ After config.php: 0.81ms
 After sidebar.php: 32.41ms
 After sqlStats: 43.69ms
 After sqlProducts: 56.07ms
+Start index.php
+After config.php: 4.52ms
+After sidebar.php: 76.7ms
+After sqlStats: 121.39ms
+After sqlProducts: 152.75ms
+Start index.php
+After config.php: 18.17ms
+After sidebar.php: 64.51ms
+After sqlStats: 97.84ms
+After sqlProducts: 126.31ms
