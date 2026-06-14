@@ -371,14 +371,33 @@ const ReceiptFunctions = {
           }, 800);
         }
 
-        // Show receipt with the actual sale reference and date from the database
-        this.showReceiptWithRef(data.sale_ref, data.created_at, {
-          wallet_supplement: walletSupplementAmt,
-          saved_to_wallet: (saveToWallet && changeDue > 0) ? changeDue : 0,
-          shortfall_deducted: !shortfallAsCredit ? (shortfallAmt || 0) : 0,
-          shortfall_as_credit: shortfallAsCredit ? (shortfallAmt || 0) : 0,
-          paid_by_wallet: (paymentMethod === 'wallet') ? grandTotal : 0,
+        // Show a styled success dialog using the globally available EllaConfirm
+        const showReceipt = await EllaConfirm.show({
+            title: 'Transaction Successful',
+            message: `<strong>Reference:</strong> <span class="text-primary fw-bold">${data.sale_ref}</span><br>
+                      <strong>Date:</strong> ${data.created_at ? new Date(data.created_at.replace(/-/g, '/')).toLocaleString() : new Date().toLocaleString()}<br>
+                      <strong>Grand Total:</strong> <span class="fw-bold text-success">₱${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><br>
+                      Print or preview receipt?`,
+            confirmText: 'Print Receipt',
+            cancelText: 'New Sale',
+            confirmClass: 'btn-success',
+            icon: 'fa-circle-check',
+            iconColor: 'text-success',
+            isHtml: true,
+            modalSize: 'modal-md'
         });
+
+        if (showReceipt) {
+            // Show receipt with the actual sale reference and date from the database
+            this.showReceiptWithRef(data.sale_ref, data.created_at, {
+              wallet_supplement: walletSupplementAmt,
+              saved_to_wallet: (saveToWallet && changeDue > 0) ? changeDue : 0,
+              shortfall_deducted: !shortfallAsCredit ? (shortfallAmt || 0) : 0,
+              shortfall_as_credit: shortfallAsCredit ? (shortfallAmt || 0) : 0,
+              paid_by_wallet: (paymentMethod === 'wallet') ? grandTotal : 0,
+            });
+        }
+
         POS.cart = [];
         if (typeof POS.clearState === 'function') POS.clearState();
         document.getElementById("amount-tendered").value = "";
@@ -390,10 +409,10 @@ const ReceiptFunctions = {
           document.querySelectorAll('.mix-amount-input').forEach(input => input.value = '');
         }
 
-        // Refresh page to update stock levels
+        // Refresh page after a brief delay to allow the print tab/popup to spawn
         setTimeout(() => {
           window.location.reload();
-        }, 500);
+        }, 300);
         return;
       }
 

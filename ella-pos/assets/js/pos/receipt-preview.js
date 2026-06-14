@@ -158,11 +158,16 @@ window.ReceiptPreview = {
                         display: inline-block;
                         width: 100%;
                     }
-                    /* Floating button for download */
-                    .no-print-btn {
+                    /* Floating actions container */
+                    .no-print-actions {
                         position: fixed;
                         top: 10px;
                         right: 10px;
+                        display: flex;
+                        gap: 8px;
+                        z-index: 9999;
+                    }
+                    .no-print-btn {
                         background: #0d6efd;
                         color: #fff;
                         border: none;
@@ -172,23 +177,34 @@ window.ReceiptPreview = {
                         font-family: Arial, sans-serif;
                         font-size: 14px;
                         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                        z-index: 9999;
+                        transition: background-color 0.2s;
                     }
                     .no-print-btn:hover { background: #0b5ed7; }
+                    .no-print-btn.btn-print {
+                        background: #198754;
+                    }
+                    .no-print-btn.btn-print:hover {
+                        background: #157347;
+                    }
                     .no-print-btn i { margin-right: 5px; }
 
                     @media print {
                         body { background: #fff; padding: 0; margin: 0; }
                         #receipt-capture-area { background: transparent; display: block; }
-                        .no-print-btn { display: none !important; }
+                        .no-print-actions { display: none !important; }
                         @page { margin: 0; size: ${format === 'a4' ? 'A4' : '80mm auto'}; }
                     }
                 </style>
             </head>
             <body>
-                <button class="no-print-btn" onclick="downloadReceiptImage()">
-                    Download Image
-                </button>
+                <div class="no-print-actions">
+                    <button class="no-print-btn btn-print" onclick="window.print()">
+                        Print Receipt
+                    </button>
+                    <button class="no-print-btn" onclick="downloadReceiptImage()">
+                        Download Image
+                    </button>
+                </div>
                 <div id="receipt-capture-area">
                     ${receiptHTML}
                 </div>
@@ -1030,17 +1046,13 @@ window.ReceiptPreview = {
             return html;
         };
 
-        // Chunk cart dynamically: group up to 25 items, but pull remaining 26/27 items onto the last page
+        // Chunk cart dynamically: group up to 15 items per page
         const pages = [];
         let itemIndex = 0;
+        const maxItemsPerPage = 15;
         while (itemIndex < cart.length) {
-            const remaining = cart.length - itemIndex;
-            let chunkSize = 25;
-            if (remaining === 26 || remaining === 27) {
-                chunkSize = remaining;
-            }
-            pages.push(cart.slice(itemIndex, itemIndex + chunkSize));
-            itemIndex += chunkSize;
+            pages.push(cart.slice(itemIndex, itemIndex + maxItemsPerPage));
+            itemIndex += maxItemsPerPage;
         }
         if (pages.length === 0) {
             pages.push([]);
