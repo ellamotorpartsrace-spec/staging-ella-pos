@@ -18,13 +18,28 @@ try {
     $_sdb = new Database();
     $_sconn = $_sdb->getConnection();
     $_store_name = getSetting($_sconn, 'store_name', 'ELLA MOTOR PARTS');
+
+    $_pending_approvals_count = 0;
+    if (isset($role) && $role === 'super_admin') {
+        $_pa_stmt = $_sconn->prepare("SELECT COUNT(DISTINCT COALESCE(batch_id, CONCAT('REQ-', request_id))) as count FROM restock_requests WHERE status = 'pending'");
+        $_pa_stmt->execute();
+        $_pa_row = $_pa_stmt->fetch(PDO::FETCH_ASSOC);
+        $_pending_approvals_count = $_pa_row['count'] ?? 0;
+    }
 } catch (Exception $e) {
     $_store_name = 'ELLA MOTOR PARTS';
+    $_pending_approvals_count = 0;
 }
 ?>
 
 <!-- Sidebar Overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<style>
+    #wrapper.toggled .sidebar-mini-badge {
+        display: flex !important;
+    }
+</style>
 
 <div id="sidebar">
     <div class="sidebar-header">
@@ -136,8 +151,18 @@ try {
                     <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/inventory/pending_approvals.php"
-                            class="<?= $current_page === 'pending_approvals.php' ? 'active' : '' ?>">
-                            <i class="fa-solid fa-clipboard-check"></i> <span class="nav-text">Pending Approvals</span>
+                            class="<?= $current_page === 'pending_approvals.php' ? 'active' : '' ?> position-relative">
+                            <i class="fa-solid fa-clipboard-check"></i> 
+                            
+                            <?php if (!empty($_pending_approvals_count) && $_pending_approvals_count > 0): ?>
+                                <span class="badge bg-danger rounded-pill position-absolute sidebar-mini-badge align-items-center justify-content-center shadow-sm" style="display: none; top: 4px; right: 4px; font-size: 0.65rem; padding: 0.2em 0.4em; min-width: 18px; height: 18px;"><?= $_pending_approvals_count ?></span>
+                            <?php endif; ?>
+
+                            <span class="nav-text">Pending Approvals
+                                <?php if (!empty($_pending_approvals_count) && $_pending_approvals_count > 0): ?>
+                                    <span class="badge bg-danger rounded-pill ms-1"><?= $_pending_approvals_count ?></span>
+                                <?php endif; ?>
+                            </span>
                         </a>
                     </li>
                     <?php endif; ?>
