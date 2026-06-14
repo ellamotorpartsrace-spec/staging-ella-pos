@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 
 requireLogin();
-requirePermission('manage_users');
+requireRole(['super_admin']);
 
 // Get Data
 $id = $_POST['id'] ?? '';

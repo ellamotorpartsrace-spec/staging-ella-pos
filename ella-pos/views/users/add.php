@@ -3,9 +3,9 @@
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
-// Security: Only Admins can add users
+// Security: Only Super Admins can add users
 requireLogin();
-requirePermission('manage_users');
+requireRole(['super_admin']);
 
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';

@@ -394,7 +394,7 @@ try {
                 <i class="fa-solid fa-chevron-down small transition-transform" id="adminChevron"></i>
             </div>
             <div class="collapse show" id="adminCollapse">
-                <?php if (in_array($role, ['admin', 'super_admin']) || hasPermission('manage_users')): ?>
+                <?php if ($role === 'super_admin'): ?>
                     <li>
                         <a href="<?= BASE_URL ?>views/users/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'users') !== false ? 'active' : '' ?>">

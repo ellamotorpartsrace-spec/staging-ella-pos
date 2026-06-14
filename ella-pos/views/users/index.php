@@ -3,9 +3,9 @@
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
-// Auth Check - Admin Only
+// Auth Check - Super Admin Only
 requireLogin();
-requirePermission('manage_users'); // Allows admins and custom roles with this permission
+requireRole(['super_admin']); // Only super admins can manage users now
 
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';

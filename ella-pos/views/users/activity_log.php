@@ -3,11 +3,9 @@
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
-// Security: Only Admins can view activity logs
+// Security: Only Super Admins can view activity logs
 requireLogin();
-if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('manage_settings')) {
-    denyAccess("You do not have permission to view activity logs.");
-}
+requireRole(['super_admin']);
 
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
