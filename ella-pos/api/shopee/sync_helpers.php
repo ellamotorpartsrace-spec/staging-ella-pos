@@ -66,7 +66,7 @@ if (!function_exists('propagateStockToPos')) {
             $stmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 2");
             $stmt->execute([$posProductId]);
             $prevStockRow = $stmt->fetch();
-            $prevStock = $prevStockRow !== false ? (int)$prevStockRow['quantity'] : 0;
+            $prevStock = $prevStockRow !== false ? (float) $prevStockRow['quantity'] : 0;
 
             if ($prevStockRow === false || $prevStock !== $totalShopeeStock) {
                 // USER REQUEST:

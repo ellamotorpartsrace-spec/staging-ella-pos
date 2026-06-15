@@ -95,7 +95,7 @@ try {
 
         foreach ($return_items as $ri) {
             $id = intval($ri['sale_item_id']);
-            $qty = intval($ri['quantity']);
+            $qty = floatval($ri['quantity']);
             if ($qty <= 0)
                 continue;
 
@@ -162,7 +162,7 @@ try {
 
         foreach ($add_items as $ai) {
             $vId = intval($ai['variation_id']);
-            $qty = intval($ai['quantity']);
+            $qty = floatval($ai['quantity']);
             if ($qty <= 0)
                 continue;
 

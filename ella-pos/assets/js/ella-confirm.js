@@ -17,57 +17,6 @@
  */
 
 const EllaConfirm = (() => {
-    let modalEl = null;
-    let bsModal = null;
-    let resolvePromise = null;
-
-    /** Ensure the modal DOM exists */
-    function ensureModal() {
-        if (modalEl && document.body.contains(modalEl)) return;
-
-        modalEl = document.createElement('div');
-        modalEl.className = 'modal fade';
-        modalEl.id = 'ellaConfirmModal';
-        modalEl.setAttribute('tabindex', '-1');
-        modalEl.setAttribute('aria-hidden', 'true');
-        modalEl.innerHTML = `
-            <div class="modal-dialog modal-dialog-centered modal-sm" id="ella-confirm-dialog">
-                <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
-                    <div class="modal-body text-center p-4">
-                        <div id="ella-confirm-icon" class="mb-3">
-                            <i class="fa-solid fa-question-circle fa-3x text-warning"></i>
-                        </div>
-                        <h5 id="ella-confirm-title" class="fw-bold mb-2">Are you sure?</h5>
-                        <p id="ella-confirm-message" class="text-muted small mb-0">This action cannot be undone.</p>
-                    </div>
-                    <div class="modal-footer border-0 justify-content-center gap-2 pb-4 pt-0">
-                        <button type="button" class="btn btn-outline-secondary px-4" id="ella-confirm-cancel" data-bs-dismiss="modal">
-                            Cancel
-                        </button>
-                        <button type="button" class="btn btn-danger px-4" id="ella-confirm-ok">
-                            Confirm
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modalEl);
-
-        // Confirm button handler
-        modalEl.querySelector('#ella-confirm-ok').addEventListener('click', () => {
-            if (bsModal) bsModal.hide();
-            if (resolvePromise) resolvePromise(true);
-            resolvePromise = null;
-        });
-
-        // Cancel / dismiss handler
-        modalEl.addEventListener('hidden.bs.modal', () => {
-            if (resolvePromise) resolvePromise(false);
-            resolvePromise = null;
-        });
-    }
-
     /**
      * Show a confirmation dialog
      * @param {Object} options
@@ -85,49 +34,74 @@ const EllaConfirm = (() => {
      * @returns {Promise<boolean>}
      */
     function show(options = {}) {
-        ensureModal();
-
-        const {
-            title = 'Are you sure?',
-            message = 'This action cannot be undone.',
-            confirmText = 'Confirm',
-            cancelText = 'Cancel',
-            confirmClass = 'btn-danger',
-            icon = 'fa-question-circle',
-            iconColor = 'text-warning',
-            isHtml = false,
-            modalSize = 'modal-sm',
-            onConfirm = null,
-            onCancel = null
-        } = options;
-
-        // Update DOM
-        modalEl.querySelector('#ella-confirm-dialog').className = `modal-dialog modal-dialog-centered ${modalSize}`;
-        modalEl.querySelector('#ella-confirm-title').textContent = title;
-        
-        if (isHtml) {
-            modalEl.querySelector('#ella-confirm-message').innerHTML = message;
-        } else {
-            modalEl.querySelector('#ella-confirm-message').textContent = message;
-        }
-
-        const okBtn = modalEl.querySelector('#ella-confirm-ok');
-        okBtn.textContent = confirmText;
-        okBtn.className = `btn ${confirmClass} px-4`;
-
-        modalEl.querySelector('#ella-confirm-cancel').textContent = cancelText;
-        modalEl.querySelector('#ella-confirm-icon').innerHTML =
-            `<i class="fa-solid ${icon} fa-3x ${iconColor}"></i>`;
-
-        // Create promise
         return new Promise((resolve) => {
-            resolvePromise = (confirmed) => {
-                if (confirmed && onConfirm) onConfirm();
-                if (!confirmed && onCancel) onCancel();
-                resolve(confirmed);
-            };
+            const {
+                title = 'Are you sure?',
+                message = 'This action cannot be undone.',
+                confirmText = 'Confirm',
+                cancelText = 'Cancel',
+                confirmClass = 'btn-danger',
+                icon = 'fa-question-circle',
+                iconColor = 'text-warning',
+                isHtml = false,
+                modalSize = 'modal-sm',
+                onConfirm = null,
+                onCancel = null
+            } = options;
 
-            bsModal = new bootstrap.Modal(modalEl);
+            // Create fresh DOM element
+            const modalEl = document.createElement('div');
+            modalEl.className = 'modal fade';
+            modalEl.setAttribute('tabindex', '-1');
+            modalEl.setAttribute('aria-hidden', 'true');
+            modalEl.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered ${modalSize}">
+                    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                        <div class="modal-body text-center p-4">
+                            <div class="mb-3">
+                                <i class="fa-solid ${icon} fa-3x ${iconColor}"></i>
+                            </div>
+                            <h5 class="fw-bold mb-2">${title}</h5>
+                            <p class="text-muted small mb-0">${isHtml ? message : ''}</p>
+                        </div>
+                        <div class="modal-footer border-0 justify-content-center gap-2 pb-4 pt-0">
+                            <button type="button" class="btn btn-outline-secondary px-4 btn-cancel" data-bs-dismiss="modal">
+                                ${cancelText}
+                            </button>
+                            <button type="button" class="btn ${confirmClass} px-4 btn-confirm">
+                                ${confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (!isHtml) {
+                modalEl.querySelector('p').textContent = message;
+            }
+
+            document.body.appendChild(modalEl);
+            const bsModal = new bootstrap.Modal(modalEl);
+
+            let resolved = false;
+
+            modalEl.querySelector('.btn-confirm').addEventListener('click', () => {
+                resolved = true;
+                if (onConfirm) onConfirm();
+                bsModal.hide();
+            });
+
+            modalEl.querySelector('.btn-cancel').addEventListener('click', () => {
+                resolved = false;
+                if (onCancel) onCancel();
+                bsModal.hide();
+            });
+
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                resolve(resolved);
+                modalEl.remove();
+            });
+
             bsModal.show();
         });
     }

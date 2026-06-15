@@ -84,7 +84,7 @@ try {
     foreach ($items as $item) {
         $saleItemId = intval($item['sale_item_id'] ?? 0);
         $variationId = intval($item['variation_id'] ?? 0);
-        $returnQty = intval($item['quantity'] ?? 0);
+        $returnQty = floatval($item['quantity'] ?? 0);
 
         if ($returnQty <= 0)
             continue;
@@ -95,7 +95,7 @@ try {
 
         $origItem = $origItemsMap[$saleItemId];
         $alreadyReturned = $alreadyReturnedMap[$saleItemId] ?? 0;
-        $maxReturnable = (int) $origItem['quantity'] - $alreadyReturned;
+        $maxReturnable = (float) $origItem['quantity'] - $alreadyReturned;
 
         if ($returnQty > $maxReturnable) {
             throw new Exception("Cannot return {$returnQty} of item ID {$saleItemId}. Maximum returnable: {$maxReturnable}.");

@@ -2,8 +2,13 @@
 $__start = microtime(true);
 file_put_contents('load_profile.log', "Start index.php\n", FILE_APPEND);
 // views/inventory/index.php
+
+// Prevent BFcache and browser caching of this page so stock is always fresh
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 require_once '../../config/config.php';
-file_put_contents('load_profile.log', "After config.php: " . round((microtime(true) - $__start)*1000, 2) . "ms\n", FILE_APPEND);
 require_once '../../includes/auth.php';
 
 // Auth Check
@@ -622,10 +627,15 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
 </div>
 
 <script>
+    // Prevent Back-Forward Cache (bfcache) from showing stale stock
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
     // 1. Logic to Toggle Cost Column
     document.addEventListener('DOMContentLoaded', function () {
-        const btn = document.getElementById('btnToggleCost');
-        if (!btn) return; // If user doesn't have permission, skip this
 
         // Select both the column cells AND the Summary Card at the top
         const costElements = document.querySelectorAll('.capital-col');
@@ -741,7 +751,6 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
         observer: null,
         isFetching: false,
         hasMore: true,
-        cache: {},
         initialHtml: { tbody: '', mobile: '' },
         currentFetchController: null,
 
@@ -831,20 +840,12 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 this.currentFetchController.abort();
             }
 
-            // Client-side Request Caching or Initial HTML Restore
-            const cacheKey = url;
-            
             // If the query is completely empty and we are on page 1, restore the PHP-rendered initial HTML instantly
             if (query === '' && this.currentPage === 1 && !this.currentFilter) {
                 if (this.tbody) this.tbody.innerHTML = this.initialHtml.tbody;
                 if (this.mobileContainer) this.mobileContainer.innerHTML = this.initialHtml.mobile;
                 this.isFetching = false;
                 this.spinner?.classList.add('d-none');
-                return;
-            }
-
-            if (this.cache[cacheKey]) {
-                this.handleResponse(this.cache[cacheKey], isAppending);
                 return;
             }
 
@@ -859,10 +860,19 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 this.spinner?.classList.remove('d-none');
             }
 
-            fetch(url, { signal: this.currentFetchController.signal })
+            // Add timestamp cache buster to completely bypass aggressive browser caching
+            url += `&_t=${Date.now()}`;
+
+            fetch(url, { 
+                signal: this.currentFetchController.signal,
+                cache: 'no-store',
+                headers: {
+                    'Pragma': 'no-cache',
+                    'Cache-Control': 'no-cache'
+                }
+            })
                 .then(res => res.json())
                 .then(data => {
-                    this.cache[cacheKey] = data; // Cache the result
                     this.handleResponse(data, isAppending);
                 })
                 .catch(err => {
@@ -925,10 +935,10 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
         },
 
         renderTableRow(row, baseUrl, isHidden) {
-            const qty = parseInt(row.current_stock) || 0;
-            const online = parseInt(row.online_stock) || 0;
+            const qty = parseFloat(row.current_stock) || 0;
+            const online = parseFloat(row.online_stock) || 0;
             const phys = Math.max(0, qty - online);
-            const thresh = parseInt(row.low_stock_threshold) || 0;
+            const thresh = parseFloat(row.low_stock_threshold) || 0;
 
             const query = this.searchInput ? this.searchInput.value.trim() : '';
             const safeQuery = query ? query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&').split(/\\s+/).filter(Boolean) : [];
@@ -1023,10 +1033,10 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
         },
 
         renderCard(row, baseUrl) {
-            const qty = parseInt(row.current_stock) || 0;
-            const online = parseInt(row.online_stock) || 0;
+            const qty = parseFloat(row.current_stock) || 0;
+            const online = parseFloat(row.online_stock) || 0;
             const phys = Math.max(0, qty - online);
-            const thresh = parseInt(row.low_stock_threshold) || 0;
+            const thresh = parseFloat(row.low_stock_threshold) || 0;
 
             const query = this.searchInput ? this.searchInput.value.trim() : '';
             const safeQuery = query ? query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&').split(/\\s+/).filter(Boolean) : [];

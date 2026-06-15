@@ -164,7 +164,7 @@ function handleCreate(PDO $conn): void
         $snapStmt = $conn->query("SELECT total_products, total_stock_qty FROM inventory_snapshots WHERE id = {$snapId}");
         $snapData = $snapStmt->fetch(PDO::FETCH_ASSOC);
         $count = (int)$snapData['total_products'];
-        $qty   = (int)$snapData['total_stock_qty'];
+        $qty   = (float) $snapData['total_stock_qty'];
 
         logSnapshotAudit($conn, 'CREATE_SNAPSHOT', $snapId, $name, null,
             $count, 'Manual snapshot created.', $currentUserId, $currentUserName, $currentIp, $qty);
@@ -477,7 +477,7 @@ function handleRestore(PDO $conn): void
 
         // ── Step E: Audit log ───────────────────────────────────────────────
         $affected = (int)$snapshot['total_products'];
-        $affectedQty = (int)$snapshot['total_stock_qty'];
+        $affectedQty = (float) $snapshot['total_stock_qty'];
         
         $auditMsg = $preRestoreId 
             ? "Inventory restored. Pre-restore backup ID: {$preRestoreId}." 

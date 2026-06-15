@@ -122,7 +122,7 @@ if (isset($_FILES['pt_file']) && $_FILES['pt_file']['error'] === UPLOAD_ERR_OK) 
             $tid = trim((string) ($row[$col_id] ?? ''));
             // Remove commas or formatting if stock comes in as "1,000"
             $tqty_raw = str_replace(',', '', (string) ($row[$col_qty] ?? '0'));
-            $tqty = (int) $tqty_raw;
+            $tqty = (float) $tqty_raw;
 
             // Only add if ID is valid (skip informational/instruction rows)
             if ($tid !== '' && $tqty > 0 && is_numeric($tid)) {
@@ -156,7 +156,7 @@ try {
 
     foreach ($transfers as $item) {
         $platform_id = trim((string) ($item['online_variation_id'] ?? ''));
-        $qty = (int) ($item['quantity'] ?? 0);
+        $qty = (float) ($item['quantity'] ?? 0);
 
         if (empty($platform_id) || $qty <= 0) {
             $results[] = [

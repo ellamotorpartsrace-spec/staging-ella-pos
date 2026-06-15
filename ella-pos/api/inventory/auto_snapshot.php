@@ -120,7 +120,7 @@ try {
     )->fetch(PDO::FETCH_ASSOC);
 
     $count = (int)$stats['total_products'];
-    $stockQty = (int)$stats['total_stock_qty'];
+    $stockQty = (float) $stats['total_stock_qty'];
 
     // 4. Update last-ran timestamp
     $conn->prepare(

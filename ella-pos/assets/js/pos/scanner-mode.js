@@ -183,11 +183,11 @@ const ScannerMode = {
                 }
 
                 // Check for EXACT barcode match first, then fallback to first result
-                let validItem = items.find(item => item.barcode === barcode && parseInt(item.stock) > 0);
+                let validItem = items.find(item => item.barcode === barcode && parseFloat(item.stock) > 0);
 
                 // If no exact match with stock, find any result with stock
                 if (!validItem) {
-                    validItem = items.find(item => parseInt(item.stock) > 0);
+                    validItem = items.find(item => parseFloat(item.stock) > 0);
                 }
 
                 if (validItem) {

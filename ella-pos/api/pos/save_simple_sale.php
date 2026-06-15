@@ -81,7 +81,7 @@ try {
             $cost = $stmtCostVar->fetchColumn() ?: 0;
         }
 
-        $qty = (int) $item['qty'];
+        $qty = (float) $item['qty'];
         $multiplier = isset($item['multiplier']) ? (int) $item['multiplier'] : 1;
         $totalDeducted = $qty * $multiplier;
 

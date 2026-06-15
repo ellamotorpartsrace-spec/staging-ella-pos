@@ -30,7 +30,7 @@ if (!isset($_SESSION['user_id'])) {
 $data = json_decode(file_get_contents('php://input'), true);
 
 $variationId = (int) ($data['variation_id'] ?? 0);
-$quantity = (int) ($data['quantity'] ?? 0);
+$quantity = (float) ($data['quantity'] ?? 0);
 $platform = trim($data['platform'] ?? 'Other');
 $reference = trim($data['reference'] ?? '');
 $price = (float) ($data['price'] ?? 0.0);
@@ -56,7 +56,7 @@ try {
     $checkStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 2");
     $checkStmt->execute([$variationId]);
     $row = $checkStmt->fetch(PDO::FETCH_ASSOC);
-    $currentOnlineStock = $row ? (int) $row['quantity'] : 0;
+    $currentOnlineStock = $row ? (float) $row['quantity'] : 0;
 
     if ($currentOnlineStock < $quantity) {
         throw new Exception("Insufficient online stock. Available: {$currentOnlineStock}");

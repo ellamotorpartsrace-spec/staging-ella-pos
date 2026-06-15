@@ -228,7 +228,7 @@ const ProductSearch = {
 
     // Auto-add (only on first batch)
     if (!append) {
-      const exactMatch = items ? items.find((i) => i.barcode === originalQuery && parseInt(i.stock) > 0) : null;
+      const exactMatch = items ? items.find((i) => i.barcode === originalQuery && parseFloat(i.stock) > 0) : null;
       if (isScan && exactMatch) {
         window.CartManager.addToCart(exactMatch, true);
         if (searchInput) searchInput.value = "";
@@ -251,7 +251,7 @@ const ProductSearch = {
     }
 
     items.forEach((item) => {
-      const stock = parseInt(item.stock);
+      const stock = parseFloat(item.stock);
       const buyer = window.POS_BUYER;
       let displayPrice = parseFloat(item.price_retail || 0);
 

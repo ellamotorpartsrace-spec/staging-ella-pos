@@ -17,7 +17,7 @@ requireLogin();
 
 // 2. Get Data
 $var_id = $_POST['variation_id'];
-$qty_added = (int) $_POST['quantity_added'];
+$qty_added = (float) $_POST['quantity_added'];
 $current_qty = (int) $_POST['current_stock'];
 $new_capital = $_POST['new_capital'];
 $supplier = trim($_POST['supplier']);

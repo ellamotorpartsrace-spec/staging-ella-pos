@@ -76,7 +76,7 @@ try {
             $belowCapitalItems[] = [
                 'name' => $item['product_name'] ?? ($item['name'] ?? ('Item ' . ($idx + 1))),
                 'variation' => $item['variation_name'] ?? ($item['variation'] ?? ($item['unit_type'] ?? '')),
-                'qty' => (int) ($item['quantity'] ?? ($item['qty'] ?? 1)),
+                'qty' => (float) ($item['quantity'] ?? ($item['qty'] ?? 1)),
                 'price' => $salePrice,
                 'capital' => $costPrice
             ];
@@ -255,7 +255,7 @@ try {
             $costPrice = $costVarStmt->fetchColumn() ?: 0;
         }
 
-        $itemQty = (int) $item['quantity'];
+        $itemQty = (float) $item['quantity'];
         $itemMultiplier = isset($item['multiplier']) ? (int) $item['multiplier'] : 1;
         $totalDeductedQty = $itemQty * $itemMultiplier;
 

@@ -31,7 +31,7 @@ try {
 
         foreach($movements as $m) {
             $actualPrev = (int)$m['previous_stock'];
-            $quantity = (int)$m['quantity'];
+            $quantity = (float) $m['quantity'];
             $actualNew = (int)$m['new_stock'];
 
             // Detect gaps using the UNFIXED (database) values

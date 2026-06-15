@@ -95,7 +95,7 @@ try {
             ':manual_discount_type' => $item['manual_discount_type'] ?? 'fixed',
             ':override_tier' => !empty($item['override_tier']) ? $item['override_tier'] : null,
             ':price_tier' => $priceTier,
-            ':qty' => (int) $item['qty'],
+            ':qty' => (float) $item['qty'],
             ':stock' => (int) ($item['stock'] ?? 0)
         ]);
     }

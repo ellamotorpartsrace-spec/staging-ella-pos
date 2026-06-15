@@ -73,7 +73,7 @@ try {
 
     foreach ($items as $item) {
         $multiplier = isset($item['multiplier']) && $item['multiplier'] > 0 ? (int) $item['multiplier'] : 1;
-        $totalQtyToRestore = (int) $item['quantity'] * $multiplier;
+        $totalQtyToRestore = (float) $item['quantity'] * $multiplier;
         // Get current stock from Physical Store (store_id = 1)
         $invStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
         $invStmt->execute([$item['variation_id']]);

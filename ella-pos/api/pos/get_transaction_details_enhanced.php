@@ -143,7 +143,7 @@ try {
     // global_discount = (sum of items net subtotal) - (grand_total)
     $netItemsTotal = 0;
     foreach ($items as $item) {
-        $netItemsTotal += (float)$item['price_at_sale'] * (int)$item['quantity'];
+        $netItemsTotal += (float)$item['price_at_sale'] * (float) $item['quantity'];
     }
     
     $grandTotal = (float)$sale['grand_total'];
@@ -157,8 +157,8 @@ try {
                 'variation' => $item['variation_name'],
                 'unit_type' => $item['unit_type'],
                 'sku' => $item['sku'] ?? '',
-                'qty' => (int) $item['quantity'],
-                'returned_qty' => (int) $item['returned_quantity'],
+                'qty' => (float) $item['quantity'],
+                'returned_qty' => (float) $item['returned_quantity'],
                 'price' => (float) $item['price_at_sale'],
                 'original_price' => $item['original_price'] ? (float) $item['original_price'] : null,
                 'item_discount' => $item['item_discount'] ? (float) $item['item_discount'] : 0
@@ -204,7 +204,7 @@ try {
     $total_cost = 0;
     $total_profit = 0;
     foreach ($items as $item) {
-        $total_cost += (float) $item['cost_at_sale'] * (int) $item['quantity'];
+        $total_cost += (float) $item['cost_at_sale'] * (float) $item['quantity'];
         $total_profit += (float) $item['item_profit'];
     }
 

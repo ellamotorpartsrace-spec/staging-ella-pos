@@ -38,7 +38,7 @@ if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('ad
 
 // 2. Get Data
 $var_id = $_POST['variation_id'];
-$qty_adjust = (int) $_POST['quantity_adjustment']; // Can be positive or negative
+$qty_adjust = (float) $_POST['quantity_adjustment']; // Can be positive or negative
 $reason = trim($_POST['reason']);
 $remarks = trim($_POST['remarks']);
 

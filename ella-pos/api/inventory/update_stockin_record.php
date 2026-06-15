@@ -30,7 +30,7 @@ if (!$input) {
 
 $movement_id  = (int) ($input['movement_id'] ?? 0);
 $action_type  = $input['action_type'] ?? 'edit'; // edit, swap, void, reference
-$new_quantity  = (int) ($input['new_quantity'] ?? 0);
+$new_quantity  = (float) ($input['new_quantity'] ?? 0);
 $new_capital   = (float) ($input['new_capital'] ?? 0);
 $new_variation_id = (int) ($input['new_variation_id'] ?? 0);
 $new_reference = trim((string) ($input['new_reference'] ?? ''));
@@ -102,7 +102,7 @@ try {
         exit;
     }
 
-    $old_quantity = (int) $original['quantity'];
+    $old_quantity = (float) $original['quantity'];
     $old_capital  = (float) $original['effective_capital'];
     $old_variation_id = $original['variation_id'];
     $reference = $original['reference'];
@@ -217,8 +217,8 @@ try {
             insertStockinAdjustmentLog($conn, [
                 'movement_id' => (int) $row['movement_id'],
                 'adjusted_by' => $user_id,
-                'old_quantity' => (int) $row['quantity'],
-                'new_quantity' => (int) $row['quantity'],
+                'old_quantity' => (float) $row['quantity'],
+                'new_quantity' => (float) $row['quantity'],
                 'old_capital' => (float) $row['effective_capital'],
                 'new_capital' => (float) $row['effective_capital'],
                 'old_variation_id' => (int) $row['variation_id'],
@@ -256,7 +256,7 @@ try {
         $stmtInvOld = $conn->prepare("SELECT COALESCE(quantity, 0) as qty FROM inventory WHERE variation_id = ? AND store_id = 1");
         $stmtInvOld->execute([$old_variation_id]);
         $invOld = $stmtInvOld->fetch(PDO::FETCH_ASSOC);
-        $current_old = $invOld ? (int) $invOld['qty'] : 0;
+        $current_old = $invOld ? (float) $invOld['qty'] : 0;
         
         if ($current_old - $old_quantity < 0) {
             $conn->rollBack();
@@ -282,7 +282,7 @@ try {
             $stmtInv = $conn->prepare("SELECT COALESCE(quantity, 0) as qty FROM inventory WHERE variation_id = ? AND store_id = 1");
             $stmtInv->execute([$old_variation_id]);
             $invRow = $stmtInv->fetch(PDO::FETCH_ASSOC);
-            $current_inventory = $invRow ? (int) $invRow['qty'] : 0;
+            $current_inventory = $invRow ? (float) $invRow['qty'] : 0;
 
             if ($current_inventory + $qty_delta < 0) {
                 $conn->rollBack();

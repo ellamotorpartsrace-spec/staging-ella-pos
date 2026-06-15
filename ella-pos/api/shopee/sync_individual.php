@@ -61,8 +61,8 @@ try {
     }
 
     // 3. If mapped, push stock (dynamically compute using stock_allocation_ratio)
-    $posPhysicalQty = (int)$item['pos_physical_qty'];
-    $posOnlineQty = (int)$item['pos_online_qty'];
+    $posPhysicalQty = (float) $item['pos_physical_qty'];
+    $posOnlineQty = (float) $item['pos_online_qty'];
     $totalQty = $posPhysicalQty + $posOnlineQty;
 
     $ratio = isset($item['stock_allocation_ratio']) ? (int)$item['stock_allocation_ratio'] : 100;

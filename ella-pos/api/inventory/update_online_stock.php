@@ -29,7 +29,7 @@ if (!isset($_SESSION['user_id'])) {
 $data = json_decode(file_get_contents('php://input'), true);
 
 $variationId = (int) ($data['variation_id'] ?? 0);
-$newQuantity = (int) ($data['new_quantity'] ?? -1);
+$newQuantity = (float) ($data['new_quantity'] ?? -1);
 $reason = trim($data['reason'] ?? 'Manual online stock adjustment');
 
 if ($variationId <= 0 || $newQuantity < 0) {
@@ -47,7 +47,7 @@ try {
     $stmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 2");
     $stmt->execute([$variationId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $currentQty = $row ? (int) $row['quantity'] : 0;
+    $currentQty = $row ? (float) $row['quantity'] : 0;
 
     // Upsert online inventory record
     $upsert = $conn->prepare("

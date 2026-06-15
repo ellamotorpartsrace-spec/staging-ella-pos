@@ -30,7 +30,7 @@ if (!$input) {
 
 $reference     = trim($input['reference'] ?? '');
 $variation_id  = (int) ($input['variation_id'] ?? 0);
-$quantity      = (int) ($input['quantity'] ?? 0);
+$quantity      = (float) ($input['quantity'] ?? 0);
 $capital_cost  = (float) ($input['capital_cost'] ?? 0);
 $remarks       = trim($input['remarks'] ?? '');
 if (empty($remarks)) {
@@ -79,7 +79,7 @@ try {
     $stmtInv = $conn->prepare("SELECT COALESCE(quantity, 0) as qty FROM inventory WHERE variation_id = ? AND store_id = 1 FOR UPDATE");
     $stmtInv->execute([$variation_id]);
     $invRow = $stmtInv->fetch(PDO::FETCH_ASSOC);
-    $previous_stock = $invRow ? (int) $invRow['qty'] : 0;
+    $previous_stock = $invRow ? (float) $invRow['qty'] : 0;
     $new_stock = $previous_stock + $quantity;
 
     $conn->prepare("

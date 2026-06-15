@@ -37,8 +37,8 @@ try {
 
     foreach ($orphans as $row) {
         $varId     = (int)$row['variation_id'];
-        $onlineQty = (int)$row['online_qty'];
-        $physQty   = (int)$row['physical_qty'];
+        $onlineQty = (float) $row['online_qty'];
+        $physQty   = (float) $row['physical_qty'];
 
         // Zero out online inventory
         $conn->prepare("UPDATE inventory SET quantity = 0 WHERE variation_id = ? AND store_id = 2")

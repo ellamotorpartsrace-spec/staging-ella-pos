@@ -179,7 +179,7 @@ const CartManager = {
 
     addToCart(product, fromScan = false) {
         this._saveSnapshot();
-        const stock = parseInt(product.stock ?? 0);
+        const stock = parseFloat(product.stock ?? 0);
 
         // 1. Stock Check
         if (stock <= 0) {
@@ -234,7 +234,7 @@ const CartManager = {
             const newItem = {
                 variation_id: product.variation_id,
                 unit_id: product.unit_id || null,
-                multiplier: parseInt(product.multiplier) || 1,
+                multiplier: parseFloat(product.multiplier) || 1,
                 name: product.product_name,
                 brand: product.brand_name || '',
                 variation: product.variation_name || '',
@@ -318,7 +318,7 @@ const CartManager = {
             );
 
             if (updated) {
-                const newStock = parseInt(updated.stock || 0);
+                const newStock = parseFloat(updated.stock || 0);
                 const newPriceCapital = parseFloat(updated.price_capital || 0);
                 const newTiers = {
                     retail: parseFloat(updated.price_retail || 0),
@@ -391,7 +391,7 @@ const CartManager = {
     async setQty(index, value) {
         this._saveSnapshot();
         const item = POS.cart[index];
-        const qty = parseInt(value);
+        const qty = parseFloat(value);
         if (!item || isNaN(qty)) return;
 
         if (qty <= 0) {
@@ -504,7 +504,7 @@ const CartManager = {
                 ${presets.map(v => `<button class="qty-pad-preset ${v === item.qty ? 'active' : ''}" data-val="${v}">${v}</button>`).join('')}
             </div>
             <div class="qty-pad-custom">
-                <input type="number" class="qty-pad-input" value="${item.qty}" min="1" max="${maxStock}" autofocus>
+                <input type="number" class="qty-pad-input" step="any" value="${item.qty}" min="0.01" max="${maxStock}" autofocus>
                 <button class="qty-pad-apply"><i class="fa-solid fa-check"></i></button>
             </div>
         `;
@@ -518,7 +518,7 @@ const CartManager = {
         // Preset click
         pad.querySelectorAll('.qty-pad-preset').forEach(btn => {
             btn.addEventListener('click', () => {
-                const val = parseInt(btn.dataset.val);
+                const val = parseFloat(btn.dataset.val);
                 this.setQty(index, val);
                 pad.remove();
             });
@@ -527,7 +527,7 @@ const CartManager = {
         // Apply custom value
         const applyBtn = pad.querySelector('.qty-pad-apply');
         const applyQty = () => {
-            const val = parseInt(qtyInput.value);
+            const val = parseFloat(qtyInput.value);
             if (val > 0) {
                 this.setQty(index, val);
             }

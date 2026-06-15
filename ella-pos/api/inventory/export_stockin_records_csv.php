@@ -138,7 +138,7 @@ try {
 
     foreach ($records as $row) {
         $capital = (float) $row['price_capital'];
-        $qty = abs((int) $row['quantity']);
+        $qty = abs((float) $row['quantity']);
         $total = $capital * $qty;
 
         fputcsv($output, [

@@ -92,7 +92,7 @@ try {
         $stockItem = [
             'seller_stock' => [
                 [
-                    'stock' => (int) $job['new_quantity']
+                    'stock' => (float) $job['new_quantity']
                 ]
             ]
         ];

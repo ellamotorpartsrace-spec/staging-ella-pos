@@ -48,8 +48,8 @@ try {
         exit;
     }
 
-    $posPhysicalQty = (int)$item['pos_physical_qty'];
-    $posOnlineQty = (int)$item['pos_online_qty'];
+    $posPhysicalQty = (float) $item['pos_physical_qty'];
+    $posOnlineQty = (float) $item['pos_online_qty'];
     $totalQty = $posPhysicalQty + $posOnlineQty;
     $unitMultiplier = max(1, (int)$item['unit_multiplier']);
     $isBundleMapping = !empty($item['pos_bundle_set_id']);

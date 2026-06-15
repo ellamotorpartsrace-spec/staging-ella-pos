@@ -47,7 +47,7 @@ try {
 
     $processed = 0;
     foreach ($items as $item) {
-        if ((int)$item['quantity'] <= 0) continue;
+        if ((float) $item['quantity'] <= 0) continue;
         $stmtReq->execute([
             $batch_id, $item['variation_id'], $item['quantity'], $item['cost'], $supplier_id, $supplier_name, $finalReference, $payment_status, $credit_terms, $_SESSION['user_id']
         ]);

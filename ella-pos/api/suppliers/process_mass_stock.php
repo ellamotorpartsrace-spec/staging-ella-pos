@@ -55,7 +55,7 @@ try {
     // --- STEP 2: PROCESS EACH ITEM ---
     foreach ($data['items'] as $item) {
         $var_id = $item['variation_id'];
-        $qty    = (int)$item['qty'];
+        $qty    = (float) $item['qty'];
         $cost   = (float)$item['cost'];
         $subtotal = $qty * $cost;
         $grand_total += $subtotal;

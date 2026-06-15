@@ -76,7 +76,7 @@ try {
             'manual_discount' => floatval($item['manual_discount'] ?? 0),
             'manual_discount_type' => $item['manual_discount_type'] ?? 'fixed',
             'override_tier' => $item['override_tier'] ?: null,
-            'qty' => (int) $item['qty'],
+            'qty' => (float) $item['qty'],
             'stock' => (int) $item['current_stock'],
             'stock_at_draft' => (int) $item['stock_at_draft'],
             // CRITICAL: Tiers for price recalculation when switching customer types

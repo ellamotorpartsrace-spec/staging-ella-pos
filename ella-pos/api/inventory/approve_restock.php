@@ -59,7 +59,7 @@ try {
 
     foreach ($requests as $req) {
         $variation_id = $req['variation_id'];
-        $quantity = (int) $req['quantity'];
+        $quantity = (float) $req['quantity'];
         $cost = (float) $req['cost'];
         $supplier_id = $req['supplier_id'];
         $reference = $req['reference'];
@@ -68,7 +68,7 @@ try {
         $stmtStock = $conn->prepare("SELECT COALESCE(quantity, 0) as qty FROM inventory WHERE variation_id = ? AND store_id = 1");
         $stmtStock->execute([$variation_id]);
         $inv = $stmtStock->fetch(PDO::FETCH_ASSOC);
-        $actual_current = $inv ? (int) $inv['qty'] : 0;
+        $actual_current = $inv ? (float) $inv['qty'] : 0;
         
         $conn->prepare("
             INSERT INTO inventory (variation_id, quantity, store_id) 

@@ -105,7 +105,7 @@ function fetchCurrentInventory(PDO $conn): array
     foreach ($rows as $row) {
         $variationId = (int)$row['variation_id'];
         $storeId = (int)$row['store_id'];
-        $inventory[$variationId][$storeId] = (int)$row['quantity'];
+        $inventory[$variationId][$storeId] = (float) $row['quantity'];
     }
 
     return $inventory;

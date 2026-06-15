@@ -88,7 +88,7 @@ try {
             'manual_discount' => floatval($item['price_at_sale']),
             'manual_discount_type' => 'custom',
             'override_tier' => null,
-            'qty' => (int) $item['quantity'],
+            'qty' => (float) $item['quantity'],
             'stock' => (int) $item['current_stock'],
             'price_capital' => floatval($item['price_capital'] ?? 0),
             // Include tiers so price switching works

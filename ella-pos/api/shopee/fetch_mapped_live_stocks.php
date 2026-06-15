@@ -110,9 +110,9 @@ try {
                 foreach ($invRows as $row) {
                     $rowId = isset($row['row_id']) ? (int)$row['row_id'] : 0;
                     if ($rowId === 1 || (int)$row['store_id'] === 1) {
-                        $posPhysStock = (int)$row['quantity'];
+                        $posPhysStock = (float) $row['quantity'];
                     } elseif ($rowId === 2 || (int)$row['store_id'] === 2) {
-                        $posOnlineStock = (int)$row['quantity'];
+                        $posOnlineStock = (float) $row['quantity'];
                     }
                 }
             } elseif (!empty($map['pos_bundle_set_id'])) {
