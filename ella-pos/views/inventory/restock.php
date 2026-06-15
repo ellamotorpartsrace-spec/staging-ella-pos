@@ -1227,6 +1227,8 @@ if (isset($_GET['id'])) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    const STORAGE_PREFIX = <?= json_encode('user_' . ($_SESSION['user_id'] ?? 0) . '_') ?>;
+
     // Toggle due date visibility for single mode
     function toggleDueDate(selectElem) {
         const container = document.getElementById('single-due-date-container');
@@ -1453,33 +1455,33 @@ if (isset($_GET['id'])) {
         },
 
         saveState() {
-            localStorage.setItem('restock_batch_items', JSON.stringify(this.items));
-            localStorage.setItem('restock_batch_supplier', document.getElementById('batch-supplier').value);
-            localStorage.setItem('restock_batch_reference', document.getElementById('batch-reference').value);
-            localStorage.setItem('restock_batch_payment_status', document.getElementById('batch-payment-status').value);
-            localStorage.setItem('restock_batch_credit_terms', JSON.stringify(this.creditTerms));
+            localStorage.setItem(STORAGE_PREFIX + 'restock_batch_items', JSON.stringify(this.items));
+            localStorage.setItem(STORAGE_PREFIX + 'restock_batch_supplier', document.getElementById('batch-supplier').value);
+            localStorage.setItem(STORAGE_PREFIX + 'restock_batch_reference', document.getElementById('batch-reference').value);
+            localStorage.setItem(STORAGE_PREFIX + 'restock_batch_payment_status', document.getElementById('batch-payment-status').value);
+            localStorage.setItem(STORAGE_PREFIX + 'restock_batch_credit_terms', JSON.stringify(this.creditTerms));
         },
 
         loadState() {
             try {
-                const savedItems = localStorage.getItem('restock_batch_items');
+                const savedItems = localStorage.getItem(STORAGE_PREFIX + 'restock_batch_items');
                 if (savedItems) {
                     this.items = JSON.parse(savedItems);
                     this.renderBatchList();
                 }
 
-                const savedSupplier = localStorage.getItem('restock_batch_supplier');
+                const savedSupplier = localStorage.getItem(STORAGE_PREFIX + 'restock_batch_supplier');
                 if (savedSupplier) document.getElementById('batch-supplier').value = savedSupplier;
 
-                const savedRef = localStorage.getItem('restock_batch_reference');
+                const savedRef = localStorage.getItem(STORAGE_PREFIX + 'restock_batch_reference');
                 if (savedRef) document.getElementById('batch-reference').value = savedRef;
 
-                const savedStatus = localStorage.getItem('restock_batch_payment_status');
+                const savedStatus = localStorage.getItem(STORAGE_PREFIX + 'restock_batch_payment_status');
                 if (savedStatus) {
                     document.getElementById('batch-payment-status').value = savedStatus;
                 }
 
-                const savedTerms = localStorage.getItem('restock_batch_credit_terms');
+                const savedTerms = localStorage.getItem(STORAGE_PREFIX + 'restock_batch_credit_terms');
                 if (savedTerms) {
                     this.creditTerms = JSON.parse(savedTerms);
                     if (this.creditTerms.length === 0) {
@@ -1495,11 +1497,11 @@ if (isset($_GET['id'])) {
         },
 
         clearState() {
-            localStorage.removeItem('restock_batch_items');
-            localStorage.removeItem('restock_batch_supplier');
-            localStorage.removeItem('restock_batch_reference');
-            localStorage.removeItem('restock_batch_payment_status');
-            localStorage.removeItem('restock_batch_credit_terms');
+            localStorage.removeItem(STORAGE_PREFIX + 'restock_batch_items');
+            localStorage.removeItem(STORAGE_PREFIX + 'restock_batch_supplier');
+            localStorage.removeItem(STORAGE_PREFIX + 'restock_batch_reference');
+            localStorage.removeItem(STORAGE_PREFIX + 'restock_batch_payment_status');
+            localStorage.removeItem(STORAGE_PREFIX + 'restock_batch_credit_terms');
             this.creditTerms = [{ date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: '' }];
             this.renderCreditTerms();
             document.getElementById('batch-payment-status').value = 'paid';
@@ -2034,7 +2036,7 @@ if (isset($_GET['id'])) {
             if (!variationIdElem) return;
 
             const variationId = variationIdElem.value;
-            const cacheKey = 'restock_single_form_' + variationId;
+            const cacheKey = STORAGE_PREFIX + 'restock_single_form_' + variationId;
 
             // Load saved data
             try {

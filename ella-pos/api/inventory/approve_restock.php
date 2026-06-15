@@ -40,10 +40,20 @@ try {
     
     // Fetch requests
     if ($batch_id) {
-        $stmt = $conn->prepare("SELECT * FROM restock_requests WHERE batch_id = ? AND status = 'pending'");
+        $stmt = $conn->prepare("
+            SELECT r.*, u.full_name as requester_name 
+            FROM restock_requests r 
+            LEFT JOIN users u ON r.requested_by = u.id 
+            WHERE r.batch_id = ? AND r.status = 'pending'
+        ");
         $stmt->execute([$batch_id]);
     } else {
-        $stmt = $conn->prepare("SELECT * FROM restock_requests WHERE request_id = ? AND status = 'pending'");
+        $stmt = $conn->prepare("
+            SELECT r.*, u.full_name as requester_name 
+            FROM restock_requests r 
+            LEFT JOIN users u ON r.requested_by = u.id 
+            WHERE r.request_id = ? AND r.status = 'pending'
+        ");
         $stmt->execute([$request_id]);
     }
     
@@ -98,13 +108,19 @@ try {
         }
 
         // 3. Log Movement
-        $remarks = "Approved Restock: " . ($req['supplier_name'] ?: 'Unknown') . " (Requested by user #" . $req['requested_by'] . ")";
+        $super_admin_name = $_SESSION['full_name'] ?? 'Super Admin';
+        $requester_name = $req['requester_name'] ?: ('User #' . $req['requested_by']);
+        
+        $remarks = "Approved Restock: " . ($req['supplier_name'] ?: 'Unknown') . " | Approved by: " . $super_admin_name . " | Requested by: " . $requester_name;
+        
+        $record_owner_id = $req['requested_by'] ?: $user_id;
+
         $conn->prepare("
             INSERT INTO stock_movements 
             (variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, store_id, capital_cost)
             VALUES (?, 'stock_in', ?, ?, ?, ?, ?, ?, 1, ?)
         ")->execute([
-            $variation_id, $quantity, $actual_current, $new_stock, $reference, $remarks, $user_id, $cost
+            $variation_id, $quantity, $actual_current, $new_stock, $reference, $remarks, $record_owner_id, $cost
         ]);
 
         // Accumulate POs
