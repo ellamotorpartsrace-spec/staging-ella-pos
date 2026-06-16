@@ -152,6 +152,7 @@ require_once '../../includes/sidebar.php';
 </style>
 
 <div class="sp-page sp-animate">
+    <?php require_once __DIR__ . '/shopee_token_warning.php'; ?>
     <div class="sp-breadcrumb">
         <span>Shopee Sync</span>
         <i class="fa-solid fa-chevron-right" style="font-size:.6rem"></i>

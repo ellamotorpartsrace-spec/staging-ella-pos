@@ -228,7 +228,7 @@ try {
         <?php if ($canViewShopee || $canManageInventory): ?>
             <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
                 style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#onlineStoreCollapse">
-                <span class="nav-text">Online Store</span>
+                <span class="nav-text">Shopee Store</span>
                 <i class="fa-solid fa-chevron-down small transition-transform" id="onlineStoreChevron"></i>
             </div>
             <div class="collapse <?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'show' : '' ?>"
@@ -240,6 +240,12 @@ try {
                         <a href="<?= BASE_URL ?>views/shopee/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Shopee Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>views/shopee/sales_income.php"
+                            class="<?= $current_page === 'sales_income.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-money-bill-trend-up"></i> <span class="nav-text">Sales & Income</span>
                         </a>
                     </li>
                     <li>
