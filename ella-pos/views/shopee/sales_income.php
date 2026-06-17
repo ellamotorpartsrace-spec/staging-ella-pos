@@ -608,10 +608,14 @@ require_once '../../includes/sidebar.php';
     </div>
 </div>
 
-<!-- Loading overlay -->
-<div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.7); z-index:9999; align-items:center; justify-content:center;">
-    <div class="spinner-border text-shopee" role="status">
-        <span class="visually-hidden">Loading...</span>
+<!-- Enhanced Loading overlay -->
+<div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.85); z-index:9999; align-items:center; justify-content:center; flex-direction:column; backdrop-filter: blur(3px);">
+    <div style="background: white; padding: 2.5rem; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%;">
+        <div class="spinner-border text-shopee mb-3" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="fw-bold mb-2 text-dark" id="loadingTitle">Syncing Orders</h4>
+        <p class="text-secondary small mb-0" id="loadingDesc">Fetching the latest orders and financial data from Shopee.<br><strong>Please do not close this page.</strong> This may take up to 60 seconds depending on your order volume.</p>
     </div>
 </div>
 
@@ -918,6 +922,7 @@ function renderTop() {
 }
 
 async function syncOrders() {
+    document.getElementById('loadingTitle').textContent = 'Syncing Orders';
     document.getElementById('loadingOverlay').style.display = 'flex';
     try {
         const res = await fetch(`${window.BASE_URL}api/shopee/sync_orders.php?days=15`);
@@ -937,6 +942,7 @@ async function syncOrders() {
 }
 
 async function syncFinances() {
+    document.getElementById('loadingTitle').textContent = 'Syncing Finances';
     document.getElementById('loadingOverlay').style.display = 'flex';
     try {
         const res = await fetch(`${window.BASE_URL}api/shopee/sync_finances.php`);
