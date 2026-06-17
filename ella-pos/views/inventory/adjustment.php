@@ -563,6 +563,7 @@ if (isset($_GET['id'])) {
                 input: 'password',
                 inputPlaceholder: '••••',
                 inputAttributes: { 
+                    autocomplete: 'new-password',
                     required: 'true',
                     maxlength: '4',
                     autocapitalize: 'off',

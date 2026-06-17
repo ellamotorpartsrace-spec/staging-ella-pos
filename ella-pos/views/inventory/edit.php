@@ -514,6 +514,7 @@ if (strpos($return_url, 'edit.php') !== false || strpos($return_url, 'update_pro
                 input: 'password',
                 inputPlaceholder: '••••',
                 inputAttributes: { 
+                    autocomplete: 'new-password',
                     required: 'true',
                     maxlength: '4',
                     autocapitalize: 'off',
