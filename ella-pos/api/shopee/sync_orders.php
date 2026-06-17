@@ -83,9 +83,10 @@ try {
         $cursor = $listResult['response']['next_cursor'] ?? "";
         $hasNextPage = $listResult['response']['more'] ?? false;
         
-        if (!$hasNextPage || empty($cursor)) {
+        if (!$hasNextPage || empty($cursor) || (isset($prevCursor) && $cursor === $prevCursor)) {
             break;
         }
+        $prevCursor = $cursor;
         
         // Rate Limiter: pause for 200ms to avoid HTTP 429 Too Many Requests
         usleep(200000);
