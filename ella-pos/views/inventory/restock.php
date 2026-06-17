@@ -797,6 +797,7 @@ if (isset($_GET['id'])) {
                                         <label class="form-label">Supplier</label>
                                         <select name="supplier" class="form-select">
                                             <option value="">-- Select Supplier --</option>
+                                            <option value="Unknown">-- No Supplier / Unknown --</option>
                                             <?php foreach ($suppliers as $s): ?>
                                                 <option value="<?= htmlspecialchars($s['supplier_name']) ?>">
                                                     <?= htmlspecialchars($s['supplier_name']) ?>
@@ -915,6 +916,7 @@ if (isset($_GET['id'])) {
                             <label class="form-label fw-bold">Supplier</label>
                             <select id="batch-supplier" class="form-select">
                                 <option value="">-- Select Supplier --</option>
+                                <option value="Unknown" data-name="Unknown">-- No Supplier / Unknown --</option>
                                 <?php foreach ($suppliers as $s): ?>
                                     <option value="<?= $s['supplier_id'] ?>"
                                         data-name="<?= htmlspecialchars($s['supplier_name']) ?>">
