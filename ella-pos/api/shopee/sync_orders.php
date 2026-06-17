@@ -50,47 +50,63 @@ try {
     set_time_limit(0);
     $pageSize = 50;
     
-    $days_to_sync = isset($_GET['days']) ? (int)$_GET['days'] : 15; // default 15 days back
-    $fromTime = time() - ($days_to_sync * 86400);
-    $toTime = time();
+    $days_to_sync = isset($_GET['days']) ? (int)$_GET['days'] : 90; // Default to 90 days for better historical data
+    
+    // Shopee only allows max 15 days per request, so we chunk it
+    $chunks = [];
+    $remainingDays = $days_to_sync;
+    $endTime = time();
+    
+    while ($remainingDays > 0) {
+        $chunkDays = min(15, $remainingDays);
+        $startTime = $endTime - ($chunkDays * 86400);
+        $chunks[] = ['from' => $startTime, 'to' => $endTime];
+        $endTime = $startTime;
+        $remainingDays -= $chunkDays;
+    }
 
-    $cursor = "";
     $allOrderSns = [];
 
     // 1. Fetch Order SN List
-    do {
-        $apiParams = [
-            'time_range_field' => 'update_time',
-            'time_from'        => $fromTime,
-            'time_to'          => $toTime,
-            'page_size'        => $pageSize,
-        ];
-        if (!empty($cursor)) {
-            $apiParams['cursor'] = $cursor;
-        }
+    foreach ($chunks as $chunk) {
+        $cursor = "";
+        do {
+            $apiParams = [
+                'time_range_field' => 'create_time', // Change to create_time for historical fetching
+                'time_from'        => $chunk['from'],
+                'time_to'          => $chunk['to'],
+                'page_size'        => $pageSize,
+            ];
+            if (!empty($cursor)) {
+                $apiParams['cursor'] = $cursor;
+            }
 
-        $listResult = $shopee->get('/api/v2/order/get_order_list', $apiParams, $accessToken, $shopId);
+            $listResult = $shopee->get('/api/v2/order/get_order_list', $apiParams, $accessToken, $shopId);
 
-        if (isset($listResult['error']) && $listResult['error'] !== '' && $listResult['error'] !== 0) {
-            throw new Exception('Shopee API error: ' . ($listResult['message'] ?? json_encode($listResult['error'])));
-        }
+            if (isset($listResult['error']) && $listResult['error'] !== '' && $listResult['error'] !== 0) {
+                // If there's an error on an older chunk, just break the inner loop and continue to the next chunk
+                break;
+            }
 
-        $orders = $listResult['response']['order_list'] ?? [];
-        foreach ($orders as $o) {
-            $allOrderSns[] = $o['order_sn'];
-        }
+            $orders = $listResult['response']['order_list'] ?? [];
+            foreach ($orders as $o) {
+                if (!in_array($o['order_sn'], $allOrderSns)) {
+                    $allOrderSns[] = $o['order_sn'];
+                }
+            }
 
-        $cursor = $listResult['response']['next_cursor'] ?? "";
-        $hasNextPage = $listResult['response']['more'] ?? false;
-        
-        if (!$hasNextPage || empty($cursor) || (isset($prevCursor) && $cursor === $prevCursor)) {
-            break;
-        }
-        $prevCursor = $cursor;
-        
-        // Rate Limiter: pause for 200ms to avoid HTTP 429 Too Many Requests
-        usleep(200000);
-    } while (true);
+            $cursor = $listResult['response']['next_cursor'] ?? "";
+            $hasNextPage = $listResult['response']['more'] ?? false;
+            
+            if (!$hasNextPage || empty($cursor) || (isset($prevCursor) && $cursor === $prevCursor)) {
+                break;
+            }
+            $prevCursor = $cursor;
+            
+            // Rate Limiter: pause for 200ms
+            usleep(200000);
+        } while (true);
+    }
 
     if (empty($allOrderSns)) {
         echo json_encode(['success' => true, 'message' => 'No orders found in the given timeframe.', 'synced_count' => 0]);

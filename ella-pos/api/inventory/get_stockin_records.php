@@ -27,10 +27,12 @@ try {
 
     if ($supplier_id === 'none') {
         $supplier_name = 'No Supplier / Unknown';
-        $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ?";
+        $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.remarks LIKE ?";
         $params = [
             "%Restock: Manual Entry%",
-            "%Batch Restock: Unknown Supplier%"
+            "%Batch Restock: Unknown Supplier%",
+            "%Approved Restock: Unknown%",
+            "%Restock: Unknown%"
         ];
     } else {
         // Get supplier name
@@ -154,7 +156,9 @@ try {
     if ($supplier_id === 'none') {
         $statsParams = [
             "%Restock: Manual Entry%",
-            "%Batch Restock: Unknown Supplier%"
+            "%Batch Restock: Unknown Supplier%",
+            "%Approved Restock: Unknown%",
+            "%Restock: Unknown%"
         ];
     } else {
         $statsParams = [

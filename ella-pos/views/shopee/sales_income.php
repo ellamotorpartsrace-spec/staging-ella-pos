@@ -925,7 +925,8 @@ async function syncOrders() {
     document.getElementById('loadingTitle').textContent = 'Syncing Orders';
     document.getElementById('loadingOverlay').style.display = 'flex';
     try {
-        const res = await fetch(`${window.BASE_URL}api/shopee/sync_orders.php?days=15`);
+        console.log("Starting Historical Sync (90 days)...");
+        const res = await fetch(`${window.BASE_URL}api/shopee/sync_orders.php?days=90`);
         const data = await res.json();
         if(data.success) {
             alert(`Successfully synced ${data.inserted_or_updated} orders.`);
