@@ -27,8 +27,23 @@ try {
     $attempt_count = $limit_stm->fetch(PDO::FETCH_ASSOC)['attempts'];
 
     if ($attempt_count >= 3) {
-        header("Location: ../../views/auth/login.php?error=locked_out");
-        exit;
+        if (session_status() === PHP_SESSION_NONE)
+            session_start();
+        
+        $user_captcha = trim($_POST['captcha_answer'] ?? '');
+        $real_captcha = $_SESSION['captcha_answer'] ?? null;
+        
+        if (!$real_captcha || $user_captcha !== (string)$real_captcha) {
+            // Log failed attempt for wrong captcha
+            $log_fail = $conn->prepare("INSERT INTO login_attempts (ip_address, username) VALUES (:ip, :user)");
+            $log_fail->execute([':ip' => $ip_address, ':user' => $username]);
+            
+            header("Location: ../../views/auth/login.php?error=locked_out");
+            exit;
+        }
+        
+        // Clear captcha so it can't be reused
+        unset($_SESSION['captcha_answer'], $_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
     }
 
     // 3. Find User
@@ -133,6 +148,10 @@ try {
 
         // F. Log Activity
         logActivity($conn, $user['id'], 'LOGIN_SUCCESS', 'Auth', "User logged in successfully");
+
+        // Clear failed login attempts for this IP since they successfully authenticated
+        $clear_attempts = $conn->prepare("DELETE FROM login_attempts WHERE ip_address = :ip");
+        $clear_attempts->execute([':ip' => $ip_address]);
 
         // --- NEW SESSION LOGIC ENDS HERE ---
 

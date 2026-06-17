@@ -1,11 +1,35 @@
 <?php
 require_once '../../config/config.php';
+require_once '../../config/database.php';
 
 if (session_status() === PHP_SESSION_NONE)
     session_start();
 if (isset($_SESSION['user_id'])) {
     header("Location: ../dashboard/index.php");
     exit;
+}
+
+try {
+    $db = new Database();
+    $conn = $db->getConnection();
+    $ip_address = $_SERVER['REMOTE_ADDR'];
+    $limit_stm = $conn->prepare("SELECT COUNT(*) as attempts FROM login_attempts WHERE ip_address = :ip AND attempted_at > (NOW() - INTERVAL 5 MINUTE)");
+    $limit_stm->execute([':ip' => $ip_address]);
+    $attempt_count = $limit_stm->fetch(PDO::FETCH_ASSOC)['attempts'];
+
+    $requires_captcha = $attempt_count >= 3;
+
+    if ($requires_captcha) {
+        if (!isset($_SESSION['captcha_num1']) || !isset($_SESSION['captcha_num2'])) {
+            $_SESSION['captcha_num1'] = rand(1, 9);
+            $_SESSION['captcha_num2'] = rand(1, 9);
+            $_SESSION['captcha_answer'] = $_SESSION['captcha_num1'] + $_SESSION['captcha_num2'];
+        }
+    } else {
+        unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2'], $_SESSION['captcha_answer']);
+    }
+} catch (Exception $e) {
+    $requires_captcha = false;
 }
 ?>
 <!DOCTYPE html>
@@ -38,7 +62,7 @@ if (isset($_SESSION['user_id'])) {
                 elseif ($_GET['error'] === 'wrong_password')
                     echo "$icon Incorrect password.";
                 elseif ($_GET['error'] === 'locked_out')
-                    echo "$icon Too many failed attempts. Try again in 5 minutes.";
+                    echo "$icon Too many failed attempts. Please solve the security check.";
                 elseif ($_GET['error'] === 'db_error')
                     echo "$icon Database connection failed.";
                 elseif ($_GET['error'] === 'ip_changed')
@@ -89,6 +113,18 @@ if (isset($_SESSION['user_id'])) {
                     </span>
                 </div>
             </div>
+
+            <?php if ($requires_captcha): ?>
+            <div class="mb-3">
+                <label class="form-label text-danger fw-bold">Security Check <small class="text-muted fw-normal">(Too many failed attempts)</small></label>
+                <div class="input-group">
+                    <span class="input-group-text fw-bold bg-danger-subtle text-danger" style="font-size: 1.1rem; width: 100px; justify-content: center;">
+                        <?php echo $_SESSION['captcha_num1'] . " + " . $_SESSION['captcha_num2'] . " ="; ?>
+                    </span>
+                    <input type="number" name="captcha_answer" class="form-control border-danger" placeholder="Answer" required>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <div class="mb-4 d-flex align-items-center justify-content-between">
                 <div class="form-check">
