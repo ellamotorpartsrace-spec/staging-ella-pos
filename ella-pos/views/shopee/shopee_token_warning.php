@@ -22,7 +22,10 @@ if (isset($_hconn)) {
             </div>
             <div>
                 <h6 class="fw-bold mb-1">CRITICAL ERROR: Shopee Authorization Expired</h6>
-                <p class="mb-0 small">Your Shopee store connection has expired because the background auto-refresh was interrupted. The automated background sync is currently failing. Please click "Re-authorize" in your Shopee settings immediately to resume operations.</p>
+                <p class="mb-2 small">Your Shopee store connection has expired because the background auto-refresh was interrupted. The automated background sync is currently failing. Please re-authorize immediately to resume operations.</p>
+                <a href="<?= BASE_URL ?>views/shopee/settings.php" class="btn btn-sm btn-danger fw-bold" style="border-radius: 6px; padding: 4px 12px; font-size: 0.8rem;">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Go to Settings to Re-authorize
+                </a>
             </div>
         </div>
     <?php endif;
