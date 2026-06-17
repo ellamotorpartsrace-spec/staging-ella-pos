@@ -644,14 +644,18 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
         // Default to 'false' (Visible) if not set
         let isHidden = localStorage.getItem('hide_cost') === 'true';
 
-        // Initial Render
-        updateVisibility();
+        const btn = document.getElementById('btnToggleCost');
 
-        btn.addEventListener('click', function () {
-            isHidden = !isHidden; // Toggle state
-            localStorage.setItem('hide_cost', isHidden); // Save state
+        // Initial Render
+        if (btn) {
             updateVisibility();
-        });
+
+            btn.addEventListener('click', function () {
+                isHidden = !isHidden; // Toggle state
+                localStorage.setItem('hide_cost', isHidden); // Save state
+                updateVisibility();
+            });
+        }
 
         function updateVisibility() {
             const currentCostElements = document.querySelectorAll('.capital-col');
