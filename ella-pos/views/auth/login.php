@@ -38,7 +38,7 @@ if (isset($_SESSION['user_id'])) {
                 elseif ($_GET['error'] === 'wrong_password')
                     echo "$icon Incorrect password.";
                 elseif ($_GET['error'] === 'locked_out')
-                    echo "$icon Too many failed attempts. Try again in 10 minutes.";
+                    echo "$icon Too many failed attempts. Try again in 5 minutes.";
                 elseif ($_GET['error'] === 'db_error')
                     echo "$icon Database connection failed.";
                 elseif ($_GET['error'] === 'ip_changed')

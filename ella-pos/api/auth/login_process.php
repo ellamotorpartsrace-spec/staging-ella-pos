@@ -22,7 +22,7 @@ try {
     $conn = $db->getConnection();
 
     // 2. CHECK RATE LIMITING
-    $limit_stm = $conn->prepare("SELECT COUNT(*) as attempts FROM login_attempts WHERE ip_address = :ip AND attempted_at > (NOW() - INTERVAL 10 MINUTE)");
+    $limit_stm = $conn->prepare("SELECT COUNT(*) as attempts FROM login_attempts WHERE ip_address = :ip AND attempted_at > (NOW() - INTERVAL 5 MINUTE)");
     $limit_stm->execute([':ip' => $ip_address]);
     $attempt_count = $limit_stm->fetch(PDO::FETCH_ASSOC)['attempts'];
 
