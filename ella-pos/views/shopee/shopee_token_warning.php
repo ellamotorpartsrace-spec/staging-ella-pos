@@ -7,11 +7,10 @@ if (isset($_hconn)) {
     $stmtToken->execute();
     $configData = $stmtToken->fetch(PDO::FETCH_ASSOC);
     $tokenWarning = false;
-    $daysLeft = 0;
     if ($configData && !empty($configData['token_expires_at'])) {
         $expires = strtotime($configData['token_expires_at']);
-        $daysLeft = round(($expires - time()) / 86400);
-        if ($daysLeft <= 3) {
+        // If the token is already expired, it means the auto-refresh cron job failed
+        if ($expires < time()) {
             $tokenWarning = true;
         }
     }
@@ -22,8 +21,8 @@ if (isset($_hconn)) {
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <div>
-                <h6 class="fw-bold mb-1">CRITICAL WARNING: Shopee Authorization Expiring Soon</h6>
-                <p class="mb-0 small">Your Shopee store connection will expire in <strong><?= $daysLeft ?> days</strong>. The automated background sync will completely fail once it expires. Please click "Re-authorize" in your Shopee settings to prevent dashboard outages.</p>
+                <h6 class="fw-bold mb-1">CRITICAL ERROR: Shopee Authorization Expired</h6>
+                <p class="mb-0 small">Your Shopee store connection has expired because the background auto-refresh was interrupted. The automated background sync is currently failing. Please click "Re-authorize" in your Shopee settings immediately to resume operations.</p>
             </div>
         </div>
     <?php endif;
