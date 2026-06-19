@@ -993,3 +993,12 @@ Start index.php
 After sidebar.php: 48.17ms
 After sqlStats: 137.33ms
 After sqlProducts: 202.58ms
+Start index.php
+Start index.php
+After sidebar.php: 196.39ms
+After sqlStats: 278.49ms
+After sqlProducts: 342.69ms
+Start index.php
+After sidebar.php: 36.28ms
+After sqlStats: 109.41ms
+After sqlProducts: 166.49ms

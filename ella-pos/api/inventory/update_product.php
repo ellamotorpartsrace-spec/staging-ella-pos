@@ -218,7 +218,7 @@ try {
         $stmtInv->execute([$var_id, $new_stock, $new_stock]);
 
         // 3. Record movement
-        $type_code = ($adj_type === 'add') ? 'stock_in' : 'stock_out';
+        $type_code = 'adjustment';
         $stmtMov = $conn->prepare("INSERT INTO stock_movements (variation_id, type, quantity, previous_stock, new_stock, remarks, created_by, store_id, capital_cost) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)");
         $stmtMov->execute([$var_id, $type_code, $adj_qty, $prev_stock, $new_stock, $adj_remarks, $_SESSION['user_id'], $capital]);
 

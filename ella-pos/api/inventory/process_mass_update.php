@@ -383,7 +383,7 @@ try {
                     $stmtInv->execute([$var_id, $new_stock, $new_stock]);
 
                     // Record stock movement
-                    $movement_type = $stock_diff > 0 ? 'stock_in' : 'adjustment';
+                    $movement_type = 'adjustment';
                     $stmtMove = $conn->prepare("
                         INSERT INTO stock_movements 
                         (variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, store_id, capital_cost) 
