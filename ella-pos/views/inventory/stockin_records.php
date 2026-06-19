@@ -158,7 +158,7 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
                 <div class="col-12 col-md-4">
                     <label class="form-label small fw-bold text-muted mb-1">SUPPLIER</label>
                     <select name="supplier_id" id="supplier-select" class="form-select" required>
-                        <option value="">-- Select Supplier --</option>
+                        <option value="all" <?= (empty($selected_supplier) || $selected_supplier === 'all') ? 'selected' : '' ?>>-- All Suppliers --</option>
                         <option value="none" <?= $selected_supplier === 'none' ? 'selected' : '' ?>>-- No Supplier / Unknown --</option>
                         <?php foreach ($suppliers as $s): ?>
                             <option value="<?= $s['supplier_id'] ?>" <?= $selected_supplier == $s['supplier_id'] ? 'selected' : '' ?>>
@@ -710,35 +710,12 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
     }
 
     function resetFilters() {
-        document.getElementById('supplier-select').value = '';
+        document.getElementById('supplier-select').value = 'all';
         document.getElementById('date-from').value = '';
         document.getElementById('date-to').value = '';
         localStorage.removeItem(LAST_SUPPLIER_KEY);
-        document.getElementById('stats-row').classList.add('d-none');
-        document.getElementById('pagination-footer').classList.add('d-none');
-        document.getElementById('records-title').textContent = 'Stock-In Records';
-        document.getElementById('records-count').textContent = 'Select a supplier';
-        document.getElementById('export-btn').disabled = true;
-
-        document.getElementById('records-tbody').innerHTML = `
-            <tr>
-                <td colspan="8" class="text-center py-5">
-                    <div class="empty-state">
-                        <i class="fa-solid fa-truck-ramp-box d-block"></i>
-                        <h6 class="text-muted">Select a Supplier</h6>
-                        <p class="small text-muted mb-0">Choose a supplier from the dropdown above to view their stock-in records</p>
-                    </div>
-                </td>
-            </tr>`;
-        document.getElementById('records-mobile').innerHTML = `
-            <div class="empty-state text-center">
-                <i class="fa-solid fa-truck-ramp-box d-block"></i>
-                <h6 class="text-muted">Select a Supplier</h6>
-                <p class="small text-muted mb-0">Choose a supplier from the dropdown above to view their stock-in records</p>
-            </div>`;
-
-        // Clear URL params
-        window.history.replaceState({}, '', window.location.pathname);
+        
+        loadRecords(1);
     }
 
     function exportCSV() {

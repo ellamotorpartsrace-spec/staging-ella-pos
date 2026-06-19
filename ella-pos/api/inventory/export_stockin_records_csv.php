@@ -15,14 +15,18 @@ $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
 
 if (!$supplier_id) {
-    die("No supplier selected");
+    $supplier_id = 'all';
 }
 
 try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    if ($supplier_id === 'none') {
+    if ($supplier_id === 'all') {
+        $supplier_name = 'All Suppliers';
+        $supplierFilter = "1=1";
+        $params = [];
+    } elseif ($supplier_id === 'none') {
         $supplier_name = 'No Supplier / Unknown';
         $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.remarks LIKE ?";
         $params = [

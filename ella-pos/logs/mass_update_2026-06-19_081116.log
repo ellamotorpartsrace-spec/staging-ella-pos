@@ -1,0 +1,258 @@
+[2026-06-19 08:11:16] === MASS UPDATE STARTED ===
+[2026-06-19 08:11:16] CSV Headers detected: [product_id, variation_id, product_name, brand_name, variation_name, sku, barcode, unit_type, price_capital, price_retail, price_wholesale, price_dealer, current_stock, low_stock_threshold, status]
+[2026-06-19 08:11:16] Total data rows (excluding header): 42
+[2026-06-19 08:11:16] --- Row 2 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5895', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5895, product_id=5949, product='HUN CVT KIT SET  NMAX AEROX V1/ V2/ V3'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 2 updated
+[2026-06-19 08:11:16] --- Row 3 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5896', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5896, product_id=5950, product='HUN CVT KIT SET CLICK 125 CLICK 150'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 3 updated
+[2026-06-19 08:11:16] --- Row 4 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5893', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5893, product_id=5947, product='HUN CVT KIT SET MIO SPORTY SOULTY'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 4 updated
+[2026-06-19 08:11:16] --- Row 5 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5894', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5894, product_id=5948, product='HUN CVT KIT SET PCX 160/ ADV 160/ CLICK 160/ AIRBLADE 160'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 5 updated
+[2026-06-19 08:11:16] --- Row 6 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5897', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5897, product_id=5951, product='HUN CVT SET KIT M3/ MIO I 125/ MIO SOUL I 125 / GEAR 125'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 6 updated
+[2026-06-19 08:11:16] --- Row 7 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5898', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5898, product_id=5952, product='HUN DEGREE WHEEL'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 7 updated
+[2026-06-19 08:11:16] --- Row 8 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6085', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6085, product_id=6139, product='HUN PIPE BEAT FI'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, variation_name = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 8 updated
+[2026-06-19 08:11:16] --- Row 9 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5871', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5871, product_id=5925, product='HUN PIPE CLICK125/150'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 9 updated
+[2026-06-19 08:11:16] --- Row 10 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5870', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5870, product_id=5924, product='HUN PIPE MIOi125/M3'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 10 updated
+[2026-06-19 08:11:16] --- Row 11 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5876', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5876, product_id=5930, product='HUN PIPE RAIDER CARB BLACK'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 11 updated
+[2026-06-19 08:11:16] --- Row 12 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5877', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5877, product_id=5931, product='HUN PIPE RAIDER CARB CHROME'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 12 updated
+[2026-06-19 08:11:16] --- Row 13 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5880', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5880, product_id=5934, product='HUN PIPE SMASH 115'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, variation_name = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 13 updated
+[2026-06-19 08:11:16] --- Row 14 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5875', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5875, product_id=5929, product='HUN PIPE SNIPER 150'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, variation_name = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 14 updated
+[2026-06-19 08:11:16] --- Row 15 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5873', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5873, product_id=5927, product='HUN PIPE SNIPER 155 OPEN'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, variation_name = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 15 updated
+[2026-06-19 08:11:16] --- Row 16 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5874', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5874, product_id=5928, product='HUN PIPE SNIPER 155 STANDARD'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, variation_name = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 16 updated
+[2026-06-19 08:11:16] --- Row 17 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6039', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6039, product_id=6093, product='HUN PIPE WAVE 100 CHROME'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 17 updated
+[2026-06-19 08:11:16] --- Row 18 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5881', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5881, product_id=5935, product='HUN PIPE WAVE 125 CHROME'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 18 updated
+[2026-06-19 08:11:16] --- Row 19 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6084', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6084, product_id=6138, product='HUN PIPE XRM 125 CHROME'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, variation_name = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 19 updated
+[2026-06-19 08:11:16] --- Row 20 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='5878', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=5878, product_id=5932, product='HUN PIPI WAVE 100 CHROME'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?, unit_type = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 20 updated
+[2026-06-19 08:11:16] --- Row 21 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6366', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6366, product_id=6438, product='INNER TUBE W/ NUT AND SPRING GOLD - CLICK125/150 BEAT CDI/FI'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 21 updated
+[2026-06-19 08:11:16] --- Row 22 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6367', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6367, product_id=6439, product='INNER TUBE W/ NUT AND SPRING GOLD - MIO/ M3/AEROX155'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 22 updated
+[2026-06-19 08:11:16] --- Row 23 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6368', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6368, product_id=6440, product='INNER TUBE W/ NUT AND SPRING GOLD - NMAX V1/V2'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 23 updated
+[2026-06-19 08:11:16] --- Row 24 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6369', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6369, product_id=6441, product='INNER TUBE W/ NUT AND SPRING GOLD - RAIDER 150 CDI'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 24 updated
+[2026-06-19 08:11:16] --- Row 25 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6370', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6370, product_id=6442, product='INNER TUBE W/ NUT AND SPRING GOLD - Y150ZR/LC150/LC155'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 25 updated
+[2026-06-19 08:11:16] --- Row 26 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6348', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6348, product_id=6420, product='RIM 1.4/1.4 SET NEW -  GOLD'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 26 updated
+[2026-06-19 08:11:16] --- Row 27 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6349', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6349, product_id=6421, product='RIM 1.4/1.4 SET NEW -  RED'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 27 updated
+[2026-06-19 08:11:16] --- Row 28 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6350', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6350, product_id=6422, product='RIM 1.4/1.4 SET NEW - BLACK'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 28 updated
+[2026-06-19 08:11:16] --- Row 29 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6351', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6351, product_id=6423, product='RIM 1.4/1.4 SET NEW - BLUE'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 29 updated
+[2026-06-19 08:11:16] --- Row 30 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6352', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6352, product_id=6424, product='RIM 1.4/1.4 SET NEW - GREEN'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 30 updated
+[2026-06-19 08:11:16] --- Row 31 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6353', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6353, product_id=6425, product='RIM 1.4/1.4 SET NEW - PINK'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 31 updated
+[2026-06-19 08:11:16] --- Row 32 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6354', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6354, product_id=6426, product='RIM 1.4/1.4 SET NEW - PURPLE'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 32 updated
+[2026-06-19 08:11:16] --- Row 33 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6355', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6355, product_id=6427, product='RIM 1.4/1.4 SET NEW - SILVER'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 33 updated
+[2026-06-19 08:11:16] --- Row 34 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6356', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6356, product_id=6428, product='RIM 1.4/1.4 SET NEW - SKY BLUE'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 34 updated
+[2026-06-19 08:11:16] --- Row 35 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6357', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6357, product_id=6429, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - BLACK'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 35 updated
+[2026-06-19 08:11:16] --- Row 36 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6358', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6358, product_id=6430, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - BLUE'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 36 updated
+[2026-06-19 08:11:16] --- Row 37 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6359', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6359, product_id=6431, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - GOLD'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 37 updated
+[2026-06-19 08:11:16] --- Row 38 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6360', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6360, product_id=6432, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - GREEN'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 38 updated
+[2026-06-19 08:11:16] --- Row 39 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6361', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6361, product_id=6433, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - PINK'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 39 updated
+[2026-06-19 08:11:16] --- Row 40 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6362', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6362, product_id=6434, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - PURPLE'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 40 updated
+[2026-06-19 08:11:16] --- Row 41 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6363', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6363, product_id=6435, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - RED'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 41 updated
+[2026-06-19 08:11:16] --- Row 42 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6364', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6364, product_id=6436, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - SILVER'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 42 updated
+[2026-06-19 08:11:16] --- Row 43 ---
+[2026-06-19 08:11:16]   Raw values => variation_id='6365', sku='', barcode=''
+[2026-06-19 08:11:16]   Matching by: variation_id
+[2026-06-19 08:11:16]   FOUND: variation_id=6365, product_id=6437, product='RIM BROKEN SIZE 1.2/1.4 SET NEW - SKY BLUE'
+[2026-06-19 08:11:16]   Fields to update: [price_capital = ?, price_retail = ?, price_wholesale = ?, price_dealer = ?, low_stock_threshold = ?, status = ?] + [product_name = ?, brand_name = ?]
+[2026-06-19 08:11:16]   SUCCESS: Row 43 updated
+[2026-06-19 08:11:16] === MASS UPDATE FINISHED ===
+[2026-06-19 08:11:16] Results: 42 updated, 0 not found, 0 skipped, 0 errors
+[2026-06-19 08:11:16] Log file: C:\xampp\htdocs\ella-pos\ella-pos\api\inventory/../../logs/mass_update_2026-06-19_081116.log

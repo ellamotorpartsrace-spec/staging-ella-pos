@@ -16,8 +16,7 @@ $per_page = 50;
 $offset = ($page - 1) * $per_page;
 
 if (!$supplier_id) {
-    echo json_encode(['success' => false, 'error' => 'No supplier selected']);
-    exit;
+    $supplier_id = 'all';
 }
 
 try {
@@ -25,7 +24,11 @@ try {
     $conn = $db->getConnection();
     ensureReferenceAttachmentBackupColumns($conn);
 
-    if ($supplier_id === 'none') {
+    if ($supplier_id === 'all') {
+        $supplier_name = 'All Suppliers';
+        $supplierFilter = "1=1";
+        $params = [];
+    } elseif ($supplier_id === 'none') {
         $supplier_name = 'No Supplier / Unknown';
         $supplierFilter = "sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.remarks LIKE ? OR sm.remarks LIKE ?";
         $params = [
@@ -153,7 +156,9 @@ try {
     ";
 
     // Reuse the base params from before (we must copy them because we might have appended dates)
-    if ($supplier_id === 'none') {
+    if ($supplier_id === 'all') {
+        $statsParams = [];
+    } elseif ($supplier_id === 'none') {
         $statsParams = [
             "%Restock: Manual Entry%",
             "%Batch Restock: Unknown Supplier%",
