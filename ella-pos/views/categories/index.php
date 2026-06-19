@@ -6,7 +6,7 @@ require_once '../../includes/auth.php';
 // Auth Check
 // Auth Check
 requireLogin();
-if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('manage_settings') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('manage_settings') && !in_array($_SESSION['role'], ['manager'])) {
     denyAccess("You do not have permission to manage categories.");
 }
 

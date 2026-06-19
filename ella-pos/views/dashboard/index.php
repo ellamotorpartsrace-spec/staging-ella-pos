@@ -6,6 +6,12 @@ require_once '../../includes/auth.php';
 // 1. Secure the page
 requireLogin();
 
+// Redirect stockman directly to stock checker
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'stockman') {
+    header("Location: " . BASE_URL . "views/inventory/stock_checker.php");
+    exit;
+}
+
 // 2. Load Layout
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';

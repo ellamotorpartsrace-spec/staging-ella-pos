@@ -435,7 +435,7 @@ window.ReceiptPreview = {
             cmds.push({ type: 'text', text: 'Customer: ' + (buyer.name || "Walk-in") });
         }
         if (_show('receipt_show_cashier')) {
-            cmds.push({ type: 'text', text: 'Cashier: ' + (window.CURRENT_USER_NAME || "Staff") });
+            cmds.push({ type: 'text', text: 'Cashier: ' + (user || window.CURRENT_USER_NAME || "Staff") });
         }
         cmds.push({ type: 'text', text: 'Items: ' + itemCount });
 
@@ -589,7 +589,7 @@ window.ReceiptPreview = {
             <div>Ref: <strong>${payment.reference || "N/A"}</strong></div>
             <div>Date: ${data.date ? (data.date.includes(' ') ? data.date.replace(/-/g, '/').replace(' ', ' @ ') : new Date(data.date).toLocaleString()) : new Date().toLocaleString()}</div>
             ${_show('receipt_show_customer') ? `<div>Customer: ${buyer.name || "Walk-in"}</div>` : ''}
-            ${_show('receipt_show_cashier') ? `<div>Cashier: ${window.CURRENT_USER_NAME || "Staff"}</div>` : ''}
+            ${_show('receipt_show_cashier') ? `<div>Cashier: ${user || window.CURRENT_USER_NAME || "Staff"}</div>` : ''}
             <div>Items: ${itemCount}</div>
 
             <hr>
@@ -753,7 +753,7 @@ window.ReceiptPreview = {
             <div>Ref: <strong>${payment.reference || "N/A"}</strong></div>
             <div>Date: ${data.date ? new Date(data.date).toLocaleString() : new Date().toLocaleString()}</div>
             ${_show('receipt_show_customer') ? `<div>Customer: ${buyer.name || "Walk-in"}</div>` : ''}
-            ${_show('receipt_show_cashier') ? `<div>Cashier: ${window.CURRENT_USER_NAME || "Staff"}</div>` : ''}
+            ${_show('receipt_show_cashier') ? `<div>Cashier: ${user || window.CURRENT_USER_NAME || "Staff"}</div>` : ''}
             <div>Items: ${itemCount}</div>
 
             <hr>
@@ -1185,7 +1185,7 @@ window.ReceiptPreview = {
                                     <div style="margin-top:${chunk.length === 26 ? '1.5px' : (chunk.length >= 27 ? '1px' : '2px')}; font-size:${fsHeaderMeta}px; font-weight:600; color:#555;">PAGE: ${p + 1} of ${totalPages}</div>
                                     <div style="margin-top:${marginHeaderBill}; font-size:${fsHeaderMeta}px; color:#333; text-align:right;">
                                         ${_show('receipt_show_customer') ? `<div>BILL TO: <strong>${buyer.name || "Walk-in Customer"}</strong></div>` : ''}
-                                        ${_show('receipt_show_cashier') ? `<div>CASHIER: <strong>${window.CURRENT_USER_NAME || "Staff"}</strong></div>` : ''}
+                                        ${_show('receipt_show_cashier') ? `<div>CASHIER: <strong>${user || window.CURRENT_USER_NAME || "Staff"}</strong></div>` : ''}
                                     </div>
                                 </div>
                             </div>

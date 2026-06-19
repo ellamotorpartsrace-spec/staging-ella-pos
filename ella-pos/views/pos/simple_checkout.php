@@ -792,7 +792,7 @@ require_once '../../includes/sidebar.php';
 </script>
 
 <script>
-    const CURRENT_USER_NAME = "<?= $_SESSION['username'] ?? 'Staff' ?>";
+    window.CURRENT_USER_NAME = "<?= $_SESSION['username'] ?? 'Staff' ?>";
 
     const DraftUI = {
         modals: {

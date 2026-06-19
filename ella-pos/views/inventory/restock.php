@@ -4,7 +4,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 // Auth Check
-if (!isset($_SESSION['role']) || (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman']))) {
+if (!isset($_SESSION['role']) || (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager']))) {
     denyAccess("You do not have permission to access restocking.");
 }
 

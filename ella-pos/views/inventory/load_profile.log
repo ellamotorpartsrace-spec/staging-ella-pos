@@ -1002,3 +1002,11 @@ Start index.php
 After sidebar.php: 36.28ms
 After sqlStats: 109.41ms
 After sqlProducts: 166.49ms
+Start index.php
+After sidebar.php: 41.88ms
+After sqlStats: 74.1ms
+After sqlProducts: 107.12ms
+Start index.php
+After sidebar.php: 34.96ms
+After sqlStats: 57.57ms
+After sqlProducts: 93.99ms

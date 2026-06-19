@@ -3,7 +3,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 
 requireLogin();
-if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager', 'stockman'])) {
+if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('adjust_prices') && !in_array($_SESSION['role'], ['manager'])) {
     denyAccess("You do not have permission to access bundle sets.");
 }
 

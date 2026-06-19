@@ -7,7 +7,7 @@ $role = $_SESSION['role'] ?? 'cashier';
 $current_page = basename($_SERVER['PHP_SELF']);
 $canManageInventory = in_array($role, ['admin', 'super_admin']) || hasPermission('adjust_prices') || in_array($role, ['manager', 'stockman']);
 $canViewInventory = $canManageInventory || hasPermission('view_product_history');
-$canViewShopee = true; // Open for all logged in users
+$canViewShopee = ($role !== 'stockman'); // Open for all logged in users except stockman
 $canViewSales = hasPermission('make_sales') || hasPermission('view_sales');
 $canViewCustomers = hasPermission('view_buyers') || hasPermission('view_wallet_ledger') || hasPermission('view_receivables');
 $canViewFinance = hasPermission('view_finance') || hasPermission('view_payables') || hasPermission('view_expenses') || hasPermission('manage_service_fees');
@@ -69,6 +69,7 @@ try {
     <ul class="list-unstyled components">
 
         <!-- MAIN -->
+        <?php if ($_SESSION['role'] !== 'stockman'): ?>
         <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1"><span
                 class="nav-text">Main</span></div>
         <li>
@@ -77,6 +78,7 @@ try {
                 <i class="fa-solid fa-chart-line"></i> <span class="nav-text">Dashboard</span>
             </a>
         </li>
+        <?php endif; ?>
 
         <?php if (in_array($role, ['admin', 'super_admin']) || hasPermission('view_profit') || in_array($role, ['manager'])): ?>
             <li>
@@ -124,12 +126,21 @@ try {
             </div>
             <div class="collapse show" id="inventoryCollapse">
                 <?php if ($canManageInventory): ?>
+                    <?php if ($_SESSION['role'] !== 'stockman'): ?>
                     <li>
                         <a data-bs-toggle="tooltip" data-sidebar-tooltip="Inventory" href="<?= BASE_URL ?>views/inventory/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'inventory') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-boxes-stacked"></i> <span class="nav-text">Inventory</span>
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <li>
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Stock Checker" href="<?= BASE_URL ?>views/inventory/stock_checker.php"
+                            class="<?= $current_page === 'stock_checker.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i> <span class="nav-text">Stock Checker</span>
+                        </a>
+                    </li>
+                    <?php if ($_SESSION['role'] !== 'stockman'): ?>
                     <li>
                         <a data-bs-toggle="tooltip" data-sidebar-tooltip="Categories" href="<?= BASE_URL ?>views/categories/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'categories') !== false ? 'active' : '' ?>">
@@ -148,6 +159,7 @@ try {
                             <i class="fa-solid fa-truck-ramp-box"></i> <span class="nav-text">Stocks</span>
                         </a>
                     </li>
+                    <?php endif; ?>
                     <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                     <li>
                         <a data-bs-toggle="tooltip" data-sidebar-tooltip="Pending Approvals" href="<?= BASE_URL ?>views/inventory/pending_approvals.php"
@@ -166,6 +178,7 @@ try {
                         </a>
                     </li>
                     <?php endif; ?>
+                    <?php if ($_SESSION['role'] !== 'stockman'): ?>
                     <li>
                         <a data-bs-toggle="tooltip" data-sidebar-tooltip="Adjustment" href="<?= BASE_URL ?>views/inventory/adjustment.php"
                             class="<?= $current_page === 'adjustment.php' ? 'active' : '' ?>">
@@ -184,6 +197,7 @@ try {
                             <i class="fa-solid fa-file-invoice"></i> <span class="nav-text">Stock-In Records</span>
                         </a>
                     </li>
+                    <?php endif; ?>
                     <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                         <li>
                             <a data-bs-toggle="tooltip" data-sidebar-tooltip="Image DB Sync" href="<?= BASE_URL ?>views/inventory/reference_image_sync.php"
@@ -192,6 +206,7 @@ try {
                             </a>
                         </li>
                     <?php endif; ?>
+                    <?php if ($_SESSION['role'] !== 'stockman'): ?>
                     <li>
                         <a data-bs-toggle="tooltip" data-sidebar-tooltip="Price History" href="<?= BASE_URL ?>views/inventory/price_history_records.php"
                             class="<?= $current_page === 'price_history_records.php' ? 'active' : '' ?>">
@@ -204,6 +219,7 @@ try {
                             <i class="fa-solid fa-person"></i> <span class="nav-text">Suppliers</span>
                         </a>
                     </li>
+                    <?php endif; ?>
                 <?php endif; ?>
                 <?php if (hasPermission('view_product_history')): ?>
                     <li>
@@ -225,7 +241,7 @@ try {
         <?php endif; ?>
 
         <!-- ONLINE STORE -->
-        <?php if ($canViewShopee || $canManageInventory): ?>
+        <?php if ($canViewShopee): ?>
             <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
                 style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#onlineStoreCollapse">
                 <span class="nav-text">Shopee Store</span>
