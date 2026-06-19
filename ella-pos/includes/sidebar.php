@@ -72,7 +72,7 @@ try {
         <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1"><span
                 class="nav-text">Main</span></div>
         <li>
-            <a href="<?= BASE_URL ?>views/dashboard/index.php"
+            <a title="Dashboard" href="<?= BASE_URL ?>views/dashboard/index.php"
                 class="<?= $current_page === 'index.php' && strpos($_SERVER['REQUEST_URI'], 'dashboard') !== false ? 'active' : '' ?>">
                 <i class="fa-solid fa-chart-line"></i> <span class="nav-text">Dashboard</span>
             </a>
@@ -80,7 +80,7 @@ try {
 
         <?php if (in_array($role, ['admin', 'super_admin']) || hasPermission('view_profit') || in_array($role, ['manager'])): ?>
             <li>
-                <a href="<?= BASE_URL ?>views/dashboard/statistics.php"
+                <a title="Statistics" href="<?= BASE_URL ?>views/dashboard/statistics.php"
                     class="<?= $current_page === 'statistics.php' ? 'active' : '' ?>">
                     <i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Statistics</span>
                 </a>
@@ -97,7 +97,7 @@ try {
             <div class="collapse show" id="salesCollapse">
                 <?php if (hasPermission('make_sales')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/pos/simple_checkout.php"
+                        <a title="POS Terminal" href="<?= BASE_URL ?>views/pos/simple_checkout.php"
                             class="<?= $current_page === 'simple_checkout.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-cash-register"></i> <span class="nav-text">POS Terminal</span>
                         </a>
@@ -106,7 +106,7 @@ try {
 
                 <?php if (hasPermission('view_sales')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/pos/receipts.php"
+                        <a title="Sales History" href="<?= BASE_URL ?>views/pos/receipts.php"
                             class="<?= $current_page === 'receipts.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-receipt"></i> <span class="nav-text">Sales History</span>
                         </a>
@@ -125,32 +125,32 @@ try {
             <div class="collapse show" id="inventoryCollapse">
                 <?php if ($canManageInventory): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/index.php"
+                        <a title="Inventory" href="<?= BASE_URL ?>views/inventory/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'inventory') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-boxes-stacked"></i> <span class="nav-text">Inventory</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/categories/index.php"
+                        <a title="Categories" href="<?= BASE_URL ?>views/categories/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'categories') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-tags"></i> <span class="nav-text">Categories</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/unit_types.php"
+                        <a title="Unit Types" href="<?= BASE_URL ?>views/inventory/unit_types.php"
                             class="<?= $current_page === 'unit_types.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-boxes-packing"></i> <span class="nav-text">Unit Types</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/restock.php"
+                        <a title="Stocks" href="<?= BASE_URL ?>views/inventory/restock.php"
                             class="<?= $current_page === 'restock.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-truck-ramp-box"></i> <span class="nav-text">Stocks</span>
                         </a>
                     </li>
                     <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/pending_approvals.php"
+                        <a title="Pending Approvals" href="<?= BASE_URL ?>views/inventory/pending_approvals.php"
                             class="<?= $current_page === 'pending_approvals.php' ? 'active' : '' ?> position-relative">
                             <i class="fa-solid fa-clipboard-check"></i> 
                             
@@ -167,39 +167,39 @@ try {
                     </li>
                     <?php endif; ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/adjustment.php"
+                        <a title="Adjustment" href="<?= BASE_URL ?>views/inventory/adjustment.php"
                             class="<?= $current_page === 'adjustment.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-sliders"></i> <span class="nav-text">Adjustment</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/movements.php"
+                        <a title="Stock Movements" href="<?= BASE_URL ?>views/inventory/movements.php"
                             class="<?= $current_page === 'movements.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-arrow-right-arrow-left"></i> <span class="nav-text">Stock Movements</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/stockin_records.php"
+                        <a title="Stock-In Records" href="<?= BASE_URL ?>views/inventory/stockin_records.php"
                             class="<?= $current_page === 'stockin_records.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-file-invoice"></i> <span class="nav-text">Stock-In Records</span>
                         </a>
                     </li>
                     <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                         <li>
-                            <a href="<?= BASE_URL ?>views/inventory/reference_image_sync.php"
+                            <a title="Image DB Sync" href="<?= BASE_URL ?>views/inventory/reference_image_sync.php"
                                 class="<?= $current_page === 'reference_image_sync.php' ? 'active' : '' ?>">
                                 <i class="fa-solid fa-database"></i> <span class="nav-text">Image DB Sync</span>
                             </a>
                         </li>
                     <?php endif; ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/price_history_records.php"
+                        <a title="Price History" href="<?= BASE_URL ?>views/inventory/price_history_records.php"
                             class="<?= $current_page === 'price_history_records.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-chart-line"></i> <span class="nav-text">Price History</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/suppliers/index.php"
+                        <a title="Suppliers" href="<?= BASE_URL ?>views/suppliers/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'suppliers') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-person"></i> <span class="nav-text">Suppliers</span>
                         </a>
@@ -207,7 +207,7 @@ try {
                 <?php endif; ?>
                 <?php if (hasPermission('view_product_history')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/product_history.php"
+                        <a title="Product History" href="<?= BASE_URL ?>views/inventory/product_history.php"
                             class="<?= $current_page === 'product_history.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Product History</span>
                         </a>
@@ -215,7 +215,7 @@ try {
                 <?php endif; ?>
                 <?php if (in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/inventory/backup_recovery.php"
+                        <a title="Backup &amp;amp; Recovery" href="<?= BASE_URL ?>views/inventory/backup_recovery.php"
                             class="<?= $current_page === 'backup_recovery.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-shield-halved"></i> <span class="nav-text">Backup &amp; Recovery</span>
                         </a>
@@ -237,26 +237,26 @@ try {
 
                 <?php if ($canViewShopee): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/shopee/index.php"
+                        <a title="Shopee Dashboard" href="<?= BASE_URL ?>views/shopee/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'shopee') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Shopee Dashboard</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/shopee/sales_income.php"
+                        <a title="Sales &amp; Income" href="<?= BASE_URL ?>views/shopee/sales_income.php"
                             class="<?= $current_page === 'sales_income.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-money-bill-trend-up"></i> <span class="nav-text">Sales & Income</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/shopee/products.php"
+                        <a title="Shopee Products" href="<?= BASE_URL ?>views/shopee/products.php"
                             class="<?= $current_page === 'products.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-bag-shopping"></i> <span class="nav-text">Shopee Products</span>
                         </a>
                     </li>
                     <?php if (hasPermission('shopee_mapping')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/shopee/mapping.php"
+                        <a title="Product Mapping" href="<?= BASE_URL ?>views/shopee/mapping.php"
                             class="<?= $current_page === 'mapping.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-link"></i> <span class="nav-text">Product Mapping</span>
                         </a>
@@ -264,7 +264,7 @@ try {
                     <?php endif; ?>
                     <?php if (hasPermission('shopee_allocation')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/shopee/allocation.php"
+                        <a title="Stock Allocation" href="<?= BASE_URL ?>views/shopee/allocation.php"
                             class="<?= $current_page === 'allocation.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-sliders"></i> <span class="nav-text">Stock Allocation</span>
                         </a>
@@ -272,7 +272,7 @@ try {
                     <?php endif; ?>
                     <?php if (in_array($role, ['admin', 'super_admin'])): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/shopee/logs.php"
+                        <a title="Sync Logs" href="<?= BASE_URL ?>views/shopee/logs.php"
                             class="<?= $current_page === 'logs.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Sync Logs</span>
                         </a>
@@ -280,7 +280,7 @@ try {
                     <?php endif; ?>
                     <?php if (in_array($role, ['admin', 'super_admin'])): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/shopee/settings.php"
+                        <a title="Shopee Settings" href="<?= BASE_URL ?>views/shopee/settings.php"
                             class="<?= $current_page === 'settings.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-gear"></i> <span class="nav-text">Shopee Settings</span>
                         </a>
@@ -300,7 +300,7 @@ try {
             <div class="collapse show" id="customersCollapse">
                 <?php if (hasPermission('view_buyers')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/buyers/index.php"
+                        <a title="Buyers" href="<?= BASE_URL ?>views/buyers/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'buyers') !== false && $current_page !== 'wallet_ledger.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-users"></i> <span class="nav-text">Buyers</span>
                         </a>
@@ -309,7 +309,7 @@ try {
 
                 <?php if (hasPermission('view_receivables')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/receivables/index.php"
+                        <a title="Receivables" href="<?= BASE_URL ?>views/receivables/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'receivables') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-file-invoice-dollar"></i> <span class="nav-text">Receivables</span>
                         </a>
@@ -318,7 +318,7 @@ try {
 
                 <?php if (hasPermission('view_receivables')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/receivables/ledger.php"
+                        <a title="Buyer Ledger" href="<?= BASE_URL ?>views/receivables/ledger.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'receivables/ledger.php') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-book-bookmark"></i> <span class="nav-text">Buyer Ledger</span>
                         </a>
@@ -327,7 +327,7 @@ try {
 
                 <?php if (hasPermission('view_wallet_ledger')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/buyers/wallet_ledger.php"
+                        <a title="Wallet Ledger" href="<?= BASE_URL ?>views/buyers/wallet_ledger.php"
                             class="<?= $current_page === 'wallet_ledger.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-wallet"></i> <span class="nav-text">Wallet Ledger</span>
                         </a>
@@ -346,7 +346,7 @@ try {
             <div class="collapse show" id="financeCollapse">
                 <?php if (hasPermission('view_finance')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/financing/index.php"
+                        <a title="Financing" href="<?= BASE_URL ?>views/financing/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'financing') !== false || strpos($_SERVER['REQUEST_URI'], 'home_credit') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-building-columns"></i> <span class="nav-text">Financing</span>
                         </a>
@@ -355,7 +355,7 @@ try {
 
                 <?php if (hasPermission('view_payables')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/payables/index.php"
+                        <a title="Payables" href="<?= BASE_URL ?>views/payables/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'payables') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-money-bill-transfer"></i> <span class="nav-text">Payables</span>
                         </a>
@@ -364,7 +364,7 @@ try {
 
                 <?php if (hasPermission('view_expenses')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/expenses/index.php"
+                        <a title="Expenses" href="<?= BASE_URL ?>views/expenses/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'expenses') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-money-check-dollar"></i> <span class="nav-text">Expenses</span>
                         </a>
@@ -373,7 +373,7 @@ try {
 
                 <?php if (hasPermission('manage_service_fees')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/service_fees/index.php"
+                        <a title="Service Fees" href="<?= BASE_URL ?>views/service_fees/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'service_fees') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-truck-fast"></i> <span class="nav-text">Service Fees</span>
                         </a>
@@ -386,7 +386,7 @@ try {
         <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1"><span
                 class="nav-text">Preferences</span></div>
         <li>
-            <a href="<?= BASE_URL ?>views/user/profile.php"
+            <a title="My Profile" href="<?= BASE_URL ?>views/user/profile.php"
                 class="<?= $current_page === 'profile.php' ? 'active' : '' ?>">
                 <i class="fa-solid fa-user-gear"></i> <span class="nav-text">My Profile</span>
             </a>
@@ -402,7 +402,7 @@ try {
             <div class="collapse show" id="adminCollapse">
                 <?php if ($role === 'super_admin'): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/users/index.php"
+                        <a title="Users" href="<?= BASE_URL ?>views/users/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'users') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-users-gear"></i> <span class="nav-text">Users</span>
                         </a>
@@ -411,19 +411,19 @@ try {
 
                 <?php if (in_array($role, ['admin', 'super_admin'])): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/pos/admin_drafts.php"
+                        <a title="All User Drafts" href="<?= BASE_URL ?>views/pos/admin_drafts.php"
                             class="<?= $current_page === 'admin_drafts.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-folder-tree"></i> <span class="nav-text">All User Drafts</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/system/backup.php"
+                        <a title="Backup &amp; Recovery" href="<?= BASE_URL ?>views/system/backup.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'system/backup') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-database"></i> <span class="nav-text">Backup & Recovery</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/system/roles.php"
+                        <a title="Roles &amp; Permissions" href="<?= BASE_URL ?>views/system/roles.php"
                             class="<?= $current_page === 'roles.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-user-shield"></i> <span class="nav-text">Roles & Permissions</span>
                         </a>
@@ -432,19 +432,19 @@ try {
 
                 <?php if (in_array($role, ['admin', 'super_admin']) || hasPermission('manage_settings')): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/system/settings.php"
+                        <a title="System Settings" href="<?= BASE_URL ?>views/system/settings.php"
                             class="<?= $current_page === 'settings.php' && strpos($_SERVER['REQUEST_URI'], 'system') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-gear"></i> <span class="nav-text">System Settings</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/system/integrations.php"
+                        <a title="Platform Integrations" href="<?= BASE_URL ?>views/system/integrations.php"
                             class="<?= $current_page === 'integrations.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-plug"></i> <span class="nav-text">Platform Integrations</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/system/scanner_devices.php"
+                        <a title="Scanner Devices" href="<?= BASE_URL ?>views/system/scanner_devices.php"
                             class="<?= $current_page === 'scanner_devices.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-mobile-screen"></i> <span class="nav-text">Scanner Devices</span>
                         </a>
@@ -453,13 +453,13 @@ try {
 
                 <?php if (in_array($role, ['admin', 'super_admin'])): ?>
                     <li>
-                        <a href="<?= BASE_URL ?>views/system/receipt_templates.php"
+                        <a title="Receipt Templates" href="<?= BASE_URL ?>views/system/receipt_templates.php"
                             class="<?= $current_page === 'receipt_templates.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-receipt"></i> <span class="nav-text">Receipt Templates</span>
                         </a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>views/system/activity_logs.php"
+                        <a title="Activity Logs" href="<?= BASE_URL ?>views/system/activity_logs.php"
                             class="<?= $current_page === 'activity_logs.php' && strpos($_SERVER['REQUEST_URI'], 'system') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-list-check"></i> <span class="nav-text">Activity Logs</span>
                         </a>
@@ -480,7 +480,7 @@ try {
         </li>
 
         <li class="mt-2 text-center pb-4">
-            <a href="<?= BASE_URL ?>logout.php" class="text-danger text-decoration-none fw-bold">
+            <a title="Logout" href="<?= BASE_URL ?>logout.php" class="text-danger text-decoration-none fw-bold">
                 <i class="fa-solid fa-power-off me-2"></i> <span class="nav-text">Logout</span>
             </a>
         </li>
