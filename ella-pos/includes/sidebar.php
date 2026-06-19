@@ -657,6 +657,10 @@ try {
                         try {
                             const bsCollapse = bootstrap.Collapse.getInstance(parentCollapse) || new bootstrap.Collapse(parentCollapse, { show: true });
                             bsCollapse.show();
+                        } catch (e) {}
+                    }
+                }
+
                 // Initialize sidebar tooltips for better aesthetics (Bootstrap)
                 if (typeof bootstrap !== 'undefined') {
                     const tooltipTriggerList = [].slice.call(document.querySelectorAll('#sidebar [data-bs-toggle="tooltip"]'));
