@@ -1,0 +1,1 @@
+{"success":true,"message":"Successfully synced products from Lazada","total_items":50,"total_rows":89,"inserted":0,"updated":0,"skipped":89,"auto_matched":0,"has_next_page":true,"next_offset":50}

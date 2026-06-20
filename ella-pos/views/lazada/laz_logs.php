@@ -1,0 +1,743 @@
+<?php
+// views/lazada/laz_logs.php — Sync Logs
+$page_title = 'Lazada Sync — Sync Logs';
+require_once '../../config/config.php';
+require_once '../../includes/auth.php';
+requireRole(['admin', 'super_admin']);
+
+$db = new Database();
+$conn = $db->getConnection();
+
+$startDate = $_GET['start_date'] ?? date('Y-m-d');
+$endDate = $_GET['end_date'] ?? date('Y-m-d');
+
+$where = [];
+$params = [];
+
+$where[] = "DATE(l.created_at) BETWEEN ? AND ?";
+$params[] = $startDate;
+$params[] = $endDate;
+
+$whereSql = '';
+if (!empty($where)) {
+    $whereSql = 'WHERE ' . implode(' AND ', $where);
+}
+
+$stmt = $conn->prepare("
+    SELECT l.*, u.full_name AS user_name,
+           (SELECT p.product_name 
+            FROM lazada_product_mappings m 
+            JOIN product_variations v ON m.pos_product_id = v.variation_id
+            JOIN products p ON v.product_id = p.product_id
+            WHERE m.lazada_item_id = l.lazada_item_id 
+            ORDER BY m.id DESC LIMIT 1) as mapped_pos_name,
+           (SELECT v.variation_name 
+            FROM lazada_product_mappings m 
+            JOIN product_variations v ON m.pos_product_id = v.variation_id
+            WHERE m.lazada_item_id = l.lazada_item_id 
+            ORDER BY m.id DESC LIMIT 1) as mapped_pos_variation,
+           (SELECT p.product_name 
+            FROM product_variations v 
+            JOIN products p ON v.product_id = p.product_id 
+            WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
+            LIMIT 1) as fallback_pos_name,
+           (SELECT v.variation_name 
+            FROM product_variations v 
+            WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
+            LIMIT 1) as fallback_pos_variation,
+           (SELECT p.product_name 
+            FROM product_variations v 
+            JOIN products p ON v.product_id = p.product_id 
+            WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.old_value) COLLATE utf8mb4_unicode_ci 
+            LIMIT 1) as fallback_old_pos_name,
+           (SELECT v.variation_name 
+            FROM product_variations v 
+            WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.old_value) COLLATE utf8mb4_unicode_ci 
+            LIMIT 1) as fallback_old_pos_variation
+    FROM lazada_sync_logs l
+    LEFT JOIN users u ON l.created_by = u.id
+    $whereSql
+    ORDER BY l.created_at DESC 
+    LIMIT 1000
+");
+$stmt->execute($params);
+$dbLogs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$logsJson = [];
+foreach ($dbLogs as $l) {
+    $logsJson[] = [
+        'ts' => date('Y-m-d h:i:s A', strtotime($l['created_at'])),
+        'product' => $l['product_name'] ?: 'System Event',
+        'sku' => $l['sku'] ?: '—',
+        'type' => str_replace('_', ' ', ucfirst($l['event_type'])),
+        'event' => $l['event_type'],
+        'oldStock' => $l['old_value'] !== null ? $l['old_value'] : '—',
+        'newStock' => $l['new_value'] !== null ? $l['new_value'] : '—',
+        'source' => $l['source'] ?: 'Automated',
+        'status' => $l['status'],
+        'error' => $l['error_message'] ?: '',
+        'user' => $l['user_name'] ?: 'System',
+        'posName' => $l['mapped_pos_name'] ?: ($l['fallback_old_pos_name'] ?? $l['fallback_pos_name'] ?? ''),
+        'posVarName' => $l['mapped_pos_variation'] ?: ($l['fallback_old_pos_variation'] ?? $l['fallback_pos_variation'] ?? '')
+    ];
+}
+
+$countsStmt = $conn->prepare("SELECT 
+    SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success,
+    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+    COUNT(*) as total
+FROM lazada_sync_logs l $whereSql");
+$countsStmt->execute($params);
+$counts = $countsStmt->fetch(PDO::FETCH_ASSOC);
+
+$totalCount = $counts['total'] ?? 0;
+$successCount = $counts['success'] ?? 0;
+$successRateFormatted = $totalCount > 0 ? number_format(($successCount / $totalCount) * 100, 1) . '%' : '—';
+
+if ($startDate === $endDate) {
+    if ($startDate === date('Y-m-d')) {
+        $periodLabel = "Today's Total";
+    } elseif ($startDate === date('Y-m-d', strtotime('-1 day'))) {
+        $periodLabel = "Yesterday's Total";
+    } else {
+        $periodLabel = date('M d, Y', strtotime($startDate));
+    }
+} else {
+    $periodLabel = date('M d, Y', strtotime($startDate)) . ' - ' . date('M d, Y', strtotime($endDate));
+}
+
+require_once '../../includes/header.php';
+require_once '../../includes/sidebar.php';
+?>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/lazada-sync.css?v=<?= filemtime(__DIR__ . '/../../assets/css/lazada-sync.css') ?>">
+
+<style>
+/* Custom inline Premium Filters block */
+.lz-card-body.filter-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem !important;
+}
+
+.premium-search-box {
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--lz-radius-sm);
+    padding: 0 0.75rem;
+    transition: all 0.2s ease;
+    width: 220px;
+}
+.premium-search-box:focus-within {
+    border-color: var(--lazada-primary);
+    box-shadow: 0 0 0 3px rgba(238, 77, 45, 0.1);
+}
+.premium-search-box i {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+.premium-search-box input {
+    border: none;
+    background: transparent;
+    padding: 0.45rem 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    outline: none;
+    width: 100%;
+}
+
+.premium-filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.premium-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--lz-neutral-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--lz-radius-sm);
+    padding: 0.45rem 2rem 0.45rem 0.75rem !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary) !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+}
+.premium-select:focus {
+    border-color: var(--lazada-primary);
+}
+
+.premium-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.premium-select-wrapper::after {
+    content: "\f078";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    position: absolute;
+    right: 0.75rem;
+    pointer-events: none;
+}
+
+.premium-date-input {
+    background: var(--lz-neutral-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--lz-radius-sm);
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.premium-date-input:focus {
+    border-color: var(--lazada-primary);
+}
+
+.premium-pill.lz-pill {
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.premium-pill.lz-pill:hover {
+    border-color: var(--lazada-primary);
+    color: var(--lazada-primary);
+}
+.premium-pill.lz-pill.active {
+    background: var(--lazada-light);
+    border-color: var(--lazada-primary);
+    color: var(--lazada-primary);
+}
+.premium-pill.lz-pill.pill-failed:hover {
+    border-color: var(--lz-danger);
+    color: var(--lz-danger);
+}
+.premium-pill.lz-pill.pill-failed.active {
+    background: var(--lz-danger-bg);
+    border-color: var(--lz-danger);
+    color: var(--lz-danger);
+}
+
+.premium-fade-in {
+    animation: premium-fadeIn 0.2s ease-out forwards;
+}
+@keyframes premium-fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+/* Green Popover for Logs */
+.logs-popover {
+    --bs-popover-max-width: 300px;
+    --bs-popover-border-color: rgba(25, 135, 84, 0.25);
+    --bs-popover-header-bg: #198754;
+    --bs-popover-header-color: #fff;
+    --bs-popover-body-padding-x: 0.75rem;
+    --bs-popover-body-padding-y: 0.6rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(25, 135, 84, 0.12);
+    border: 1px solid var(--bs-popover-border-color);
+    font-size: 0.82rem;
+}
+.logs-popover .popover-header {
+    font-weight: 600;
+    font-size: 0.78rem;
+    border-bottom: none;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    text-align: center;
+    padding: 0.35rem 0.75rem;
+    letter-spacing: 0.3px;
+}
+.logs-popover .popover-body {
+    background-color: #fff;
+    color: #333;
+    font-size: 0.82rem;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+    padding: 0.5rem 0.75rem;
+}
+.logs-popover .popover-arrow::before {
+    border-top-color: rgba(25, 135, 84, 0.25);
+}
+.logs-popover .popover-arrow::after {
+    border-top-color: #fff;
+}
+</style>
+
+<div class="lz-animate" style="background: #f4f7fb; min-height: calc(100vh - 60px); padding-bottom: 3rem;">
+    <?php require_once __DIR__ . '/laz_token_warning.php'; ?>
+
+    <!-- Premium Hero Banner -->
+    <div class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #0f136d 0%, #1a237e 100%); padding: 2.5rem 2rem; border-radius: 0 0 24px 24px; box-shadow: 0 10px 30px rgba(15, 19, 109, 0.15); margin-bottom: 2rem;">
+        <!-- Decorative Background Graphic -->
+        <i class="fa-solid fa-clock-rotate-left position-absolute text-white" style="font-size: 16rem; opacity: 0.04; right: -2%; top: -15%;"></i>
+        
+        <div class="container-fluid px-4 position-relative" style="z-index: 2;">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-3" style="font-size: 0.9rem;">
+                        <a href="<?= BASE_URL ?>views/lazada/laz_index.php" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Lazada Dashboard</a>
+                        <i class="fa-solid fa-chevron-right text-white" style="font-size: 0.6rem; opacity: 0.7;"></i>
+                        <span class="text-white" style="opacity: 0.9; font-weight: 500;">Sync Logs</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center justify-content-center bg-white shadow-sm" style="width: 60px; height: 60px; border-radius: 16px; font-size: 1.8rem; color: var(--lazada-primary);">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div>
+                            <h1 class="fw-bold mb-0 text-white" style="font-size: 2.2rem; letter-spacing: -0.5px;">
+                                Lazada Sync Logs
+                            </h1>
+                            <p class="mb-0 mt-1 text-white" style="opacity: 0.85; font-size: 1.05rem;">Track every stock update, product sync, mapping change, and system event.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4">
+        <!-- Premium KPI Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="bg-white p-4 h-100" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; border-bottom: 4px solid var(--lz-success); display: flex; align-items: center; gap: 1.2rem;">
+                    <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 54px; height: 54px; border-radius: 14px; background: rgba(40, 167, 69, 0.1); color: var(--lz-success); font-size: 1.5rem;">
+                        <i class="fa-solid fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <div class="text-uppercase fw-bold" style="font-size: 0.85rem; color: #64748b; letter-spacing: 0.5px;">Successful</div>
+                        <div class="fw-bold text-success" style="font-size: 1.8rem; line-height: 1.2;"><?= number_format($counts['success'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="bg-white p-4 h-100" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; border-bottom: 4px solid var(--lz-danger); display: flex; align-items: center; gap: 1.2rem;">
+                    <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 54px; height: 54px; border-radius: 14px; background: rgba(220, 53, 69, 0.1); color: var(--lz-danger); font-size: 1.5rem;">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <div>
+                        <div class="text-uppercase fw-bold" style="font-size: 0.85rem; color: #64748b; letter-spacing: 0.5px;">Failed</div>
+                        <div class="fw-bold text-danger" style="font-size: 1.8rem; line-height: 1.2;"><?= number_format($counts['failed'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="bg-white p-4 h-100" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; border-bottom: 4px solid var(--lz-warning); display: flex; align-items: center; gap: 1.2rem;">
+                    <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 54px; height: 54px; border-radius: 14px; background: rgba(255, 193, 7, 0.1); color: var(--lz-warning); font-size: 1.5rem;">
+                        <i class="fa-solid fa-rotate"></i>
+                    </div>
+                    <div>
+                        <div class="text-uppercase fw-bold" style="font-size: 0.8rem; color: #64748b; letter-spacing: 0.5px;"><?= $periodLabel ?></div>
+                        <div class="fw-bold text-warning" style="font-size: 1.8rem; line-height: 1.2;"><?= number_format($counts['total'] ?? 0) ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="bg-white p-4 h-100" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; border-bottom: 4px solid var(--lz-info); display: flex; align-items: center; gap: 1.2rem;">
+                    <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 54px; height: 54px; border-radius: 14px; background: rgba(23, 162, 184, 0.1); color: var(--lz-info); font-size: 1.5rem;">
+                        <i class="fa-solid fa-percent"></i>
+                    </div>
+                    <div>
+                        <div class="text-uppercase fw-bold" style="font-size: 0.85rem; color: #64748b; letter-spacing: 0.5px;">Success Rate</div>
+                        <div class="fw-bold text-info" style="font-size: 1.8rem; line-height: 1.2;"><?= $successRateFormatted ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white mb-4" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+            <form method="GET" action="" id="filterForm" class="w-100 m-0">
+                <div class="p-3 d-flex align-items-center flex-wrap gap-3">
+                    
+                    <!-- Search Box -->
+                    <div class="premium-search-box" style="flex: 1; min-width: 250px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.4rem 1rem;">
+                        <i class="fa-solid fa-search text-secondary"></i>
+                        <input type="text" id="logSearch" autocomplete="off" placeholder="Search product, SKU..." oninput="renderLogs()" style="border: none; background: transparent; padding: 0.45rem 0.5rem; width: 100%; outline: none; font-size: 0.95rem; color: #475569;">
+                    </div>
+                    
+                    <!-- Date Frame Selection -->
+                    <div class="d-flex align-items-center gap-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.3rem 0.6rem;">
+                        <span class="fw-bold text-secondary mx-2" style="font-size: 0.85rem;">DATE:</span>
+                        <input type="date" id="startDate" name="start_date" value="<?= htmlspecialchars($startDate) ?>" onchange="document.getElementById('filterForm').submit()" style="border: none; background: transparent; font-size: 0.9rem; font-weight: 600; color: #1e293b; outline: none;">
+                        <span class="text-secondary fw-bold mx-1" style="font-size: 0.85rem;">to</span>
+                        <input type="date" id="endDate" name="end_date" value="<?= htmlspecialchars($endDate) ?>" onchange="document.getElementById('filterForm').submit()" style="border: none; background: transparent; font-size: 0.9rem; font-weight: 600; color: #1e293b; outline: none; margin-right: 0.5rem;">
+                    </div>
+
+                    <!-- Category Pills -->
+                    <div class="lz-filter-pills ms-auto d-flex gap-2 flex-wrap">
+                        <button type="button" class="premium-pill lz-pill pill-all active" onclick="setLogFilter('all',this)">All Events</button>
+                        <button type="button" class="premium-pill lz-pill pill-stock" onclick="setLogFilter('stock_update',this)">Stock Updates</button>
+                        <button type="button" class="premium-pill lz-pill pill-map" onclick="setLogFilter('mapping',this)">Mapping</button>
+                        <button type="button" class="premium-pill lz-pill pill-sku" onclick="setLogFilter('lazada_sku',this)">Lazada SKU</button>
+                        <button type="button" class="premium-pill lz-pill pill-sync" onclick="setLogFilter('product_import',this)">Product Sync</button>
+                        <button type="button" class="premium-pill lz-pill pill-token" onclick="setLogFilter('token_refresh',this)">Token</button>
+                        <button type="button" class="premium-pill lz-pill pill-failed" onclick="setLogFilter('failed',this)">Failed</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="bg-white overflow-hidden mb-4" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+            <div class="p-0 lz-table-wrap">
+                <table class="table lz-table mb-0 align-middle" style="border-collapse: collapse;">
+                    <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding: 1rem 1.5rem; font-weight: 700; color: #475569; font-size: 0.85rem; text-transform: uppercase; width:160px">Timestamp</th>
+                            <th style="padding: 1rem 1.5rem; font-weight: 700; color: #475569; font-size: 0.85rem; text-transform: uppercase; width:380px">Scope / Product</th>
+                            <th style="padding: 1rem 1.5rem; font-weight: 700; color: #475569; font-size: 0.85rem; text-transform: uppercase; width:140px">Event Type</th>
+                            <th style="padding: 1rem 1.5rem; font-weight: 700; color: #475569; font-size: 0.85rem; text-transform: uppercase;">Details / Summary</th>
+                            <th style="padding: 1rem 1.5rem; font-weight: 700; color: #475569; font-size: 0.85rem; text-transform: uppercase; width:120px">User</th>
+                            <th style="padding: 1rem 1.5rem; font-weight: 700; color: #475569; font-size: 0.85rem; text-transform: uppercase; width:110px">Source</th>
+                            <th style="padding: 1rem 1.5rem; font-weight: 700; color: #475569; font-size: 0.85rem; text-transform: uppercase; width:110px">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php
+// Database variables are handled at the top
+?>
+<script>
+const LOGS = <?= json_encode($logsJson) ?>;
+
+let logFilter = 'all';
+
+function setLogFilter(f, btn) {
+    logFilter = f;
+    document.querySelectorAll('.lz-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    renderLogs();
+}
+
+
+
+function clearFilters() {
+    window.location.href = 'logs.php';
+}
+
+function searchTerms(q) {
+    return String(q || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+}
+function progressiveMatch(terms, fields) {
+    if (!terms.length) return true;
+    const haystack = fields.map(v => String(v || '').toLowerCase());
+    return terms.every(term => haystack.some(field => field.includes(term)));
+}
+
+function renderLogs() {
+    const search = document.getElementById('logSearch')?.value || '';
+    const terms = searchTerms(search);
+    const body = document.getElementById('logBody');
+
+    let items = LOGS.filter(l => {
+        if (!progressiveMatch(terms, [l.product, l.sku, l.type, l.source, l.status, l.error, l.user, l.posName, l.posVarName, l.newStock])) return false;
+        if (logFilter === 'failed') { if (l.status !== 'failed') return false; }
+        else if (logFilter !== 'all') {
+            const isRetroactiveSku = (l.event === '' && l.newStock && l.newStock.includes('Added/Fix Missing SKU'));
+            const effectiveEvent = isRetroactiveSku ? 'lazada_sku' : l.event;
+            if (effectiveEvent !== logFilter) return false;
+        }
+        return true;
+    });
+
+    if (!items.length) {
+        body.innerHTML = '<tr><td colspan="7"><div class="text-center py-5 my-3"><i class="fa-solid fa-clock-rotate-left text-secondary mb-3" style="font-size: 4rem; opacity: 0.15;"></i><h4 class="fw-bold" style="color: #1e293b;">No logs found</h4><p class="text-secondary mb-0" style="font-size: 1.05rem;">Try adjusting your filters or search query.</p></div></td></tr>';
+        return;
+    }
+    // Aggressively remove any stuck popovers from the DOM
+    document.querySelectorAll('.popover').forEach(p => p.remove());
+
+    body.innerHTML = items.map(l => {
+        const getPopoverHtml = (text, iconColor) => {
+            const safeName = (l.posName || l.product || 'Unknown Product').replace(/"/g, '&quot;');
+            const safeVar = (l.posVarName || '').replace(/"/g, '&quot;');
+            const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
+            const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
+            const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="logs-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
+            return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none;" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}"></i></a>`;
+        };
+
+        let eventBadge = '';
+        switch(l.event) {
+            case 'product_import': 
+                if (l.product.includes('Quick Sync')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(238,77,45,0.12);color:#ee4d2d"><i class="fa-solid fa-bolt me-1"></i>Quick Sync</span>';
+                } else if (l.product.includes('Full Sync')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6"><i class="fa-solid fa-arrows-rotate me-1"></i>Full Sync</span>';
+                } else if (l.product.includes('Stock Sync')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(16,185,129,0.12);color:#10b981"><i class="fa-solid fa-box me-1"></i>Stock Sync</span>';
+                } else if (l.product.includes('Price Sync')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(245,158,11,0.12);color:#f59e0b"><i class="fa-solid fa-sack-dollar me-1"></i>Price Sync</span>';
+                } else if (l.product.includes('Mapping Sync')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(102,16,242,0.12);color:#6610f2"><i class="fa-solid fa-link me-1"></i>Mapping Sync</span>';
+                } else if (l.product.includes('Product Sync (Products Page)')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(99,102,241,0.12);color:#6366f1"><i class="fa-solid fa-bag-shopping me-1"></i>Product Sync</span>';
+                } else if (l.product.includes('Ghost Product Cleanup')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-broom me-1"></i>Ghost Cleanup</span>';
+                } else {
+                    eventBadge = '<span class="lz-badge lz-badge-info"><i class="fa-solid fa-cloud-arrow-down me-1"></i>Import</span>';
+                }
+                break;
+            case 'stock_update': eventBadge = '<span class="lz-badge lz-badge-success"><i class="fa-solid fa-boxes-stacked me-1"></i>Stock Update</span>'; break;
+            case 'lazada_sku': eventBadge = '<span class="lz-badge" style="background:rgba(253,126,20,0.12);color:#fd7e14;border:1px solid rgba(253,126,20,0.25)"><i class="fa-solid fa-tag me-1"></i>Lazada SKU</span>'; break;
+            case 'mapping': eventBadge = '<span class="lz-badge" style="background:rgba(102,16,242,0.1);color:#6610f2"><i class="fa-solid fa-link me-1"></i>Mapping</span>'; break;
+            case 'token_refresh':
+                if (l.source && l.source.includes('OAuth')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(99,102,241,0.12);color:#6366f1"><i class="fa-solid fa-right-to-bracket me-1"></i>OAuth</span>';
+                } else if (l.source && (l.source.includes('Cron') || l.source.includes('Auto'))) {
+                    eventBadge = '<span class="lz-badge lz-badge-warning"><i class="fa-solid fa-clock-rotate-left me-1"></i>Auto-Refresh</span>';
+                } else {
+                    eventBadge = '<span class="lz-badge lz-badge-warning"><i class="fa-solid fa-key me-1"></i>Token Refresh</span>';
+                }
+                break;
+            default: 
+                if (l.event === '' && l.newStock && l.newStock.includes('Added/Fix Missing SKU')) {
+                    eventBadge = '<span class="lz-badge" style="background:rgba(253,126,20,0.12);color:#fd7e14;border:1px solid rgba(253,126,20,0.25)"><i class="fa-solid fa-tag me-1"></i>Lazada SKU</span>';
+                } else {
+                    eventBadge = '<span class="lz-badge lz-badge-neutral">' + l.type + '</span>';
+                }
+        }
+
+        let statusBadge = l.status === 'success'
+            ? '<span class="lz-badge lz-badge-success"><i class="fa-solid fa-check me-1"></i>Success</span>'
+            : '<span class="lz-badge lz-badge-danger"><i class="fa-solid fa-xmark me-1"></i>Failed</span>';
+
+        let details = '—';
+        if (l.status === 'failed') {
+            // ── Failed — show the error message clearly ──────────────────────────
+            const errMsg = l.error || l.newStock || 'Operation failed';
+            details = `<span class="small"><i class="fa-solid fa-circle-exclamation text-danger me-1"></i><span class="text-danger fw-semibold">Error:</span> <span class="text-dark">${errMsg}</span></span>`;
+
+        } else if (l.event === 'mapping') {
+            // ── Mapping — link, unlink, relink, or bulk auto-match summary ───────
+            const isBulkSummary = l.product === 'Bulk Auto-Match';
+            const srcLower = (l.source || '').toLowerCase();
+            
+            let isUnlinked = false;
+            let isNewLink = false;
+
+            if (srcLower.includes('unlink')) {
+                isUnlinked = true;
+            } else if (srcLower.includes('link') && !srcLower.includes('unlink')) {
+                isNewLink = true;
+            } else {
+                isUnlinked = (l.newStock === 'Unmapped' || l.newStock === '—' || !l.newStock);
+                isNewLink  = (l.oldStock === '—' || l.oldStock === 'Unmapped' || !l.oldStock);
+            }
+
+            if (isBulkSummary) {
+                details = `<span class="small"><i class="fa-solid fa-wand-magic-sparkles me-1" style="color:#6610f2"></i><span class="text-dark">${l.newStock}</span></span>`;
+            } else {
+                if (isUnlinked) {
+                    const displayOld = (l.oldStock === 'Unmapped' || !l.oldStock) ? '[No SKU]' : l.oldStock;
+                    const noSkuHtml = getPopoverHtml(displayOld, 'var(--text-secondary)');
+                    details = `<span class="small"><i class="fa-solid fa-link-slash me-1 text-danger"></i><span class="text-secondary">Unlinked from POS SKU:</span> <del class="font-monospace text-muted ms-1" style="background:rgba(220,53,69,0.06);padding:2px 7px;border-radius:4px;border:1px solid rgba(220,53,69,0.15)">${noSkuHtml}</del></span>`;
+                } else if (isNewLink) {
+                    if (l.newStock === 'Allowed as Shared Listing') {
+                        const skuPopoverHtml = getPopoverHtml(l.sku || '[No SKU]', '#198754');
+                        details = `
+                            <div class="d-flex flex-column gap-1 mt-1">
+                                <span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${skuPopoverHtml}</span></span>
+                                <span class="small text-muted ms-3" style="font-size: 0.78rem;"><i class="fa-solid fa-share-nodes me-1 text-primary"></i>Allowed as shared listing</span>
+                            </div>`;
+                    } else {
+                        const displayNew = (l.newStock === 'Unmapped' || !l.newStock) ? '[No SKU]' : l.newStock;
+                        const noSkuHtml = getPopoverHtml(displayNew, '#198754');
+                        details = `<span class="small"><i class="fa-solid fa-link me-1" style="color:#198754"></i><span class="text-secondary">Linked to POS SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(25,135,84,0.08);color:#198754;padding:2px 7px;border-radius:4px;border:1px solid rgba(25,135,84,0.2)">${noSkuHtml}</span></span>`;
+                    }
+                } else {
+                    const newHtml = getPopoverHtml(l.newStock, '#6366f1');
+                    details = `<span class="small"><i class="fa-solid fa-arrows-rotate me-1" style="color:#6610f2"></i><span class="text-secondary">Relinked:</span> <del class="font-monospace text-muted ms-1" style="font-size:0.8rem;padding:2px 6px;background:rgba(0,0,0,0.04);border-radius:4px">${l.oldStock}</del> <i class="fa-solid fa-arrow-right mx-1" style="color:#ee4d2d;font-size:0.72rem"></i> <span class="font-monospace fw-semibold" style="background:rgba(99,102,241,0.08);color:#6366f1;padding:2px 7px;border-radius:4px;border:1px solid rgba(99,102,241,0.2)">${newHtml}</span></span>`;
+                }
+            }
+
+        } else if (l.event === 'stock_update') {
+            // ── Stock Update — Old Value / New Value with diff pill ───────────────
+            const newValRaw = l.newStock || '—';
+            const newValMatch = newValRaw.match(/^(\d+)\s*\(([^)]+)\)$/);
+            const newValNum = newValMatch ? newValMatch[1] : newValRaw;
+            const diffLabel = newValMatch ? newValMatch[2] : null;
+
+            if (l.oldStock !== '—' && newValRaw !== '—') {
+                const isIncrease = diffLabel && diffLabel.startsWith('+') && !diffLabel.startsWith('+0');
+                const isDecrease = diffLabel && (diffLabel.startsWith('-') || diffLabel.includes('Deducted'));
+                const isNoChange = !isIncrease && !isDecrease;
+
+                let diffPill = '';
+                if (diffLabel) {
+                    const pillColor = isNoChange
+                        ? 'background:rgba(108,117,125,0.12);color:#6c757d'
+                        : isIncrease
+                            ? 'background:rgba(25,135,84,0.12);color:#198754'
+                            : 'background:rgba(220,53,69,0.12);color:#dc3545';
+                    const pillIcon = isNoChange
+                        ? '<i class="fa-solid fa-minus me-1" style="font-size:0.7rem"></i>'
+                        : isIncrease
+                            ? '<i class="fa-solid fa-arrow-trend-up me-1" style="font-size:0.7rem"></i>'
+                            : '<i class="fa-solid fa-arrow-trend-down me-1" style="font-size:0.7rem"></i>';
+                    diffPill = `<span class="ms-2" style="display:inline-block;padding:1px 7px;border-radius:20px;font-size:0.72rem;font-weight:600;${pillColor}">${pillIcon}${diffLabel}</span>`;
+                }
+                details = `<span class="small"><span class="text-secondary">Old Value:</span> <strong>${l.oldStock}</strong> <span class="text-secondary ms-2">New Value:</span> <strong>${newValNum}</strong>${diffPill}</span>`;
+            } else {
+                details = `<span class="small text-secondary">${newValRaw}</span>`;
+            }
+
+        } else if (l.event === 'lazada_sku') {
+            // ── Lazada SKU — show the SKU value that was set ──────────────────────
+            const rawSkuVal = (l.newStock || '').replace('Added/Fix Missing SKU: ', '').trim();
+            if (rawSkuVal) {
+                const skuPopoverHtml = getPopoverHtml(rawSkuVal, '#fd7e14');
+                details = `<span class="small"><i class="fa-solid fa-tag me-1" style="color:#fd7e14"></i><span class="text-secondary">Added/Fix Missing SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(253,126,20,0.08);color:#fd7e14;padding:2px 7px;border-radius:4px;border:1px solid rgba(253,126,20,0.2)">${skuPopoverHtml}</span></span>`;
+            } else {
+                details = '<span class="small text-secondary">SKU updated</span>';
+            }
+
+        } else if (l.event === 'product_import') {
+            // ── Product Import — parse sync summary counts ────────────────────────
+            const rawImport = l.newStock || '';
+            // "50 Synced (12 New, 38 Updated)" — Products Page
+            const simpleMatch = rawImport.match(/^(\d+)\s+Synced\s*\((\d+)\s+New,\s*(\d+)\s+Updated\)$/);
+            // "Processed: 120 items (Inserted: 30, Updated: 90, Skipped: 0)" — Smart Sync
+            const smartMatch  = rawImport.match(/Processed:\s*(\d+)\s*items\s*\(Inserted:\s*(\d+),\s*Updated:\s*(\d+),\s*Skipped:\s*(\d+)\)/);
+
+            const pill = (txt, bg, color, icon) =>
+                `<span class="ms-1" style="display:inline-block;padding:1px 7px;border-radius:20px;font-size:0.72rem;font-weight:600;background:${bg};color:${color}"><i class="${icon} me-1" style="font-size:0.7rem"></i>${txt}</span>`;
+
+            if (simpleMatch) {
+                const [, total, added, upd] = simpleMatch;
+                details = `<span class="small"><span class="text-secondary">Synced:</span> <strong>${total}</strong>${pill(added+' New','rgba(25,135,84,0.12)','#198754','fa-solid fa-plus')}${pill(upd+' Updated','rgba(59,130,246,0.12)','#3b82f6','fa-solid fa-pen')}</span>`;
+            } else if (smartMatch) {
+                const [, total, ins, upd, skip] = smartMatch;
+                const skipPill = parseInt(skip) > 0 ? pill(skip+' Skipped','rgba(108,117,125,0.12)','#6c757d','fa-solid fa-forward') : '';
+                details = `<span class="small"><span class="text-secondary">Processed:</span> <strong>${total}</strong> items${pill(ins+' Inserted','rgba(25,135,84,0.12)','#198754','fa-solid fa-plus')}${pill(upd+' Updated','rgba(59,130,246,0.12)','#3b82f6','fa-solid fa-pen')}${skipPill}</span>`;
+            } else if (rawImport) {
+                details = `<span class="small text-secondary">${rawImport}</span>`;
+            }
+
+        } else if (l.event === 'token_refresh') {
+            // ── Token Refresh — describe who triggered it and what happened ────────
+            const src = l.source || '';
+            let tokenIcon, tokenMsg;
+            if (src.includes('OAuth')) {
+                tokenIcon = '<i class="fa-solid fa-right-to-bracket me-1" style="color:#6366f1"></i>';
+                tokenMsg  = 'Shop authorized via OAuth — access & refresh tokens issued';
+            } else if (src.includes('Cron') || src.includes('Auto')) {
+                tokenIcon = '<i class="fa-solid fa-clock-rotate-left me-1" style="color:#f59e0b"></i>';
+                tokenMsg  = 'Token auto-refreshed by background scheduler (≤15 min remaining)';
+            } else {
+                tokenIcon = '<i class="fa-solid fa-rotate me-1" style="color:#3b82f6"></i>';
+                tokenMsg  = 'Token manually refreshed from Settings page';
+            }
+            details = `<span class="small">${tokenIcon}<span class="text-dark">${tokenMsg}</span></span>`;
+
+        } else {
+            if (l.event === '' && l.newStock && l.newStock.includes('Added/Fix Missing SKU')) {
+                // Retroactive fix for older logs that had an empty event_type in the DB
+                const rawSkuVal = (l.newStock || '').replace('Added/Fix Missing SKU: ', '').trim();
+                const skuPopoverHtml = getPopoverHtml(rawSkuVal, '#fd7e14');
+                details = `<span class="small"><i class="fa-solid fa-tag me-1" style="color:#fd7e14"></i><span class="text-secondary">Added/Fix Missing SKU:</span> <span class="font-monospace fw-semibold ms-1" style="background:rgba(253,126,20,0.08);color:#fd7e14;padding:2px 7px;border-radius:4px;border:1px solid rgba(253,126,20,0.2)">${skuPopoverHtml}</span></span>`;
+            } else {
+                details = l.newStock && l.newStock !== '—'
+                    ? `<span class="small text-secondary">${l.newStock}</span>`
+                    : '<span class="small text-secondary">—</span>';
+            }
+        }
+
+        let productHtml = '';
+        if (l.product.includes(' || ') || (l.source === 'Error Resolution Center' && l.product.includes(', '))) {
+            const multiProducts = l.product.includes(' || ') ? l.product.split(' || ') : l.product.split(', ');
+            productHtml = multiProducts.map((mp, index) => {
+                let mainName = mp;
+                let varName = '';
+                
+                // Fallback for the older " (Variation)" format from the previous commit
+                if (mp.includes(' — ')) {
+                    const parts = mp.split(' — ');
+                    mainName = parts[0];
+                    varName = parts[1] || '';
+                } else if (mp.includes(' (') && mp.endsWith(')')) {
+                    const parts = mp.split(' (');
+                    mainName = parts[0];
+                    varName = parts[1].replace(')', '');
+                }
+
+                const borderStyle = index !== multiProducts.length - 1 ? 'border-bottom border-light pb-2 mb-2' : '';
+                return `
+                    <div class="${borderStyle}">
+                        <div class="fw-bold text-dark small" style="max-width:500px; word-break:break-word; line-height:1.3;" title="${mainName}"><span class="text-secondary me-1">•</span>${mainName}</div>
+                        ${varName ? `<div class="small ms-3" style="font-size:0.75rem; margin-top:2px;">
+                            <span class="text-secondary fw-semibold">Variation:</span> 
+                            <span class="fw-bold text-dark">${varName}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        } else {
+            const parts = l.product.split(' — ');
+            const mainName = parts[0];
+            const varName = parts[1] || '';
+            productHtml = `
+                <div class="fw-bold text-dark small" style="max-width:500px; word-break:break-word; line-height:1.3;" title="${mainName}">${mainName}</div>
+                ${varName ? `<div class="small" style="font-size:0.75rem; margin-top:2px;">
+                    <span class="text-secondary fw-semibold">Variation:</span> 
+                    <span class="fw-bold text-dark">${varName}</span>
+                </div>` : ''}
+            `;
+        }
+
+        return `<tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 1.2rem 1.5rem;"><div class="small text-secondary fw-semibold">${l.ts}</div></td>
+            <td style="padding: 1.2rem 1.5rem;">${productHtml}</td>
+            <td style="padding: 1.2rem 1.5rem;">${eventBadge}</td>
+            <td style="padding: 1.2rem 1.5rem;"><div class="text-start">${details}</div></td>
+            <td style="padding: 1.2rem 1.5rem;"><span class="small fw-bold text-secondary"><i class="fa-solid fa-user me-1" style="font-size:0.75rem"></i>${l.user}</span></td>
+            <td style="padding: 1.2rem 1.5rem;"><div class="small text-secondary fw-semibold">${l.source}</div></td>
+            <td style="padding: 1.2rem 1.5rem;">${statusBadge}</td>
+        </tr>`;
+    }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Use Popover event delegation globally — hover to show, mouseout to hide
+    if (typeof bootstrap !== 'undefined') {
+        new bootstrap.Popover(document.body, {
+            selector: '[data-bs-toggle="popover"]',
+            html: true,
+            trigger: 'hover',
+            placement: 'top'
+        });
+    }
+    renderLogs();
+});
+
+</script>
+
+<script src="../../views/lazada/laz_alerts.js"></script>
+<?php require_once '../../includes/footer.php'; ?>
+

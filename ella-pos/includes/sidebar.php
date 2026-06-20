@@ -8,6 +8,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 $canManageInventory = in_array($role, ['admin', 'super_admin']) || hasPermission('adjust_prices') || in_array($role, ['manager', 'stockman']);
 $canViewInventory = $canManageInventory || hasPermission('view_product_history');
 $canViewShopee = ($role !== 'stockman'); // Open for all logged in users except stockman
+$canViewLazada = ($role !== 'stockman'); // Open for all logged in users except stockman
 $canViewSales = hasPermission('make_sales') || hasPermission('view_sales');
 $canViewCustomers = hasPermission('view_buyers') || hasPermission('view_wallet_ledger') || hasPermission('view_receivables');
 $canViewFinance = hasPermission('view_finance') || hasPermission('view_payables') || hasPermission('view_expenses') || hasPermission('manage_service_fees');
@@ -128,7 +129,7 @@ try {
                 <?php if ($canManageInventory): ?>
                     <?php if ($_SESSION['role'] !== 'stockman'): ?>
                     <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Inventory" href="<?= BASE_URL ?>views/inventory/index.php"
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Inventory Dashboard" href="<?= BASE_URL ?>views/inventory/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'inventory') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-boxes-stacked"></i> <span class="nav-text">Inventory</span>
                         </a>
@@ -273,7 +274,7 @@ try {
                     <?php if (hasPermission('shopee_mapping')): ?>
                     <li>
                         <a data-bs-toggle="tooltip" data-sidebar-tooltip="Product Mapping" href="<?= BASE_URL ?>views/shopee/mapping.php"
-                            class="<?= $current_page === 'mapping.php' ? 'active' : '' ?>">
+                            class="<?= $current_page === 'mapping.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-link"></i> <span class="nav-text">Product Mapping</span>
                         </a>
                     </li>
@@ -306,6 +307,71 @@ try {
             </div>
         <?php endif; ?>
 
+        <!-- LAZADA STORE -->
+        <?php if ($canViewLazada): ?>
+            <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
+                style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#lazadaStoreCollapse">
+                <span class="nav-text">Lazada Store</span>
+                <i class="fa-solid fa-chevron-down small transition-transform" id="lazadaStoreChevron"></i>
+            </div>
+            <div class="collapse <?= strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'show' : '' ?>"
+                id="lazadaStoreCollapse">
+
+                <?php if ($canViewLazada): ?>
+                    <li>
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Dashboard" href="<?= BASE_URL ?>views/lazada/laz_index.php"
+                            class="<?= strpos($_SERVER['REQUEST_URI'], 'lazada') !== false && $current_page === 'laz_index.php' ? 'active' : '' ?>">
+                            <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Lazada Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Laz Sales&Income" href="<?= BASE_URL ?>views/lazada/laz_sales_income.php"
+                            class="<?= $current_page === 'laz_sales_income.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-money-bill-trend-up"></i> <span class="nav-text">Laz Sales&Income</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Products" href="<?= BASE_URL ?>views/lazada/laz_products.php"
+                            class="<?= $current_page === 'laz_products.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-bag-shopping"></i> <span class="nav-text">Lazada Products</span>
+                        </a>
+                    </li>
+                    <?php if (hasPermission('shopee_mapping')): ?>
+                    <li>
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Mapping" href="<?= BASE_URL ?>views/lazada/laz_mapping.php"
+                            class="<?= $current_page === 'laz_mapping.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-link"></i> <span class="nav-text">Lazada Mapping</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    <?php if (hasPermission('shopee_allocation')): ?>
+                    <li>
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Allocation" href="<?= BASE_URL ?>views/lazada/laz_allocation.php"
+                            class="<?= $current_page === 'laz_allocation.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-sliders"></i> <span class="nav-text">Lazada Allocation</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    <?php if (in_array($role, ['admin', 'super_admin'])): ?>
+                    <li>
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Sync Logs" href="<?= BASE_URL ?>views/lazada/laz_logs.php"
+                            class="<?= $current_page === 'laz_logs.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Lazada Sync Logs</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    <?php if (in_array($role, ['admin', 'super_admin'])): ?>
+                    <li>
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Settings" href="<?= BASE_URL ?>views/lazada/laz_settings.php"
+                            class="<?= $current_page === 'laz_settings.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
+                            <i class="fa-solid fa-gear"></i> <span class="nav-text">Lazada Settings</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
         <!-- CUSTOMERS -->
         <?php if ($canViewCustomers): ?>
             <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
@@ -325,7 +391,7 @@ try {
 
                 <?php if (hasPermission('view_receivables')): ?>
                     <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Receivables" href="<?= BASE_URL ?>views/receivables/index.php"
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Receivables Dashboard" href="<?= BASE_URL ?>views/receivables/index.php"
                             class="<?= strpos($_SERVER['REQUEST_URI'], 'receivables') !== false && $current_page === 'index.php' ? 'active' : '' ?>">
                             <i class="fa-solid fa-file-invoice-dollar"></i> <span class="nav-text">Receivables</span>
                         </a>
@@ -448,7 +514,7 @@ try {
 
                 <?php if (in_array($role, ['admin', 'super_admin']) || hasPermission('manage_settings')): ?>
                     <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="System Settings" href="<?= BASE_URL ?>views/system/settings.php"
+                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="General Settings" href="<?= BASE_URL ?>views/system/settings.php"
                             class="<?= $current_page === 'settings.php' && strpos($_SERVER['REQUEST_URI'], 'system') !== false ? 'active' : '' ?>">
                             <i class="fa-solid fa-gear"></i> <span class="nav-text">System Settings</span>
                         </a>
@@ -682,3 +748,5 @@ try {
         <?php
         // End of sidebar.php logic
         ?>
+
+
