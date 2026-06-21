@@ -228,6 +228,51 @@ try {
                     
                     $posPhysStock = max(0, $posPhysStock - $qtySold);
                 }
+            } 
+            // If the live stock is HIGHER than the database stock, it means an order
+            // was CANCELLED on Shopee. We must immediately RESTOCK the physical POS stock.
+            elseif ($newStock > $oldStock) {
+                $qtyRestocked = $newStock - $oldStock;
+                $userId = $_SESSION['user_id'] ?? 1;
+                
+                if (!empty($posProductId)) {
+                    // Restock single product
+                    $conn->prepare("UPDATE inventory SET quantity = quantity + ? WHERE variation_id = ? AND store_id = 1")->execute([$qtyRestocked, $posProductId]);
+                    
+                    // Log movement
+                    $getInv = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
+                    $getInv->execute([$posProductId]);
+                    $currStock = (int)$getInv->fetchColumn();
+                    $prevStock = $currStock - $qtyRestocked;
+                    
+                    $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_adjustment', ?, ?, ?, 'Shopee Live Drop', 'Auto-restocked (Shopee Order Cancelled)', ?)")
+                         ->execute([$posProductId, $qtyRestocked, $prevStock, $currStock, $userId]);
+                         
+                    $posPhysStock = $posPhysStock + $qtyRestocked;
+                    
+                } elseif (!empty($map['pos_bundle_set_id'])) {
+                    // Restock bundle components
+                    $bundleSetId = (int)$map['pos_bundle_set_id'];
+                    $compStmt2 = $conn->prepare("SELECT component_variation_id, component_qty FROM product_unit_set_items WHERE product_set_id = ?");
+                    $compStmt2->execute([$bundleSetId]);
+                    
+                    foreach ($compStmt2->fetchAll(PDO::FETCH_ASSOC) as $comp) {
+                        $compBaseQty = $qtyRestocked * (int)$comp['component_qty'];
+                        $compVarId = $comp['component_variation_id'];
+                        
+                        $conn->prepare("UPDATE inventory SET quantity = quantity + ? WHERE variation_id = ? AND store_id = 1")->execute([$compBaseQty, $compVarId]);
+                        
+                        $getInv = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
+                        $getInv->execute([$compVarId]);
+                        $currStock = (int)$getInv->fetchColumn();
+                        $prevStock = $currStock - $compBaseQty;
+                        
+                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_adjustment', ?, ?, ?, 'Shopee Live Drop', 'Auto-restocked (Shopee Cancelled Bundle)', ?)")
+                             ->execute([$compVarId, $compBaseQty, $prevStock, $currStock, $userId]);
+                    }
+                    
+                    $posPhysStock = $posPhysStock + $qtyRestocked;
+                }
             }
             // ------------------------------------------------------
             
