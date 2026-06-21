@@ -58,6 +58,7 @@ $lastMovements = $conn->query("
         SELECT variation_id, MAX(movement_id) AS max_id
         FROM stock_movements
         WHERE store_id = 1 AND status = 'active'
+          AND type NOT IN ('online_sale','online_adjustment')
         GROUP BY variation_id
     ) t ON t.variation_id = m.variation_id AND t.max_id = m.movement_id
 ")->fetchAll(PDO::FETCH_KEY_PAIR); // variation_id => new_stock
