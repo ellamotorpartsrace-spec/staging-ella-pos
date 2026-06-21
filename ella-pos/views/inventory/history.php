@@ -296,6 +296,9 @@ $type_config = [
                                     $isLazadaRelated = in_array($type, [
                                         'lazada_balance_sync'
                                     ]) || strpos($row['reference'] ?? '', 'LZD-') === 0;
+
+                                    $isGapFill = ($row['reference'] ?? '') === 'SYS-GAPFILL';
+                                    $isReconcile = ($row['reference'] ?? '') === 'SYS-RECONCILE';
                                     ?>
                                     <tr class="history-card">
                                         <td class="ps-4 small text-secondary">
@@ -336,15 +339,21 @@ $type_config = [
                                         </td>
 
                                         <td class="text-end pe-4 small">
-                                            <?php if ($isShopeeRelated): ?>
+                                            <?php if ($isGapFill): ?>
+                                                <div style="color: #888; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-clock-rotate-left me-1"></i>Historical</div>
+                                                <div class="text-muted"><i class="fa-solid fa-robot text-secondary"></i> System (Auto-fill)</div>
+                                            <?php elseif ($isReconcile): ?>
+                                                <div style="color: #888; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-check-double me-1"></i>Reconciled</div>
+                                                <div class="text-muted"><i class="fa-solid fa-robot text-secondary"></i> System (Auto-fix)</div>
+                                            <?php elseif ($isShopeeRelated): ?>
                                                 <div style="color: #ee4d2d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-shopping-bag me-1"></i>Shopee</div>
+                                                <div><i class="fa-solid fa-user-circle text-secondary"></i> <?= htmlspecialchars($row['full_name'] ?? $row['username'] ?? 'System') ?></div>
                                             <?php elseif ($isLazadaRelated): ?>
                                                 <div style="color: #0f146d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-heart me-1"></i>Lazada</div>
+                                                <div><i class="fa-solid fa-user-circle text-secondary"></i> <?= htmlspecialchars($row['full_name'] ?? $row['username'] ?? 'System') ?></div>
+                                            <?php else: ?>
+                                                <div><i class="fa-solid fa-user-circle text-secondary"></i> <?= htmlspecialchars($row['full_name'] ?? $row['username'] ?? 'System') ?></div>
                                             <?php endif; ?>
-                                            <div>
-                                                <i class="fa-solid fa-user-circle text-secondary"></i>
-                                                <?= htmlspecialchars($row['full_name'] ?? $row['username'] ?? 'System') ?>
-                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
