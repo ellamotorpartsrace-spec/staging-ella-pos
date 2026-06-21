@@ -194,11 +194,9 @@ try {
                     // Deduct single product
                     $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 1")->execute([$qtySold, $posProductId]);
                     
-                    // Log movement
-                    $getInv = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
-                    $getInv->execute([$posProductId]);
-                    $currStock = (int)$getInv->fetchColumn();
-                    $prevStock = $currStock + $qtySold;
+                    // Log movement with Shopee stock balance
+                    $currStock = $newStock;
+                    $prevStock = $oldStock;
                     
                     $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_sale', ?, ?, ?, 'Shopee Live Drop', 'Auto-deducted from Shopee API Sync', ?)")
                          ->execute([$posProductId, $qtySold, $prevStock, $currStock, $userId]);
@@ -217,10 +215,9 @@ try {
                         
                         $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 1")->execute([$compBaseQty, $compVarId]);
                         
-                        $getInv = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
-                        $getInv->execute([$compVarId]);
-                        $currStock = (int)$getInv->fetchColumn();
-                        $prevStock = $currStock + $compBaseQty;
+                        // Log movement with Shopee stock balance
+                        $currStock = $newStock;
+                        $prevStock = $oldStock;
                         
                         $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_sale', ?, ?, ?, 'Shopee Live Drop', 'Auto-deducted from Shopee API Sync (Bundle)', ?)")
                              ->execute([$compVarId, $compBaseQty, $prevStock, $currStock, $userId]);
@@ -239,11 +236,9 @@ try {
                     // Restock single product
                     $conn->prepare("UPDATE inventory SET quantity = quantity + ? WHERE variation_id = ? AND store_id = 1")->execute([$qtyRestocked, $posProductId]);
                     
-                    // Log movement
-                    $getInv = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
-                    $getInv->execute([$posProductId]);
-                    $currStock = (int)$getInv->fetchColumn();
-                    $prevStock = $currStock - $qtyRestocked;
+                    // Log movement with Shopee stock balance
+                    $currStock = $newStock;
+                    $prevStock = $oldStock;
                     
                     $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_adjustment', ?, ?, ?, 'Shopee Live Drop', 'Auto-restocked (Shopee Order Cancelled)', ?)")
                          ->execute([$posProductId, $qtyRestocked, $prevStock, $currStock, $userId]);
@@ -262,10 +257,9 @@ try {
                         
                         $conn->prepare("UPDATE inventory SET quantity = quantity + ? WHERE variation_id = ? AND store_id = 1")->execute([$compBaseQty, $compVarId]);
                         
-                        $getInv = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
-                        $getInv->execute([$compVarId]);
-                        $currStock = (int)$getInv->fetchColumn();
-                        $prevStock = $currStock - $compBaseQty;
+                        // Log movement with Shopee stock balance
+                        $currStock = $newStock;
+                        $prevStock = $oldStock;
                         
                         $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_adjustment', ?, ?, ?, 'Shopee Live Drop', 'Auto-restocked (Shopee Cancelled Bundle)', ?)")
                              ->execute([$compVarId, $compBaseQty, $prevStock, $currStock, $userId]);
