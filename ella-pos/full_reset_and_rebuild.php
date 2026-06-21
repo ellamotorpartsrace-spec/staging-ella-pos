@@ -122,11 +122,6 @@ foreach ($variationIds as $variationId) {
                     $remarks, $userId, $gapTime
                 ]);
                 $gapsFilled++;
-
-                // Re-fetch and restart for this variation
-                $movQuery->execute([$variationId]);
-                $movements = $movQuery->fetchAll(PDO::FETCH_ASSOC);
-                $i = 0;
             } catch (Exception $e) { /* skip */ }
         }
     }
