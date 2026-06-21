@@ -704,8 +704,25 @@ function displayStoreStockValue($value): int
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <small class="text-muted">
-                                            <?= htmlspecialchars($row['created_by_name'] ?? 'System') ?>
+                                        <small class="text-muted fw-bold">
+                                            <?php
+                                                $byName = $row['created_by_name'] ?? 'System';
+                                                if ($row['type'] === 'online_sale' || $row['type'] === 'online_adjustment') {
+                                                    if (strpos($row['reference'], 'Lazada') !== false) {
+                                                        $byName = 'Lazada System';
+                                                    } elseif (strpos($row['reference'], 'Shopee') !== false) {
+                                                        $byName = 'Shopee System';
+                                                    }
+                                                }
+                                                
+                                                if ($byName === 'Shopee System') {
+                                                    echo '<span style="color: #ee4d2d;"><i class="fa-solid fa-robot me-1"></i>Shopee System</span>';
+                                                } elseif ($byName === 'Lazada System') {
+                                                    echo '<span style="color: #0f146d;"><i class="fa-solid fa-robot me-1"></i>Lazada System</span>';
+                                                } else {
+                                                    echo '<i class="fa-solid fa-user text-secondary me-1"></i>' . htmlspecialchars($byName);
+                                                }
+                                            ?>
                                         </small>
                                     </td>
                                 </tr>
