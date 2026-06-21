@@ -86,9 +86,14 @@ foreach ($variations as $varId) {
 
     foreach ($movements as $mov) {
         $movId = $mov['movement_id'];
-        $qty = (float)$mov['quantity'];
         $prev = (float)$mov['previous_stock'];
         $ref = $mov['reference'] ?? '';
+
+        // The database stores 'quantity' as an absolute value.
+        // We must determine the correct sign based on the movement type.
+        $qtyAbs = abs((float)$mov['quantity']);
+        $deduction_types = ['stock_out', 'sales', 'allocation_to_online'];
+        $trueQty = in_array($mov['type'], $deduction_types) ? -$qtyAbs : $qtyAbs;
 
         // Determine if this is an allocation sync movement
         $isAlloc = (strpos($ref, 'SHP-ALLOC-') !== false || strpos($ref, 'LZD-ALLOC-') !== false || strpos($ref, 'Shopee Stock Allocation Sync') !== false);
@@ -98,7 +103,7 @@ foreach ($variations as $varId) {
             if ($isAlloc) {
                 // Buggy allocation sync. It grabbed a stale inventory value.
                 // We MUST fix the movement to use the real running balance!
-                $newStock = $runningBalance + $qty;
+                $newStock = $runningBalance + $trueQty;
                 if ($newStock < 0) $newStock = 0;
 
                 $updMov->execute([$runningBalance, $newStock, $movId]);
@@ -123,12 +128,12 @@ foreach ($variations as $varId) {
                 $runningBalance = $prev;
                 
                 // Then apply the movement itself
-                $runningBalance += $qty;
+                $runningBalance += $trueQty;
                 if ($runningBalance < 0) $runningBalance = 0;
             }
         } else {
             // Perfect match. Just apply the quantity.
-            $runningBalance += $qty;
+            $runningBalance += $trueQty;
             if ($runningBalance < 0) $runningBalance = 0;
         }
     }
