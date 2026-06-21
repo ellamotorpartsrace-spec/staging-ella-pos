@@ -6,7 +6,8 @@
  * does NOT match the last recorded movement's new_stock, then corrects them
  * by writing a corrective adjustment and fixing the inventory table.
  * 
- * Run ONCE on the live server from the browser or CLI.
+ * SAFE TO RE-RUN: Will not create duplicate entries. Skips items whose last
+ * movement was already a SYS-RECONCILE to prevent feedback loops.
  */
 require_once __DIR__ . '/config/database.php';
 
@@ -20,18 +21,19 @@ if (php_sapi_name() !== 'cli') {
     }
 }
 
-$db = new Database();
+$db   = new Database();
 $conn = $db->getConnection();
 
-// Find all variation_ids that have stock movements for store_id=1
-// Get their last logged new_stock (= correct balance per history)
-// Compare with inventory.quantity (= current value in DB)
+// Find discrepancies — but EXCLUDE items where the last movement is already a SYS-RECONCILE
+// (that would cause a feedback loop when run twice)
 $stmt = $conn->query("
     SELECT 
         m.variation_id,
-        m.new_stock AS history_balance,
+        m.new_stock       AS history_balance,
+        m.type            AS last_type,
+        m.reference       AS last_reference,
         COALESCE(i.quantity, 0) AS inventory_balance,
-        m.created_at AS last_movement_at,
+        m.created_at      AS last_movement_at,
         p.product_name,
         v.sku
     FROM stock_movements m
@@ -47,6 +49,7 @@ $stmt = $conn->query("
     LEFT JOIN product_variations v ON v.variation_id = m.variation_id
     LEFT JOIN products p ON p.product_id = v.product_id
     WHERE ABS(COALESCE(i.quantity, 0) - m.new_stock) >= 1
+      AND m.reference != 'SYS-RECONCILE'
     ORDER BY ABS(COALESCE(i.quantity, 0) - m.new_stock) DESC
 ");
 
@@ -56,22 +59,22 @@ if (empty($discrepancies)) {
     echo json_encode([
         'success' => true,
         'message' => 'All inventory values match movement history. No corrections needed.',
-        'fixed' => 0
-    ]);
+        'fixed'   => 0
+    ], JSON_PRETTY_PRINT);
     exit;
 }
 
-$fixed = 0;
+$fixed  = 0;
 $errors = [];
 $report = [];
 
-$userId = $_SESSION['user_id'] ?? 1; // Use admin user ID for CLI
+$userId = $_SESSION['user_id'] ?? 1;
 
 foreach ($discrepancies as $row) {
-    $variationId = (int)$row['variation_id'];
-    $historyBalance = (float)$row['history_balance'];
+    $variationId      = (int)$row['variation_id'];
+    $historyBalance   = (float)$row['history_balance'];
     $inventoryBalance = (float)$row['inventory_balance'];
-    $diff = $historyBalance - $inventoryBalance;
+    $diff             = $historyBalance - $inventoryBalance;
 
     try {
         $conn->beginTransaction();
@@ -115,8 +118,8 @@ foreach ($discrepancies as $row) {
 
 header('Content-Type: application/json');
 echo json_encode([
-    'success'        => true,
-    'fixed'          => $fixed,
-    'errors'         => $errors,
-    'discrepancies'  => $report
+    'success'       => true,
+    'fixed'         => $fixed,
+    'errors'        => $errors,
+    'discrepancies' => $report
 ], JSON_PRETTY_PRINT);
