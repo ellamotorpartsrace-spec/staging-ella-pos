@@ -209,6 +209,8 @@ try {
             $p['shopee_stock'] = 0;
             $p['lazada_stock'] = 0;
             $p['is_mapped'] = false;
+            $p['is_shopee_mapped'] = false;
+            $p['is_lazada_mapped'] = false;
             $v_id = $p['variation_id'];
             $v_sku = strtolower(trim($p['sku'] ?? ''));
             $valid_sku = !empty($v_sku) && !in_array($v_sku, ['', '-', 'n/a', 'na', 'none', 'null']);
@@ -220,8 +222,10 @@ try {
                 if ($matches_id || $matches_sku) {
                     if ($m['platform'] === 'shopee') {
                         $p['shopee_stock'] += (int) $m['stock_value'];
+                        $p['is_shopee_mapped'] = true;
                     } else {
                         $p['lazada_stock'] += (int) $m['stock_value'];
+                        $p['is_lazada_mapped'] = true;
                     }
                     $p['is_mapped'] = true;
                 }

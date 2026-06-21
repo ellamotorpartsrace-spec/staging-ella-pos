@@ -157,6 +157,8 @@ if (count($products) > 0) {
         $p['shopee_stock'] = 0;
         $p['lazada_stock'] = 0;
         $p['is_mapped'] = false;
+        $p['is_shopee_mapped'] = false;
+        $p['is_lazada_mapped'] = false;
         $v_id = $p['variation_id'];
         $v_sku = strtolower(trim($p['sku'] ?? ''));
         $valid_sku = !empty($v_sku) && !in_array($v_sku, ['', '-', 'n/a', 'na', 'none', 'null']);
@@ -168,8 +170,10 @@ if (count($products) > 0) {
             if ($matches_id || $matches_sku) {
                 if ($m['platform'] === 'shopee') {
                     $p['shopee_stock'] += (int) $m['stock_value'];
+                    $p['is_shopee_mapped'] = true;
                 } else {
                     $p['lazada_stock'] += (int) $m['stock_value'];
+                    $p['is_lazada_mapped'] = true;
                 }
                 $p['is_mapped'] = true;
             }
@@ -494,10 +498,10 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                         <?php if (!empty($row['is_mapped'])): ?>
                                             <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
                                                 Total: <?= $qty ?> <span class="mx-1">|</span> 
-                                                <?php if ($shopee > 0): ?>
+                                                <?php if ($shopee > 0 || !empty($row['is_shopee_mapped'])): ?>
                                                     <span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> <?= $shopee ?></span>
                                                 <?php endif; ?>
-                                                <?php if ($lazada > 0): ?>
+                                                <?php if ($lazada > 0 || !empty($row['is_lazada_mapped'])): ?>
                                                     <span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> <?= $lazada ?></span>
                                                 <?php endif; ?>
                                             </div>
@@ -607,10 +611,10 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                         <?php if (!empty($row['is_mapped'])): ?>
                                             <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
                                                 Total: <?= $qty ?> <span class="mx-1">|</span> 
-                                                <?php if ($shopee > 0): ?>
+                                                <?php if ($shopee > 0 || !empty($row['is_shopee_mapped'])): ?>
                                                     <span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> <?= $shopee ?></span>
                                                 <?php endif; ?>
-                                                <?php if ($lazada > 0): ?>
+                                                <?php if ($lazada > 0 || !empty($row['is_lazada_mapped'])): ?>
                                                     <span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> <?= $lazada ?></span>
                                                 <?php endif; ?>
                                             </div>
@@ -1004,8 +1008,8 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 stockHtml += `
                     <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
                         Total: ${qty} <span class="mx-1">|</span> 
-                        ${shopee > 0 ? `<span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> ${shopee}</span>` : ''}
-                        ${lazada > 0 ? `<span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> ${lazada}</span>` : ''}
+                        ${shopee > 0 || row.is_shopee_mapped ? `<span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> ${shopee}</span>` : ''}
+                        ${lazada > 0 || row.is_lazada_mapped ? `<span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> ${lazada}</span>` : ''}
                     </div>
                 `;
             }
@@ -1114,8 +1118,8 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 stockBadge += `
                     <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
                         Total: ${qty} <span class="mx-1">|</span> 
-                        ${shopee > 0 ? `<span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> ${shopee}</span>` : ''}
-                        ${lazada > 0 ? `<span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> ${lazada}</span>` : ''}
+                        ${shopee > 0 || row.is_shopee_mapped ? `<span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> ${shopee}</span>` : ''}
+                        ${lazada > 0 || row.is_lazada_mapped ? `<span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> ${lazada}</span>` : ''}
                     </div>
                 `;
             }
