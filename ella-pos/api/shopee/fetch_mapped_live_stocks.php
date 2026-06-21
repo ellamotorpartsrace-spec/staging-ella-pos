@@ -183,6 +183,54 @@ try {
             $oldStock = (int)$map['shopee_stock'];
             $newStock = (int)$allocatedStock; // live stock (same as what we just wrote)
             
+            // --- NEW AUTO-DEDUCT LOGIC (Bypass sync_orders.php) ---
+            // If the live stock is LOWER than the database stock, it means an order
+            // happened on Shopee. We must immediately deduct the physical POS stock.
+            if ($newStock < $oldStock) {
+                $qtySold = $oldStock - $newStock;
+                $userId = $_SESSION['user_id'] ?? 1;
+                
+                if (!empty($posProductId)) {
+                    // Deduct single product
+                    $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 1")->execute([$qtySold, $posProductId]);
+                    
+                    // Log movement
+                    $getInv = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
+                    $getInv->execute([$posProductId]);
+                    $currStock = (int)$getInv->fetchColumn();
+                    $prevStock = $currStock + $qtySold;
+                    
+                    $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_sale', ?, ?, ?, 'Shopee Live Drop', 'Auto-deducted from Shopee API Sync', ?)")
+                         ->execute([$posProductId, $qtySold, $prevStock, $currStock, $userId]);
+                         
+                    $posPhysStock = max(0, $posPhysStock - $qtySold);
+                    
+                } elseif (!empty($map['pos_bundle_set_id'])) {
+                    // Deduct bundle components
+                    $bundleSetId = (int)$map['pos_bundle_set_id'];
+                    $compStmt2 = $conn->prepare("SELECT component_variation_id, component_qty FROM product_unit_set_items WHERE product_set_id = ?");
+                    $compStmt2->execute([$bundleSetId]);
+                    
+                    foreach ($compStmt2->fetchAll(PDO::FETCH_ASSOC) as $comp) {
+                        $compBaseQty = $qtySold * (int)$comp['component_qty'];
+                        $compVarId = $comp['component_variation_id'];
+                        
+                        $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 1")->execute([$compBaseQty, $compVarId]);
+                        
+                        $getInv = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
+                        $getInv->execute([$compVarId]);
+                        $currStock = (int)$getInv->fetchColumn();
+                        $prevStock = $currStock + $compBaseQty;
+                        
+                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_sale', ?, ?, ?, 'Shopee Live Drop', 'Auto-deducted from Shopee API Sync (Bundle)', ?)")
+                             ->execute([$compVarId, $compBaseQty, $prevStock, $currStock, $userId]);
+                    }
+                    
+                    $posPhysStock = max(0, $posPhysStock - $qtySold);
+                }
+            }
+            // ------------------------------------------------------
+            
             $updated[] = [
                 'id' => $mapId,
                 'shopee_stock' => $dbAllocation,        // updated live value from DB
