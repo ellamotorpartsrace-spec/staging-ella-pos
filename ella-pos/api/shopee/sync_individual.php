@@ -69,11 +69,28 @@ try {
     $totalQty = $posPhysicalQty + $posShopeeQty + $posLazadaQty;
 
     $ratio = isset($item['stock_allocation_ratio']) ? (int)$item['stock_allocation_ratio'] : 100;
-    $computedStock = floor($totalQty * ($ratio / 100));
+    $computedStock = floor(($posPhysicalQty + $posShopeeQty) * ($ratio / 100));
     if ($computedStock < 0) $computedStock = 0;
 
     // Start transaction before updating POS inventory and pushing to Shopee
     $conn->beginTransaction();
+
+    // Get old total Shopee allocation BEFORE we change anything
+    $posSku = trim((string)($item['matched_pos_sku'] ?? ''));
+    if (empty($posSku)) {
+        $skuStmt = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
+        $skuStmt->execute([$item['pos_product_id']]);
+        $posSku = trim((string)$skuStmt->fetchColumn());
+    }
+    $oldSumStmt = $conn->prepare("
+        SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+        FROM shopee_product_mappings m
+        LEFT JOIN product_units u ON m.pos_unit_id = u.id
+        WHERE (m.pos_product_id = ? OR (m.matched_pos_sku = ? AND m.matched_pos_sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null')))
+          AND m.mapping_status IN ('auto','manual')
+    ");
+    $oldSumStmt->execute([$item['pos_product_id'], $posSku]);
+    $oldTotalShopeeAlloc = (int)$oldSumStmt->fetchColumn();
 
     // Update local cached stock value for THIS mapping first
     $conn->prepare("UPDATE shopee_product_mappings SET shopee_stock = ?, updated_at = NOW() WHERE id = ?")
@@ -81,13 +98,6 @@ try {
 
     $newOnlineStock = $computedStock;
     if (!empty($item['pos_product_id'])) {
-        $posSku = trim((string)($item['matched_pos_sku'] ?? ''));
-        if (empty($posSku)) {
-            $skuStmt = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
-            $skuStmt->execute([$item['pos_product_id']]);
-            $posSku = trim((string)$skuStmt->fetchColumn());
-        }
-
         $sumStmt = $conn->prepare("
             SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
             FROM shopee_product_mappings m
@@ -99,8 +109,9 @@ try {
         $newOnlineStock = (int)$sumStmt->fetchColumn();
     }
 
-    $newOnlineStock = min($newOnlineStock, $totalQty);
-    $newPhysicalStock = $totalQty - $newOnlineStock - $posLazadaQty;
+    // Apply delta to physical stock — this keeps the history chain accurate
+    $allocDelta = $newOnlineStock - $oldTotalShopeeAlloc;
+    $newPhysicalStock = $posPhysicalQty - $allocDelta;
     if ($newPhysicalStock < 0) $newPhysicalStock = 0;
 
     if (!empty($item['pos_product_id'])) {
