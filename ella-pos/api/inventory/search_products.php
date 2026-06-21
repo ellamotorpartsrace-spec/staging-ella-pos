@@ -69,7 +69,8 @@ try {
         FROM product_variations v
         JOIN products p ON v.product_id = p.product_id
         LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
-        LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+        LEFT JOIN inventory i_shopee ON v.variation_id = i_shopee.variation_id AND i_shopee.store_id = 2
+        LEFT JOIN inventory i_lazada ON v.variation_id = i_lazada.variation_id AND i_lazada.store_id = 3
         WHERE v.status = :status
     ";
 
@@ -85,7 +86,7 @@ try {
 
     // Filter: only products with active online stock
     if ($onlineOnly) {
-        $baseSql .= " AND COALESCE(i_online.quantity, 0) > 0";
+        $baseSql .= " AND (COALESCE(i_shopee.quantity, 0) > 0 OR COALESCE(i_lazada.quantity, 0) > 0)";
     }
 
     // Filter: by brand/category
@@ -138,7 +139,7 @@ try {
             p.product_name,
             p.brand_name,
             p.image_path,
-            COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock
+            COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0) as current_stock
             {$relevanceSelect}
         " . $baseSql . "
         {$orderClause}
@@ -181,20 +182,33 @@ try {
             SELECT 
                 m.pos_product_id,
                 m.matched_pos_sku,
-                (m.shopee_stock * COALESCE(u.multiplier, 1)) as stock_value
+                (m.shopee_stock * COALESCE(u.multiplier, 1)) as stock_value,
+                'shopee' as platform
             FROM shopee_product_mappings m
             LEFT JOIN product_units u ON m.pos_unit_id = u.id
             WHERE (m.pos_product_id IN ($variation_ids_str) OR m.matched_pos_sku IN ($skus_str))
               AND m.mapping_status IN ('auto','manual')
               AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+            UNION ALL
+            SELECT 
+                m2.pos_product_id,
+                m2.matched_pos_sku,
+                (m2.lazada_stock * COALESCE(u2.multiplier, 1)) as stock_value,
+                'lazada' as platform
+            FROM lazada_product_mappings m2
+            LEFT JOIN product_units u2 ON m2.pos_unit_id = u2.id
+            WHERE (m2.pos_product_id IN ($variation_ids_str) OR m2.matched_pos_sku IN ($skus_str))
+              AND m2.mapping_status IN ('auto','manual')
+              AND (m2.pos_bundle_set_id IS NULL OR m2.pos_bundle_set_id = 0)
         ";
 
         $mappingStmt = $conn->query($mappingSql);
         $mappings = $mappingStmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($results as &$p) {
-            $p['online_stock'] = 0;
-            $p['is_shopee_mapped'] = false;
+            $p['shopee_stock'] = 0;
+            $p['lazada_stock'] = 0;
+            $p['is_mapped'] = false;
             $v_id = $p['variation_id'];
             $v_sku = strtolower(trim($p['sku'] ?? ''));
             $valid_sku = !empty($v_sku) && !in_array($v_sku, ['', '-', 'n/a', 'na', 'none', 'null']);
@@ -204,8 +218,12 @@ try {
                 $matches_sku = ($valid_sku && strtolower(trim($m['matched_pos_sku'] ?? '')) == $v_sku);
                 
                 if ($matches_id || $matches_sku) {
-                    $p['online_stock'] += (int) $m['stock_value'];
-                    $p['is_shopee_mapped'] = true;
+                    if ($m['platform'] === 'shopee') {
+                        $p['shopee_stock'] += (int) $m['stock_value'];
+                    } else {
+                        $p['lazada_stock'] += (int) $m['stock_value'];
+                    }
+                    $p['is_mapped'] = true;
                 }
             }
         }

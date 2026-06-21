@@ -42,7 +42,7 @@ try {
         }
         $sku = $row['lazada_variation_sku'] ?: $row['lazada_parent_sku'] ?: '—';
 
-        // Propagate stock to inventory (store_id = 2)
+        // Propagate stock to inventory (store_id = 3)
         propagateStockToPos($conn, $posProductId, $lazadaStock, $prodName, $sku, 1, (int)$row['id']);
 
         $successCount++;

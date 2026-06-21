@@ -118,6 +118,17 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
                             OR (:has_sku = 1 AND m.matched_pos_sku COLLATE utf8mb4_general_ci = :sku2 COLLATE utf8mb4_general_ci))
                     )
                 , 0)
+                - 
+                COALESCE(
+                    (SELECT SUM(l.lazada_stock * COALESCE(u.multiplier, 1))
+                     FROM lazada_product_mappings l
+                     LEFT JOIN product_units u ON l.pos_unit_id = u.id
+                     WHERE l.mapping_status IN ('auto','manual')
+                       AND (l.pos_bundle_set_id IS NULL OR l.pos_bundle_set_id = 0)
+                       AND (l.pos_product_id = :vid2 
+                            OR (:has_sku = 1 AND l.matched_pos_sku COLLATE utf8mb4_general_ci = :sku2 COLLATE utf8mb4_general_ci))
+                    )
+                , 0)
             ) AS available_stock
     ");
 

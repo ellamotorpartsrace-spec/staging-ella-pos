@@ -10,7 +10,8 @@ echo "Starting synchronization of POS inventory with Lazada allocations...\n";
 $stmt = $conn->query("
     SELECT 
         v.variation_id,
-        COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as total_stock,
+        COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0) as total_stock,
+        COALESCE(i_shopee.quantity, 0) as shopee_allocated,
         (
             SELECT COALESCE(SUM(m.lazada_stock * COALESCE(u.multiplier, 1)), 0)
             FROM lazada_product_mappings m
@@ -19,7 +20,8 @@ $stmt = $conn->query("
         ) as lazada_allocated
     FROM product_variations v
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
-    LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+    LEFT JOIN inventory i_shopee ON v.variation_id = i_shopee.variation_id AND i_shopee.store_id = 2
+    LEFT JOIN inventory i_lazada ON v.variation_id = i_lazada.variation_id AND i_lazada.store_id = 3
     WHERE EXISTS (
         SELECT 1 FROM lazada_product_mappings spm 
         WHERE spm.pos_product_id = v.variation_id AND spm.mapping_status IN ('auto','manual')
@@ -36,13 +38,16 @@ try {
         $totalStock = (int)$p['total_stock'];
         $lazadaAllocated = (int)$p['lazada_allocated'];
         
+        $shopeeAllocated = (int)$p['shopee_allocated'];
+        
         // Cap lazada allocation at total stock just in case
         if ($lazadaAllocated > $totalStock) {
             $lazadaAllocated = $totalStock;
         }
         if ($lazadaAllocated < 0) $lazadaAllocated = 0;
         
-        $physicalStock = $totalStock - $lazadaAllocated;
+        $physicalStock = $totalStock - $lazadaAllocated - $shopeeAllocated;
+        if ($physicalStock < 0) $physicalStock = 0;
 
         // Get current physical stock before updating to log movement
         $currStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
@@ -58,10 +63,10 @@ try {
         ");
         $upd1->execute([$varId, $physicalStock]);
 
-        // Force store_id = 2 to lazadaAllocated
+        // Force store_id = 3 to lazadaAllocated
         $upd2 = $conn->prepare("
             INSERT INTO inventory (variation_id, store_id, quantity) 
-            VALUES (?, 2, ?)
+            VALUES (?, 3, ?)
             ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
         ");
         $upd2->execute([$varId, $lazadaAllocated]);

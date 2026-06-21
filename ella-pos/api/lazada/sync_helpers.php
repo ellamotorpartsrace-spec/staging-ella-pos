@@ -62,21 +62,21 @@ if (!function_exists('propagateStockToPos')) {
             $stmtSum->execute([$posProductId, $posSku]);
             $totalLazadaStock = (int)$stmtSum->fetchColumn();
 
-            // 1. Get previous stock in POS online store (store_id = 2)
-            $stmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 2");
+            // 1. Get previous stock in POS online store (store_id = 3)
+            $stmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 3");
             $stmt->execute([$posProductId]);
             $prevStockRow = $stmt->fetch();
             $prevStock = $prevStockRow !== false ? (float) $prevStockRow['quantity'] : 0;
 
             if ($prevStockRow === false || $prevStock !== $totalLazadaStock) {
                 // USER REQUEST:
-                // 1. Update POS Online Shop (store_id = 2) to reflect Lazada stock.
+                // 1. Update POS Online Shop (store_id = 3) to reflect Lazada stock.
                 // 2. Deduct from Physical Store (store_id = 1) so total POS stock stays exactly the same.
                 // 3. Do NOT log any stock movements (no 'lazada_sale' or 'allocation_adjustment' from background syncs).
 
                 $updStore = $conn->prepare("
                     INSERT INTO inventory (variation_id, store_id, quantity) 
-                    VALUES (?, 2, ?)
+                    VALUES (?, 3, ?)
                     ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
                 ");
                 $updStore->execute([$posProductId, $totalLazadaStock]);

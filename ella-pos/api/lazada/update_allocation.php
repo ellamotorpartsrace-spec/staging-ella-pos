@@ -31,7 +31,8 @@ try {
     // 1. Get current mapping, Lazada config, POS stocks, and unit multiplier
     $stmt = $conn->prepare("SELECT m.*, c.partner_id, c.partner_key, c.shop_id, c.access_token, c.environment, c.buffer_stock, c.out_of_stock_alerts,
         COALESCE(i1.quantity, 0) as pos_physical_qty,
-        COALESCE(i2.quantity, 0) as pos_online_qty,
+        COALESCE(i2.quantity, 0) as pos_shopee_qty,
+        COALESCE(i3.quantity, 0) as pos_lazada_qty,
         COALESCE(u.multiplier, 1) as unit_multiplier,
         u.unit_name
         FROM lazada_product_mappings m
@@ -39,6 +40,7 @@ try {
         LEFT JOIN product_units u ON m.pos_unit_id = u.id
         LEFT JOIN inventory i1 ON m.pos_product_id = i1.variation_id AND i1.store_id = 1
         LEFT JOIN inventory i2 ON m.pos_product_id = i2.variation_id AND i2.store_id = 2
+        LEFT JOIN inventory i3 ON m.pos_product_id = i3.variation_id AND i3.store_id = 3
         WHERE m.id = ?");
     $stmt->execute([$id]);
     $item = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -49,8 +51,9 @@ try {
     }
 
     $posPhysicalQty = (float) $item['pos_physical_qty'];
-    $posOnlineQty = (float) $item['pos_online_qty'];
-    $totalQty = $posPhysicalQty + $posOnlineQty;
+    $posShopeeQty = (float) $item['pos_shopee_qty'];
+    $posLazadaQty = (float) $item['pos_lazada_qty'];
+    $totalQty = $posPhysicalQty + $posShopeeQty + $posLazadaQty;
     $unitMultiplier = max(1, (int)$item['unit_multiplier']);
     $isBundleMapping = !empty($item['pos_bundle_set_id']);
 
@@ -66,7 +69,7 @@ try {
             FROM product_unit_set_items si
             LEFT JOIN product_units cu ON cu.id = si.component_unit_id
             LEFT JOIN inventory i1 ON i1.variation_id = si.component_variation_id AND i1.store_id = 1
-            LEFT JOIN inventory i2 ON i2.variation_id = si.component_variation_id AND i2.store_id = 2
+            LEFT JOIN inventory i2 ON i2.variation_id = si.component_variation_id AND i2.store_id = 3
             LEFT JOIN (
                 SELECT
                     m.pos_product_id,
@@ -165,7 +168,8 @@ try {
         
         // Cap at total stock
         $newOnlineStock = min($newOnlineStock, $totalQty);
-        $newPhysicalStock = $totalQty - $newOnlineStock;
+        $newPhysicalStock = $totalQty - $newOnlineStock - $posShopeeQty;
+        if ($newPhysicalStock < 0) $newPhysicalStock = 0;
 
         // Update or insert physical store (store_id = 1)
         $updStore1 = $conn->prepare("
@@ -175,10 +179,10 @@ try {
         ");
         $updStore1->execute([$item['pos_product_id'], $newPhysicalStock]);
 
-        // Update or insert online shop (store_id = 2)
+        // Update or insert online shop (store_id = 3)
         $updStore2 = $conn->prepare("
             INSERT INTO inventory (variation_id, store_id, quantity) 
-            VALUES (?, 2, ?)
+            VALUES (?, 3, ?)
             ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
         ");
         $updStore2->execute([$item['pos_product_id'], $newOnlineStock]);
@@ -216,7 +220,7 @@ try {
 
         // Log Online Shop changes
         // Per user request, do not register 2 movements. We only log the Physical POS change.
-        $onlineDiff = $newOnlineStock - $posOnlineQty;
+        $onlineDiff = $newOnlineStock - $posLazadaQty;
         /*
         if ($onlineDiff != 0) {
             $onlineType = $onlineDiff > 0 ? 'allocation_to_online' : 'allocation_to_physical';

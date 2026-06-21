@@ -10,7 +10,8 @@ echo "Starting synchronization of POS inventory with Shopee allocations...\n";
 $stmt = $conn->query("
     SELECT 
         v.variation_id,
-        COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as total_stock,
+        COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0) as total_stock,
+        COALESCE(i_lazada.quantity, 0) as lazada_allocated,
         (
             SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
             FROM shopee_product_mappings m
@@ -19,7 +20,8 @@ $stmt = $conn->query("
         ) as shopee_allocated
     FROM product_variations v
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
-    LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+    LEFT JOIN inventory i_shopee ON v.variation_id = i_shopee.variation_id AND i_shopee.store_id = 2
+    LEFT JOIN inventory i_lazada ON v.variation_id = i_lazada.variation_id AND i_lazada.store_id = 3
     WHERE EXISTS (
         SELECT 1 FROM shopee_product_mappings spm 
         WHERE spm.pos_product_id = v.variation_id AND spm.mapping_status IN ('auto','manual')
@@ -36,13 +38,16 @@ try {
         $totalStock = (int)$p['total_stock'];
         $shopeeAllocated = (int)$p['shopee_allocated'];
         
+        $lazadaAllocated = (int)$p['lazada_allocated'];
+        
         // Cap shopee allocation at total stock just in case
         if ($shopeeAllocated > $totalStock) {
             $shopeeAllocated = $totalStock;
         }
         if ($shopeeAllocated < 0) $shopeeAllocated = 0;
         
-        $physicalStock = $totalStock - $shopeeAllocated;
+        $physicalStock = $totalStock - $shopeeAllocated - $lazadaAllocated;
+        if ($physicalStock < 0) $physicalStock = 0;
 
         // Get current physical stock before updating to log movement
         $currStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");

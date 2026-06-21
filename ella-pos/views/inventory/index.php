@@ -38,7 +38,8 @@ $baseSql = "
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
-    LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+    LEFT JOIN inventory i_shopee ON v.variation_id = i_shopee.variation_id AND i_shopee.store_id = 2
+    LEFT JOIN inventory i_lazada ON v.variation_id = i_lazada.variation_id AND i_lazada.store_id = 3
     WHERE v.status = 'active'
 ";
 
@@ -81,7 +82,7 @@ if ($filter === 'low_stock') {
 $sqlStats = "
     SELECT 
         COUNT(*) as total_items,
-        SUM(v.price_capital * (COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0))) as total_asset_value,
+        SUM(v.price_capital * (COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0))) as total_asset_value,
         SUM(CASE WHEN COALESCE(i_phys.quantity, 0) <= v.low_stock_threshold THEN 1 ELSE 0 END) as low_stock_count
     " . $baseSql;
 
@@ -100,7 +101,7 @@ $sqlProducts = "
     SELECT v.variation_id, v.variation_name, v.sku, v.unit_type,
            v.price_capital, v.price_retail, v.status, v.low_stock_threshold,
            p.product_name, p.brand_name, p.image_path,
-           COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as current_stock
+           COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0) as current_stock
     " . $baseSql . "
     ORDER BY p.product_name ASC
     LIMIT $limit OFFSET $offset
@@ -129,20 +130,33 @@ if (count($products) > 0) {
         SELECT 
             m.pos_product_id,
             m.matched_pos_sku,
-            (m.shopee_stock * COALESCE(u.multiplier, 1)) as stock_value
+            (m.shopee_stock * COALESCE(u.multiplier, 1)) as stock_value,
+            'shopee' as platform
         FROM shopee_product_mappings m
         LEFT JOIN product_units u ON m.pos_unit_id = u.id
         WHERE (m.pos_product_id IN ($variation_ids_str) OR m.matched_pos_sku IN ($skus_str))
           AND m.mapping_status IN ('auto','manual')
           AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+        UNION ALL
+        SELECT 
+            m2.pos_product_id,
+            m2.matched_pos_sku,
+            (m2.lazada_stock * COALESCE(u2.multiplier, 1)) as stock_value,
+            'lazada' as platform
+        FROM lazada_product_mappings m2
+        LEFT JOIN product_units u2 ON m2.pos_unit_id = u2.id
+        WHERE (m2.pos_product_id IN ($variation_ids_str) OR m2.matched_pos_sku IN ($skus_str))
+          AND m2.mapping_status IN ('auto','manual')
+          AND (m2.pos_bundle_set_id IS NULL OR m2.pos_bundle_set_id = 0)
     ";
 
     $mappingStmt = $conn->query($mappingSql);
     $mappings = $mappingStmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($products as &$p) {
-        $p['online_stock'] = 0;
-        $p['is_shopee_mapped'] = false;
+        $p['shopee_stock'] = 0;
+        $p['lazada_stock'] = 0;
+        $p['is_mapped'] = false;
         $v_id = $p['variation_id'];
         $v_sku = strtolower(trim($p['sku'] ?? ''));
         $valid_sku = !empty($v_sku) && !in_array($v_sku, ['', '-', 'n/a', 'na', 'none', 'null']);
@@ -152,8 +166,12 @@ if (count($products) > 0) {
             $matches_sku = ($valid_sku && strtolower(trim($m['matched_pos_sku'] ?? '')) == $v_sku);
             
             if ($matches_id || $matches_sku) {
-                $p['online_stock'] += (int) $m['stock_value'];
-                $p['is_shopee_mapped'] = true;
+                if ($m['platform'] === 'shopee') {
+                    $p['shopee_stock'] += (int) $m['stock_value'];
+                } else {
+                    $p['lazada_stock'] += (int) $m['stock_value'];
+                }
+                $p['is_mapped'] = true;
             }
         }
     }
@@ -460,8 +478,9 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                     <td class="text-nowrap">
                                         <?php
                                         $qty = $row['current_stock'];
-                                        $online = $row['online_stock'] ?? 0;
-                                        $phys = max(0, $qty - $online);
+                                        $shopee = $row['shopee_stock'] ?? 0;
+                                        $lazada = $row['lazada_stock'] ?? 0;
+                                        $phys = max(0, $qty - $shopee - $lazada);
                                         $thresh = $row['low_stock_threshold'];
 
                                         if ($phys == 0) {
@@ -472,9 +491,15 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                             echo '<span class="badge bg-success-subtle text-success border border-success">' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
-                                        <?php if (!empty($row['is_shopee_mapped'])): ?>
+                                        <?php if (!empty($row['is_mapped'])): ?>
                                             <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
-                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap" title="Shopee Allocated"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
+                                                Total: <?= $qty ?> <span class="mx-1">|</span> 
+                                                <?php if ($shopee > 0): ?>
+                                                    <span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> <?= $shopee ?></span>
+                                                <?php endif; ?>
+                                                <?php if ($lazada > 0): ?>
+                                                    <span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> <?= $lazada ?></span>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -525,8 +550,9 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 <?php if (count($products) > 0): ?>
                     <?php foreach ($products as $row):
                         $qty = $row['current_stock'];
-                        $online = $row['online_stock'] ?? 0;
-                        $phys = max(0, $qty - $online);
+                        $shopee = $row['shopee_stock'] ?? 0;
+                        $lazada = $row['lazada_stock'] ?? 0;
+                        $phys = max(0, $qty - $shopee - $lazada);
                         $statusClass = $qty == 0 ? 'stock-out' : ($qty <= $row['low_stock_threshold'] ? 'stock-low' : 'status-active');
                         if ($row['status'] !== 'active')
                             $statusClass = 'status-inactive';
@@ -578,9 +604,15 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                                             echo '<span class="badge bg-success-subtle text-success border border-success">' . $phys . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
-                                        <?php if (!empty($row['is_shopee_mapped'])): ?>
+                                        <?php if (!empty($row['is_mapped'])): ?>
                                             <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
-                                                Total: <?= $qty ?> <span class="mx-1">|</span> <span class="text-info text-nowrap" title="Shopee Allocated"><i class="fa-solid fa-globe"></i> <?= $online ?></span>
+                                                Total: <?= $qty ?> <span class="mx-1">|</span> 
+                                                <?php if ($shopee > 0): ?>
+                                                    <span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> <?= $shopee ?></span>
+                                                <?php endif; ?>
+                                                <?php if ($lazada > 0): ?>
+                                                    <span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> <?= $lazada ?></span>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -940,8 +972,9 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
 
         renderTableRow(row, baseUrl, isHidden) {
             const qty = parseFloat(row.current_stock) || 0;
-            const online = parseFloat(row.online_stock) || 0;
-            const phys = Math.max(0, qty - online);
+            const shopee = parseFloat(row.shopee_stock) || 0;
+            const lazada = parseFloat(row.lazada_stock) || 0;
+            const phys = Math.max(0, qty - shopee - lazada);
             const thresh = parseFloat(row.low_stock_threshold) || 0;
 
             const query = this.searchInput ? this.searchInput.value.trim() : '';
@@ -967,10 +1000,12 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 stockHtml = `<span class="badge bg-success-subtle text-success border border-success">${phys} ${unit}</span>`;
             }
 
-            if (row.is_shopee_mapped) {
+            if (row.is_mapped) {
                 stockHtml += `
                     <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
-                        Total: ${qty} <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> ${online}</span>
+                        Total: ${qty} <span class="mx-1">|</span> 
+                        ${shopee > 0 ? `<span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> ${shopee}</span>` : ''}
+                        ${lazada > 0 ? `<span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> ${lazada}</span>` : ''}
                     </div>
                 `;
             }
@@ -1038,8 +1073,9 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
 
         renderCard(row, baseUrl) {
             const qty = parseFloat(row.current_stock) || 0;
-            const online = parseFloat(row.online_stock) || 0;
-            const phys = Math.max(0, qty - online);
+            const shopee = parseFloat(row.shopee_stock) || 0;
+            const lazada = parseFloat(row.lazada_stock) || 0;
+            const phys = Math.max(0, qty - shopee - lazada);
             const thresh = parseFloat(row.low_stock_threshold) || 0;
 
             const query = this.searchInput ? this.searchInput.value.trim() : '';
@@ -1074,10 +1110,12 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                 stockBadge = `<span class="badge bg-success-subtle text-success border border-success">${phys} ${unit}</span>`;
             }
 
-            if (row.is_shopee_mapped) {
+            if (row.is_mapped) {
                 stockBadge += `
                     <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
-                        Total: ${qty} <span class="mx-1">|</span> <span class="text-info text-nowrap"><i class="fa-solid fa-globe"></i> ${online}</span>
+                        Total: ${qty} <span class="mx-1">|</span> 
+                        ${shopee > 0 ? `<span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> ${shopee}</span>` : ''}
+                        ${lazada > 0 ? `<span class="text-info text-nowrap" title="Lazada Allocated"><i class="fa-solid fa-globe" style="color: #0f136d;"></i> ${lazada}</span>` : ''}
                     </div>
                 `;
             }
