@@ -67,7 +67,7 @@ $sqlHist = "
     FROM stock_movements m
     LEFT JOIN users u ON m.created_by = u.id
     WHERE m.variation_id = :id AND m.store_id = 1 
-    AND m.type NOT IN ('online_sale', 'online_adjustment', 'shopee_balance_sync')
+    AND m.type NOT IN ('online_sale', 'online_adjustment')
     ORDER BY m.created_at DESC, m.movement_id DESC
     LIMIT 100
 ";
@@ -84,6 +84,8 @@ $type_config = [
     'return'                 => ['label' => 'Return',                'icon' => 'fa-solid fa-rotate-left',          'badge' => 'bg-danger',               'desc' => 'Customer return'],
     'allocation_to_online'   => ['label' => 'Allocated to Shopee',   'icon' => 'fa-solid fa-globe',                'badge' => 'shopee-badge',            'desc' => 'Stock allocated to Shopee store'],
     'allocation_to_physical' => ['label' => 'Returned to POS',       'icon' => 'fa-solid fa-store',                'badge' => 'bg-dark',                 'desc' => 'Stock returned from Shopee to POS'],
+    'shopee_balance_sync'    => ['label' => 'Shopee Sync Fix',       'icon' => 'fa-solid fa-rotate',               'badge' => 'shopee-badge',            'desc' => 'System background stock sync'],
+    'lazada_balance_sync'    => ['label' => 'Lazada Sync Fix',       'icon' => 'fa-solid fa-rotate',               'badge' => 'bg-primary',              'desc' => 'System background stock sync'],
 ];
 ?>
 
@@ -263,6 +265,10 @@ $type_config = [
                                         case 'allocation_to_physical':
                                             $humanDesc = $absQty . ' returned from Shopee';
                                             break;
+                                        case 'shopee_balance_sync':
+                                        case 'lazada_balance_sync':
+                                            $humanDesc = 'System balance sync correction';
+                                            break;
                                         case 'sales':
                                             $humanDesc = $absQty . ' sold (walk-in)';
                                             break;
@@ -284,8 +290,12 @@ $type_config = [
 
                                     // Detect if this is a Shopee-related movement
                                     $isShopeeRelated = in_array($type, [
-                                        'allocation_to_online', 'allocation_to_physical'
+                                        'allocation_to_online', 'allocation_to_physical', 'shopee_balance_sync'
                                     ]) || strpos($row['reference'] ?? '', 'SHP-') === 0;
+
+                                    $isLazadaRelated = in_array($type, [
+                                        'lazada_balance_sync'
+                                    ]) || strpos($row['reference'] ?? '', 'LZD-') === 0;
                                     ?>
                                     <tr class="history-card">
                                         <td class="ps-4 small text-secondary">
@@ -328,6 +338,8 @@ $type_config = [
                                         <td class="text-end pe-4 small">
                                             <?php if ($isShopeeRelated): ?>
                                                 <div style="color: #ee4d2d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-shopping-bag me-1"></i>Shopee</div>
+                                            <?php elseif ($isLazadaRelated): ?>
+                                                <div style="color: #0f146d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-heart me-1"></i>Lazada</div>
                                             <?php endif; ?>
                                             <div>
                                                 <i class="fa-solid fa-user-circle text-secondary"></i>
