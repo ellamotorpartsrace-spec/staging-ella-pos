@@ -235,7 +235,7 @@ $type_config = [
                         </li>
                         <li class="nav-item flex-fill text-center" role="presentation">
                             <button class="nav-link w-100 py-3 fw-bold border-0 text-secondary" id="online-tab" data-bs-toggle="tab" data-bs-target="#online-history" type="button" role="tab" style="background: none; border-bottom: 2px solid transparent !important;">
-                                <i class="fa-solid fa-globe me-1"></i> Shopee Order Movements
+                                <i class="fa-solid fa-globe me-1"></i> Online Order Movements
                             </button>
                         </li>
                     </ul>
@@ -435,10 +435,17 @@ $type_config = [
                                     $qtyColor = $isPositive ? 'success' : 'danger';
                                     $absQty = abs($displayQty);
                                     
+                                    $isLazada = strpos($row['reference'] ?? '', 'LZD-') === 0;
+                                    $platformName = $isLazada ? 'Lazada' : 'Shopee';
+                                    
                                     $humanDesc = '';
                                     switch ($type) {
-                                        case 'online_sale': $humanDesc = $absQty . ' deducted for Shopee order'; break;
-                                        case 'online_adjustment': $humanDesc = $absQty . ' restocked (Order Cancelled)'; break;
+                                        case 'online_sale': $humanDesc = $absQty . ' deducted for ' . $platformName . ' order'; break;
+                                        case 'online_adjustment': $humanDesc = $absQty . ' restocked (' . $platformName . ' Cancelled)'; break;
+                                    }
+                                    
+                                    if ($isLazada) {
+                                        $cfg['badge'] = 'bg-primary';
                                     }
                                     ?>
                                     <tr class="history-card">
@@ -472,7 +479,11 @@ $type_config = [
                                             <small class="text-muted"><?= htmlspecialchars($row['remarks'] ?? '') ?></small>
                                         </td>
                                         <td class="text-end pe-4 small">
-                                            <div style="color: #ee4d2d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-shopping-bag me-1"></i>Shopee</div>
+                                            <?php if ($isLazada): ?>
+                                                <div style="color: #0f146d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-heart me-1"></i>Lazada</div>
+                                            <?php else: ?>
+                                                <div style="color: #ee4d2d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-shopping-bag me-1"></i>Shopee</div>
+                                            <?php endif; ?>
                                             <div><i class="fa-solid fa-user-circle text-secondary"></i> System</div>
                                         </td>
                                     </tr>
@@ -480,7 +491,7 @@ $type_config = [
                             <?php else: ?>
                                 <tr>
                                     <td colspan="6" class="text-center py-5 text-muted">
-                                        No Shopee order history found for this item yet.
+                                        No online order history found for this item yet.
                                     </td>
                                 </tr>
                             <?php endif; ?>
