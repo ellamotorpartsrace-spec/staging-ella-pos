@@ -199,9 +199,11 @@ try {
             capital_cost = VALUES(capital_cost)
     ");
 
-    $getInvStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1 FOR UPDATE");
-    $insertInvStmt = $conn->prepare("INSERT INTO inventory (variation_id, store_id, quantity) VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)");
-    $moveStmt = $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    // IMPORTANT: Shopee orders must deduct from/restore to store_id = 2 (online/Shopee allocated stock).
+    // Using store_id = 1 (physical POS) was the bug causing POS stock inaccuracies.
+    $getInvStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 2 FOR UPDATE");
+    $insertInvStmt = $conn->prepare("INSERT INTO inventory (variation_id, store_id, quantity) VALUES (?, 2, ?) ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)");
+    $moveStmt = $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost) VALUES (2, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     foreach ($orderDetails as $order) {
         $createTime = date('Y-m-d H:i:s', $order['create_time']);
