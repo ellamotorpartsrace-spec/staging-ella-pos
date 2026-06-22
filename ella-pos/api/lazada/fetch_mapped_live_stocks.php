@@ -190,13 +190,13 @@ try {
                 
                 if (!empty($posProductId)) {
                     // Deduct single product
-                    $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 1")->execute([$qtySold, $posProductId]);
+                    $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 2")->execute([$qtySold, $posProductId]);
                     
                     // Log movement with Lazada stock balance
                     $currStock = $newStock;
                     $prevStock = $oldStock;
                     
-                    $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync', ?)")
+                    $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (2, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync', ?)")
                          ->execute([$posProductId, $qtySold, $prevStock, $currStock, $userId]);
                          
                     $posPhysStock = max(0, $posPhysStock - $qtySold);
@@ -211,13 +211,13 @@ try {
                         $compBaseQty = $qtySold * (int)$comp['component_qty'];
                         $compVarId = $comp['component_variation_id'];
                         
-                        $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 1")->execute([$compBaseQty, $compVarId]);
+                        $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 2")->execute([$compBaseQty, $compVarId]);
                         
                         // Log movement with Lazada stock balance
                         $currStock = $newStock;
                         $prevStock = $oldStock;
                         
-                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync (Bundle)', ?)")
+                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (2, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync (Bundle)', ?)")
                              ->execute([$compVarId, $compBaseQty, $prevStock, $currStock, $userId]);
                     }
                     
@@ -232,13 +232,13 @@ try {
                 
                 if (!empty($posProductId)) {
                     // Restock single product
-                    $conn->prepare("UPDATE inventory SET quantity = quantity + ? WHERE variation_id = ? AND store_id = 1")->execute([$qtyRestocked, $posProductId]);
+                    $conn->prepare("UPDATE inventory SET quantity = quantity + ? WHERE variation_id = ? AND store_id = 2")->execute([$qtyRestocked, $posProductId]);
                     
                     // Log movement with Lazada stock balance
                     $currStock = $newStock;
                     $prevStock = $oldStock;
                     
-                    $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_adjustment', ?, ?, ?, 'Lazada Live Drop', 'Auto-restocked (Lazada Order Cancelled)', ?)")
+                    $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (2, ?, 'online_adjustment', ?, ?, ?, 'Lazada Live Drop', 'Auto-restocked (Lazada Order Cancelled)', ?)")
                          ->execute([$posProductId, $qtyRestocked, $prevStock, $currStock, $userId]);
                          
                     $posPhysStock = $posPhysStock + $qtyRestocked;
@@ -253,13 +253,13 @@ try {
                         $compBaseQty = $qtyRestocked * (int)$comp['component_qty'];
                         $compVarId = $comp['component_variation_id'];
                         
-                        $conn->prepare("UPDATE inventory SET quantity = quantity + ? WHERE variation_id = ? AND store_id = 1")->execute([$compBaseQty, $compVarId]);
+                        $conn->prepare("UPDATE inventory SET quantity = quantity + ? WHERE variation_id = ? AND store_id = 2")->execute([$compBaseQty, $compVarId]);
                         
                         // Log movement with Lazada stock balance
                         $currStock = $newStock;
                         $prevStock = $oldStock;
                         
-                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_adjustment', ?, ?, ?, 'Lazada Live Drop', 'Auto-restocked (Lazada Cancelled Bundle)', ?)")
+                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (2, ?, 'online_adjustment', ?, ?, ?, 'Lazada Live Drop', 'Auto-restocked (Lazada Cancelled Bundle)', ?)")
                              ->execute([$compVarId, $compBaseQty, $prevStock, $currStock, $userId]);
                     }
                     
