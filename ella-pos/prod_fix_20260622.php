@@ -367,6 +367,20 @@ try {
     // --- PHASE 3: Reconcile Inventory Table and Sync Mapping Stocks ---
     logLine("Reconciling inventory tables and mapping stock caches to correct balances...");
     
+    // Check if stock_allocation_ratio column exists in shopee_product_mappings
+    $shopeeHasRatio = false;
+    try {
+        $q = $conn->query("SHOW COLUMNS FROM shopee_product_mappings LIKE 'stock_allocation_ratio'");
+        $shopeeHasRatio = ($q && $q->rowCount() > 0);
+    } catch (Exception $e) {}
+
+    // Check if stock_allocation_ratio column exists in lazada_product_mappings
+    $lazadaHasRatio = false;
+    try {
+        $q = $conn->query("SHOW COLUMNS FROM lazada_product_mappings LIKE 'stock_allocation_ratio'");
+        $lazadaHasRatio = ($q && $q->rowCount() > 0);
+    } catch (Exception $e) {}
+
     $conn->beginTransaction();
     
     $updInv = $conn->prepare("
@@ -377,17 +391,19 @@ try {
     
     $skuStmt = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
     
+    $shopeeRatioCol = $shopeeHasRatio ? "COALESCE(stock_allocation_ratio, 100)" : "100";
     $updShopeeMap = $conn->prepare("
         UPDATE shopee_product_mappings 
-        SET shopee_stock = FLOOR((? + ?) * (COALESCE(stock_allocation_ratio, 100) / 100)), updated_at = NOW()
+        SET shopee_stock = FLOOR((? + ?) * ($shopeeRatioCol / 100)), updated_at = NOW()
         WHERE (pos_product_id = ? OR (matched_pos_sku = ? AND matched_pos_sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null')))
           AND mapping_status IN ('auto', 'manual')
           AND (pos_bundle_set_id IS NULL OR pos_bundle_set_id = 0)
     ");
     
+    $lazadaRatioCol = $lazadaHasRatio ? "COALESCE(stock_allocation_ratio, 100)" : "100";
     $updLazadaMap = $conn->prepare("
         UPDATE lazada_product_mappings 
-        SET lazada_stock = FLOOR((? + ?) * (COALESCE(stock_allocation_ratio, 100) / 100)), updated_at = NOW()
+        SET lazada_stock = FLOOR((? + ?) * ($lazadaRatioCol / 100)), updated_at = NOW()
         WHERE (pos_product_id = ? OR (matched_pos_sku = ? AND matched_pos_sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null')))
           AND mapping_status IN ('auto', 'manual')
           AND (pos_bundle_set_id IS NULL OR pos_bundle_set_id = 0)
