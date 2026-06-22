@@ -190,15 +190,30 @@ try {
                 
                 if (!empty($posProductId)) {
                     // Deduct single product
-                    $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 2")->execute([$qtySold, $posProductId]);
+                    // Split deduction between store_id=2 (online) and store_id=1 (physical)
+                    $stmtCheck2 = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 2");
+                    $stmtCheck2->execute([$posProductId]);
+                    $onlineQty = (int)($stmtCheck2->fetchColumn() ?: 0);
                     
-                    // Log movement with Lazada stock balance
-                    $currStock = $newStock;
-                    $prevStock = $oldStock;
+                    $deductOnline = min($qtySold, max(0, $onlineQty));
+                    $deductPhysical = $qtySold - $deductOnline;
                     
-                    $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (2, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync', ?)")
-                         ->execute([$posProductId, $qtySold, $prevStock, $currStock, $userId]);
-                         
+                    if ($deductOnline > 0) {
+                        $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 2")->execute([$deductOnline, $posProductId]);
+                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (2, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync (Online)', ?)")
+                             ->execute([$posProductId, $deductOnline, $onlineQty, $onlineQty - $deductOnline, $userId]);
+                    }
+                    
+                    if ($deductPhysical > 0) {
+                        $stmtCheck1 = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
+                        $stmtCheck1->execute([$posProductId]);
+                        $physQty = (int)($stmtCheck1->fetchColumn() ?: 0);
+                        
+                        $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 1")->execute([$deductPhysical, $posProductId]);
+                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync (Physical)', ?)")
+                             ->execute([$posProductId, $deductPhysical, $physQty, $physQty - $deductPhysical, $userId]);
+                    }
+                    
                     $posPhysStock = max(0, $posPhysStock - $qtySold);
                     
                 } elseif (!empty($map['pos_bundle_set_id'])) {
@@ -211,14 +226,29 @@ try {
                         $compBaseQty = $qtySold * (int)$comp['component_qty'];
                         $compVarId = $comp['component_variation_id'];
                         
-                        $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 2")->execute([$compBaseQty, $compVarId]);
+                        // Split deduction between store_id=2 (online) and store_id=1 (physical)
+                        $stmtCheck2 = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 2");
+                        $stmtCheck2->execute([$compVarId]);
+                        $onlineQty = (int)($stmtCheck2->fetchColumn() ?: 0);
                         
-                        // Log movement with Lazada stock balance
-                        $currStock = $newStock;
-                        $prevStock = $oldStock;
+                        $deductOnline = min($compBaseQty, max(0, $onlineQty));
+                        $deductPhysical = $compBaseQty - $deductOnline;
                         
-                        $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (2, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync (Bundle)', ?)")
-                             ->execute([$compVarId, $compBaseQty, $prevStock, $currStock, $userId]);
+                        if ($deductOnline > 0) {
+                            $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 2")->execute([$deductOnline, $compVarId]);
+                            $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (2, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync (Bundle Online)', ?)")
+                                 ->execute([$compVarId, $deductOnline, $onlineQty, $onlineQty - $deductOnline, $userId]);
+                        }
+                        
+                        if ($deductPhysical > 0) {
+                            $stmtCheck1 = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1");
+                            $stmtCheck1->execute([$compVarId]);
+                            $physQty = (int)($stmtCheck1->fetchColumn() ?: 0);
+                            
+                            $conn->prepare("UPDATE inventory SET quantity = quantity - ? WHERE variation_id = ? AND store_id = 1")->execute([$deductPhysical, $compVarId]);
+                            $conn->prepare("INSERT INTO stock_movements (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by) VALUES (1, ?, 'online_sale', ?, ?, ?, 'Lazada Live Drop', 'Auto-deducted from Lazada API Sync (Bundle Physical)', ?)")
+                                 ->execute([$compVarId, $deductPhysical, $physQty, $physQty - $deductPhysical, $userId]);
+                        }
                     }
                     
                     $posPhysStock = max(0, $posPhysStock - $qtySold);
