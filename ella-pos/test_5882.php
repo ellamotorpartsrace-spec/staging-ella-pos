@@ -5,7 +5,7 @@ $conn = $db->getConnection();
 
 echo "--- SEARCH BY SKU ---\n";
 $stmt = $conn->prepare("SELECT * FROM product_variations WHERE sku LIKE ? OR variation_name LIKE ?");
-$stmt->execute(['%4S1M-506%', '%PCX160/ADV160/CLICK160%']);
+$stmt->execute(['%750769%', '%100/80-14 PILOT MOTO GP%']);
 $variations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 print_r($variations);
 
