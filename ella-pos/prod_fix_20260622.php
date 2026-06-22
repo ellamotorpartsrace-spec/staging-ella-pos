@@ -212,11 +212,6 @@ echo "</pre></div>";
 
 // ════════════════════════════════════════════════════════════
 // FIX 3: Rebuild Physical Stock History Chains and Reconcile Inventory
-//
-// Since running totals (new_stock) can be corrupted by out-of-order
-// records, Shopee bugs, or gap-smoothing, the only clean way to fix
-// this is to rebuild the balance chain chronologically from the actual
-// transaction quantities, and then update the inventory table to match.
 // ════════════════════════════════════════════════════════════
 echo "<div class='section'><h2>⚖️ Fix 3: Rebuild Stock Chains and Sync Inventory</h2><pre>";
 
@@ -230,6 +225,7 @@ try {
     
     $invalidMovIds = [];
     $deduction_types = ['stock_out', 'sales', 'allocation_to_online', 'online_sale'];
+    $finalBalances = [];
     
     foreach ($allVarIds as $varId) {
         // Fetch all active movements for this variation across ALL stores
@@ -254,7 +250,6 @@ try {
             $remarks = (string)$m['remarks'];
             
             if ($type === 'allocation_to_online') {
-                // Moves stock from store 1 to store 2 or 3
                 $channel = (strpos(strtolower($remarks), 'lazada') !== false) ? 3 : 2;
                 $amt = abs($qty);
                 
@@ -262,11 +257,9 @@ try {
                     $s1 -= $amt;
                     if ($channel === 2) $s2 += $amt; else $s3 += $amt;
                 } else {
-                    // Invalid: trying to allocate more than we have in store 1
                     $invalidMovIds[] = $movId;
                 }
             } elseif ($type === 'allocation_to_physical') {
-                // Moves stock from store 2 or 3 to store 1
                 $channel = (strpos(strtolower($remarks), 'lazada') !== false) ? 3 : 2;
                 $amt = abs($qty);
                 $channelBal = ($channel === 2) ? $s2 : $s3;
@@ -275,11 +268,9 @@ try {
                     if ($channel === 2) $s2 -= $amt; else $s3 -= $amt;
                     $s1 += $amt;
                 } else {
-                    // Invalid: trying to return more than we have in the online channel
                     $invalidMovIds[] = $movId;
                 }
             } else {
-                // Normal transaction
                 if ($type === 'adjustment') {
                     $change = $qty;
                 } else {
@@ -298,6 +289,8 @@ try {
                 }
             }
         }
+        
+        $finalBalances[$varId] = ['s1' => $s1, 's2' => $s2, 's3' => $s3];
     }
     
     $invalidCount = count($invalidMovIds);
@@ -316,18 +309,17 @@ try {
         logLine("No invalid allocation movements detected ✓");
     }
 
-    // --- PHASE 2: Rebuild running stock balances chronologically for all stores ---
-    logLine("Rebuilding chronological stock history chains for all stores...");
+    // --- PHASE 2: Rebuild running stock balances chronologically for store_id = 1 ---
+    logLine("Rebuilding chronological stock history chains for POS Store (store_id=1)...");
 
     $conn->beginTransaction();
 
     $updMov = $conn->prepare("UPDATE stock_movements SET previous_stock = ?, new_stock = ? WHERE movement_id = ?");
-    $updInv = $conn->prepare("UPDATE inventory SET quantity = ? WHERE variation_id = ? AND store_id = ?");
-
+    
     $movQuery = $conn->prepare("
         SELECT movement_id, type, quantity, previous_stock, new_stock
         FROM stock_movements
-        WHERE variation_id = ? AND store_id = ?
+        WHERE variation_id = ? AND store_id = 1 AND status = 'active'
         ORDER BY created_at ASC, movement_id ASC
     ");
 
@@ -335,69 +327,108 @@ try {
     $totalFixedInventory = 0;
     $totalProcessed = 0;
 
-    foreach ([1, 2, 3] as $storeId) {
-        // Find all variation_ids that have movements on this store_id
-        $gfVarStmt = $conn->prepare("SELECT DISTINCT variation_id FROM stock_movements WHERE store_id = ?");
-        $gfVarStmt->execute([$storeId]);
-        $gfVarIds = $gfVarStmt->fetchAll(PDO::FETCH_COLUMN);
+    $gfVarStmt = $conn->query("SELECT DISTINCT variation_id FROM stock_movements WHERE store_id = 1 AND status = 'active'");
+    $gfVarIds = $gfVarStmt->fetchAll(PDO::FETCH_COLUMN);
 
-        foreach ($gfVarIds as $varId) {
-            $movQuery->execute([$varId, $storeId]);
-            $movements = $movQuery->fetchAll(PDO::FETCH_ASSOC);
-            if (empty($movements)) continue;
+    foreach ($gfVarIds as $varId) {
+        $movQuery->execute([$varId]);
+        $movements = $movQuery->fetchAll(PDO::FETCH_ASSOC);
+        if (empty($movements)) continue;
 
-            // Start running balance with the first movement's previous_stock
-            $runningBalance = (float)$movements[0]['previous_stock'];
-            
-            foreach ($movements as $m) {
-                $movId = $m['movement_id'];
-                $qtyAbs = abs((float)$m['quantity']);
-                $change = in_array($m['type'], $deduction_types) ? -$qtyAbs : $qtyAbs;
-                if ($m['type'] === 'adjustment') {
-                    $change = (float)$m['quantity']; // adjustments are signed
-                }
-
-                $prevStock = $runningBalance;
-                $newStock = $runningBalance + $change;
-                if ($newStock < 0) {
-                    $newStock = 0.0;
-                }
-
-                // Only update DB if values changed
-                if (abs((float)$m['previous_stock'] - $prevStock) > 0.01 || abs((float)$m['new_stock'] - $newStock) > 0.01) {
-                    $updMov->execute([$prevStock, $newStock, $movId]);
-                    $totalFixedMovements++;
-                }
-
-                $runningBalance = $newStock;
+        $runningBalance = (float)$movements[0]['previous_stock'];
+        
+        foreach ($movements as $m) {
+            $movId = $m['movement_id'];
+            $qtyAbs = abs((float)$m['quantity']);
+            $change = in_array($m['type'], $deduction_types) ? -$qtyAbs : $qtyAbs;
+            if ($m['type'] === 'adjustment') {
+                $change = (float)$m['quantity'];
             }
 
-            // Reconcile inventory quantity
-            $currentInvStmt = $conn->prepare("SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = ?");
-            $currentInvStmt->execute([$varId, $storeId]);
-            $currentInv = $currentInvStmt->fetchColumn();
-            
-            if ($currentInv === false) {
-                // Insert missing inventory row
-                $conn->prepare("INSERT INTO inventory (variation_id, store_id, quantity) VALUES (?, ?, ?)")
-                     ->execute([$varId, $storeId, $runningBalance]);
-                $totalFixedInventory++;
-            } elseif (abs((float)$currentInv - $runningBalance) > 0.01) {
-                $updInv->execute([$runningBalance, $varId, $storeId]);
-                $totalFixedInventory++;
-                logLine("  store #{$storeId} var #{$varId}: Stock reconciled {$currentInv} → {$runningBalance}");
+            $prevStock = $runningBalance;
+            $newStock = $runningBalance + $change;
+            if ($newStock < 0) {
+                $newStock = 0.0;
             }
-            
-            $totalProcessed++;
+
+            if (abs((float)$m['previous_stock'] - $prevStock) > 0.01 || abs((float)$m['new_stock'] - $newStock) > 0.01) {
+                $updMov->execute([$prevStock, $newStock, $movId]);
+                $totalFixedMovements++;
+            }
+
+            $runningBalance = $newStock;
         }
+        $totalProcessed++;
     }
+    
+    $conn->commit();
+    logLine("Successfully rebuilt {$totalProcessed} POS stock movement chains ✓");
 
+    // --- PHASE 3: Reconcile Inventory Table and Sync Mapping Stocks ---
+    logLine("Reconciling inventory tables and mapping stock caches to correct balances...");
+    
+    $conn->beginTransaction();
+    
+    $updInv = $conn->prepare("
+        INSERT INTO inventory (variation_id, store_id, quantity) 
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
+    ");
+    
+    $skuStmt = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
+    
+    $updShopeeMap = $conn->prepare("
+        UPDATE shopee_product_mappings 
+        SET shopee_stock = FLOOR((? + ?) * (COALESCE(stock_allocation_ratio, 100) / 100)), updated_at = NOW()
+        WHERE (pos_product_id = ? OR (matched_pos_sku = ? AND matched_pos_sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null')))
+          AND mapping_status IN ('auto', 'manual')
+          AND (pos_bundle_set_id IS NULL OR pos_bundle_set_id = 0)
+    ");
+    
+    $updLazadaMap = $conn->prepare("
+        UPDATE lazada_product_mappings 
+        SET lazada_stock = FLOOR((? + ?) * (COALESCE(stock_allocation_ratio, 100) / 100)), updated_at = NOW()
+        WHERE (pos_product_id = ? OR (matched_pos_sku = ? AND matched_pos_sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null')))
+          AND mapping_status IN ('auto', 'manual')
+          AND (pos_bundle_set_id IS NULL OR pos_bundle_set_id = 0)
+    ");
+
+    foreach ($finalBalances as $varId => $bal) {
+        $s1 = $bal['s1'];
+        $s2 = $bal['s2'];
+        $s3 = $bal['s3'];
+        
+        $currentS1 = $conn->query("SELECT quantity FROM inventory WHERE variation_id = {$varId} AND store_id = 1")->fetchColumn();
+        if ($currentS1 === false || abs((float)$currentS1 - $s1) > 0.01) {
+            $updInv->execute([$varId, 1, $s1]);
+            $totalFixedInventory++;
+            logLine("  var #{$varId}: Store 1 reconciled " . ($currentS1 !== false ? $currentS1 : '0') . " → {$s1}");
+        }
+        
+        $currentS2 = $conn->query("SELECT quantity FROM inventory WHERE variation_id = {$varId} AND store_id = 2")->fetchColumn();
+        if ($currentS2 === false || abs((float)$currentS2 - $s2) > 0.01) {
+            $updInv->execute([$varId, 2, $s2]);
+            $totalFixedInventory++;
+        }
+        
+        $currentS3 = $conn->query("SELECT quantity FROM inventory WHERE variation_id = {$varId} AND store_id = 3")->fetchColumn();
+        if ($currentS3 === false || abs((float)$currentS3 - $s3) > 0.01) {
+            $updInv->execute([$varId, 3, $s3]);
+            $totalFixedInventory++;
+        }
+        
+        $skuStmt->execute([$varId]);
+        $sku = trim((string)$skuStmt->fetchColumn());
+        $updShopeeMap->execute([$s1, $s2, $varId, $sku]);
+        $updLazadaMap->execute([$s1, $s3, $varId, $sku]);
+    }
+    
     $conn->commit();
     $totalChanges += $totalFixedInventory;
     logLine("\nFix 3 complete:");
-    logLine("  • Processed {$totalProcessed} store histories");
+    logLine("  • Processed " . count($finalBalances) . " product balances");
     logLine("  • Corrected {$totalFixedMovements} stock movement records");
-    logLine("  • Reconciled {$totalFixedInventory} inventory quantities ✓");
+    logLine("  • Reconciled {$totalFixedInventory} inventory quantities & mappings ✓");
 
 } catch (Exception $e) {
     if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
