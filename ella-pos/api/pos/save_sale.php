@@ -232,11 +232,14 @@ try {
     $stockSql = "UPDATE inventory SET quantity = quantity - :qty WHERE variation_id = :var_id AND store_id = 1";
     $stockStmt = $conn->prepare($stockSql);
 
-    // Stock movement query
+    // Read current stock (before deduction) — used to build accurate movement log
+    $prevStockSql = "SELECT quantity FROM inventory WHERE variation_id = ? AND store_id = 1 FOR UPDATE";
+    $prevStockStmt = $conn->prepare($prevStockSql);
+
+    // Stock movement insert with explicit previous/new stock values
     $moveSql = "INSERT INTO stock_movements 
                 (store_id, variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
-                SELECT 1, :var_id, 'sales', :qty, i.quantity, i.quantity - :qty2, :ref, :remarks, :user_id, :cost
-                FROM inventory i WHERE i.variation_id = :var_id2 AND i.store_id = 1";
+                VALUES (1, :var_id, 'sales', :qty, :prev_stock, :new_stock, :ref, :remarks, :user_id, :cost)";
     $moveStmt = $conn->prepare($moveSql);
 
     foreach ($items as $item) {
@@ -280,22 +283,27 @@ try {
             ':subtotal' => $itemSubtotal
         ]);
 
-        // Log stock movement BEFORE updating stock
-        $moveStmt->execute([
-            ':var_id' => (int) $item['variation_id'],
-            ':qty' => $totalDeductedQty,
-            ':qty2' => $totalDeductedQty,
-            ':ref' => $saleRef,
-            ':remarks' => 'POS Sale' . ($itemMultiplier > 1 ? " ({$itemQty} {$item['unit_type']} = {$totalDeductedQty} pcs)" : ''),
-            ':user_id' => $userId,
-            ':var_id2' => (int) $item['variation_id'],
-            ':cost' => $costPrice
-        ]);
+        // 1. Capture current stock BEFORE deduction (row-locked)
+        $prevStockStmt->execute([(int) $item['variation_id']]);
+        $previousStock = (float) ($prevStockStmt->fetchColumn() ?? 0);
+        $newStockValue = $previousStock - $totalDeductedQty;
 
-        // Update inventory
+        // 2. Deduct inventory first
         $stockStmt->execute([
             ':qty' => $totalDeductedQty,
             ':var_id' => (int) $item['variation_id']
+        ]);
+
+        // 3. Log movement with confirmed previous and new stock values
+        $moveStmt->execute([
+            ':var_id'     => (int) $item['variation_id'],
+            ':qty'        => $totalDeductedQty,
+            ':prev_stock' => $previousStock,
+            ':new_stock'  => $newStockValue,
+            ':ref'        => $saleRef,
+            ':remarks'    => 'POS Sale' . ($itemMultiplier > 1 ? " ({$itemQty} {$item['unit_type']} = {$totalDeductedQty} pcs)" : ''),
+            ':user_id'    => $userId,
+            ':cost'       => $costPrice
         ]);
     }
 
