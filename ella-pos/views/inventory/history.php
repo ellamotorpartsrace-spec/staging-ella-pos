@@ -75,19 +75,6 @@ $stmtHist = $conn->prepare($sqlHist);
 $stmtHist->execute([':id' => $variation_id]);
 $history = $stmtHist->fetchAll();
 
-$sqlOnlineHist = "
-    SELECT m.*, u.username, u.full_name
-    FROM stock_movements m
-    LEFT JOIN users u ON m.created_by = u.id
-    WHERE m.variation_id = :id AND m.store_id = 1 
-    AND m.type IN ('online_sale', 'online_adjustment')
-    ORDER BY m.created_at DESC, m.movement_id DESC
-    LIMIT 100
-";
-$stmtOnlineHist = $conn->prepare($sqlOnlineHist);
-$stmtOnlineHist->execute([':id' => $variation_id]);
-$online_history = $stmtOnlineHist->fetchAll();
-
 // Movement type configuration
 $type_config = [
     'stock_in'               => ['label' => 'Stock In',              'icon' => 'fa-solid fa-arrow-down',           'badge' => 'bg-success',              'desc' => 'New stock added to inventory'],
@@ -231,11 +218,6 @@ $type_config = [
                         <li class="nav-item flex-fill text-center" role="presentation">
                             <button class="nav-link active w-100 py-3 fw-bold border-0 text-primary" id="pos-tab" data-bs-toggle="tab" data-bs-target="#pos-history" type="button" role="tab" style="background: none; border-bottom: 2px solid transparent !important;">
                                 <i class="fa-solid fa-store me-1"></i> Physical POS History
-                            </button>
-                        </li>
-                        <li class="nav-item flex-fill text-center" role="presentation">
-                            <button class="nav-link w-100 py-3 fw-bold border-0 text-secondary" id="online-tab" data-bs-toggle="tab" data-bs-target="#online-history" type="button" role="tab" style="background: none; border-bottom: 2px solid transparent !important;">
-                                <i class="fa-solid fa-globe me-1"></i> Online Order Movements
                             </button>
                         </li>
                     </ul>
@@ -402,102 +384,6 @@ $type_config = [
                         </tbody>
                     </table>
                 </div>
-                </div>
-                <div class="tab-pane fade" id="online-history" role="tabpanel">
-                    <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4">Date & Time</th>
-                                <th>Type</th>
-                                <th class="text-center">Change</th>
-                                <th class="text-center">Balance</th>
-                                <th>Reference / Remarks</th>
-                                <th class="text-end pe-4">User</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (count($online_history) > 0): ?>
-                                <?php foreach ($online_history as $row): ?>
-                                    <?php
-                                    $type = $row['type'] ?? '';
-                                    $cfg = $type_config[$type] ?? [
-                                        'label' => ucwords(str_replace('_', ' ', $type ?: 'Unknown')),
-                                        'icon'  => 'fa-solid fa-circle',
-                                        'badge' => 'bg-secondary',
-                                        'desc'  => ''
-                                    ];
-
-                                    $qty = (int)$row['quantity'];
-                                    $deduction_types = ['stock_out', 'sales', 'allocation_to_online', 'online_sale'];
-                                    $displayQty = in_array($type, $deduction_types) ? -abs($qty) : $qty;
-                                    $isPositive = $displayQty >= 0;
-                                    $qtyColor = $isPositive ? 'success' : 'danger';
-                                    $absQty = abs($displayQty);
-                                    
-                                    $isLazada = strpos($row['reference'] ?? '', 'LZD-') === 0;
-                                    $platformName = $isLazada ? 'Lazada' : 'Shopee';
-                                    
-                                    $humanDesc = '';
-                                    switch ($type) {
-                                        case 'online_sale': $humanDesc = $absQty . ' deducted for ' . $platformName . ' order'; break;
-                                        case 'online_adjustment': $humanDesc = $absQty . ' restocked (' . $platformName . ' Cancelled)'; break;
-                                    }
-                                    
-                                    if ($isLazada) {
-                                        $cfg['badge'] = 'bg-primary';
-                                    }
-                                    ?>
-                                    <tr class="history-card">
-                                        <td class="ps-4 small text-secondary"><?= date('M d, Y h:i A', strtotime($row['created_at'])) ?></td>
-                                        <td>
-                                            <span class="badge <?= $cfg['badge'] ?> rounded-pill">
-                                                <i class="<?= $cfg['icon'] ?> me-1"></i> <?= $cfg['label'] ?>
-                                            </span>
-                                            <?php if ($humanDesc): ?>
-                                                <div class="movement-desc"><?= htmlspecialchars($humanDesc) ?></div>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center fw-bold">
-                                            <span class="text-<?= $qtyColor ?>" style="font-size: 1rem;">
-                                                <?= $displayQty >= 0 ? '+' . $absQty : '-' . $absQty ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="stock-flow">
-                                                <span class="prev"><?= $row['previous_stock'] ?></span>
-                                                <i class="fa-solid fa-arrow-right arrow"></i>
-                                                <span class="new fw-bold"><?= $row['new_stock'] ?></span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <?php if ($row['reference']): ?>
-                                                <div class="badge bg-light text-dark border border-secondary mb-1">
-                                                    Ref: <?= htmlspecialchars($row['reference']) ?>
-                                                </div><br>
-                                            <?php endif; ?>
-                                            <small class="text-muted"><?= htmlspecialchars($row['remarks'] ?? '') ?></small>
-                                        </td>
-                                        <td class="text-end pe-4 small">
-                                            <?php if ($isLazada): ?>
-                                                <div style="color: #0f146d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-heart me-1"></i>Lazada</div>
-                                            <?php else: ?>
-                                                <div style="color: #ee4d2d; font-size: 0.75rem; margin-bottom: 2px;"><i class="fa-solid fa-shopping-bag me-1"></i>Shopee</div>
-                                            <?php endif; ?>
-                                            <div><i class="fa-solid fa-user-circle text-secondary"></i> System</div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="6" class="text-center py-5 text-muted">
-                                        No online order history found for this item yet.
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                    </div>
                 </div>
                 </div>
             </div>
