@@ -145,7 +145,7 @@ if (count($products) > 0) {
             $matches_sku = ($valid_sku && strtolower(trim($m['matched_pos_sku'] ?? '')) == $v_sku);
             
             if ($matches_id || $matches_sku) {
-                $p['online_stock'] += (int) $m['stock_value'];
+                $p['online_stock'] = max($p['online_stock'], (int) $m['stock_value']);
                 $p['is_shopee_mapped'] = true;
             }
         }

@@ -169,10 +169,10 @@ if (count($products) > 0) {
             
             if ($matches_id || $matches_sku) {
                 if ($m['platform'] === 'shopee') {
-                    $p['shopee_stock'] += (int) $m['stock_value'];
+                    $p['shopee_stock'] = max($p['shopee_stock'], (int) $m['stock_value']);
                     $p['is_shopee_mapped'] = true;
                 } else {
-                    $p['lazada_stock'] += (int) $m['stock_value'];
+                    $p['lazada_stock'] = max($p['lazada_stock'], (int) $m['stock_value']);
                     $p['is_lazada_mapped'] = true;
                 }
                 $p['is_mapped'] = true;

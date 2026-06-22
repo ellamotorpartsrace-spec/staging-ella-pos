@@ -85,20 +85,20 @@ try {
     }
 
     // ════════════════════════════════════════════════════════════
-    // FIX 2: Revert Shopee movements wrongly assigned to store_id = 2 back to store_id = 1
+    // FIX 2: Fix Shopee movements wrongly assigned to store_id = 1
     // ════════════════════════════════════════════════════════════
-    logLine("Restoring Shopee sales back to store_id=1 (Physical)...");
+    logLine("Fixing Shopee sales assigned to wrong store_id...");
     $wrongMoves = $conn->query("
         SELECT movement_id FROM stock_movements 
-        WHERE type IN ('online_sale', 'online_adjustment') AND store_id IN (2, 3)
+        WHERE type = 'online_sale' AND store_id = 1 AND remarks LIKE '%Shopee%'
     ")->fetchAll(PDO::FETCH_COLUMN);
     
     if (count($wrongMoves) > 0) {
         $conn->beginTransaction();
         $ph = implode(',', array_fill(0, count($wrongMoves), '?'));
-        $conn->prepare("UPDATE stock_movements SET store_id=1 WHERE movement_id IN ({$ph})")->execute($wrongMoves);
+        $conn->prepare("UPDATE stock_movements SET store_id=2 WHERE movement_id IN ({$ph})")->execute($wrongMoves);
         $conn->commit();
-        logLine("Restored " . count($wrongMoves) . " Shopee/Lazada movements to store_id=1 ✓");
+        logLine("Moved " . count($wrongMoves) . " Shopee movements to store_id=2 ✓");
     }
 
     // ════════════════════════════════════════════════════════════
