@@ -142,22 +142,6 @@ try {
 
     // 2. Before changing anything, get the CURRENT total Lazada allocation across ALL mappings
     //    (this is the source of truth for how much is allocated away from physical store)
-    $posSku = trim((string)($item['matched_pos_sku'] ?? ''));
-    if (empty($posSku)) {
-        $skuStmt2 = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
-        $skuStmt2->execute([$item['pos_product_id'] ?? 0]);
-        $posSku = trim((string)$skuStmt2->fetchColumn());
-    }
-    $oldSumStmt = $conn->prepare("
-        SELECT COALESCE(SUM(m.lazada_stock * COALESCE(u.multiplier, 1)), 0)
-        FROM lazada_product_mappings m
-        LEFT JOIN product_units u ON m.pos_unit_id = u.id
-        WHERE (m.pos_product_id = ? OR (m.matched_pos_sku = ? AND m.matched_pos_sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null')))
-          AND m.mapping_status IN ('auto','manual')
-    ");
-    $oldSumStmt->execute([$item['pos_product_id'] ?? 0, $posSku]);
-    $oldTotalLazadaAlloc = (int)$oldSumStmt->fetchColumn();
-
     // 3. Update the mapping's lazada_stock FIRST so the SUM query below includes the new value
     $updateStmt = $conn->prepare("UPDATE lazada_product_mappings SET stock_allocation_ratio = ?, lazada_stock = ?, updated_at = NOW() WHERE id = ?");
     $updateStmt->execute([$allocationRatio, $onlineStock, $id]);
@@ -165,6 +149,12 @@ try {
     // 4. Compute new total Lazada allocation and apply the DIFF to physical store
     //    This ensures stock history stays accurate and no phantom stock appears
     if (!empty($item['pos_product_id'])) {
+        $posSku = trim((string)($item['matched_pos_sku'] ?? ''));
+        if (empty($posSku)) {
+            $skuStmt2 = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
+            $skuStmt2->execute([$item['pos_product_id'] ?? 0]);
+            $posSku = trim((string)$skuStmt2->fetchColumn());
+        }
         $newSumStmt = $conn->prepare("
             SELECT COALESCE(SUM(m.lazada_stock * COALESCE(u.multiplier, 1)), 0)
             FROM lazada_product_mappings m
@@ -176,7 +166,7 @@ try {
         $newOnlineStock = (int)$newSumStmt->fetchColumn();
 
         // The DELTA: how much Lazada allocation changed (positive = more allocated to Lazada = less physical)
-        $allocDelta = $newOnlineStock - $oldTotalLazadaAlloc;
+        $allocDelta = $newOnlineStock - $posLazadaQty;
 
         // Apply delta to current physical stock
         $newPhysicalStock = $posPhysicalQty - $allocDelta;
