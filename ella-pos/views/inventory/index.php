@@ -38,8 +38,6 @@ $baseSql = "
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
-    LEFT JOIN inventory i_shopee ON v.variation_id = i_shopee.variation_id AND i_shopee.store_id = 2
-    LEFT JOIN inventory i_lazada ON v.variation_id = i_lazada.variation_id AND i_lazada.store_id = 3
     WHERE v.status = 'active'
 ";
 
@@ -82,7 +80,7 @@ if ($filter === 'low_stock') {
 $sqlStats = "
     SELECT 
         COUNT(*) as total_items,
-        SUM(v.price_capital * (COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0))) as total_asset_value,
+        SUM(v.price_capital * COALESCE(i_phys.quantity, 0)) as total_asset_value,
         SUM(CASE WHEN COALESCE(i_phys.quantity, 0) <= v.low_stock_threshold THEN 1 ELSE 0 END) as low_stock_count
     " . $baseSql;
 
@@ -101,7 +99,7 @@ $sqlProducts = "
     SELECT v.variation_id, v.variation_name, v.sku, v.unit_type,
            v.price_capital, v.price_retail, v.status, v.low_stock_threshold,
            p.product_name, p.brand_name, p.image_path,
-           COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0) as current_stock
+           COALESCE(i_phys.quantity, 0) as current_stock
     " . $baseSql . "
     ORDER BY p.product_name ASC
     LIMIT $limit OFFSET $offset
