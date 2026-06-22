@@ -90,44 +90,23 @@ logLine("online_sale on wrong store_id=1: {$wrongSaleRows}");
 echo "</pre></div>";
 
 // ════════════════════════════════════════════════════════════
-// FIX 1: Delete duplicate SYS-GAPFILL rows
+// FIX 1: Delete all SYS-GAPFILL rows
 // ════════════════════════════════════════════════════════════
-echo "<div class='section'><h2>🗑️ Fix 1: Delete Duplicate SYS-GAPFILL Rows</h2><pre>";
+echo "<div class='section'><h2>🗑️ Fix 1: Delete All SYS-GAPFILL Rows</h2><pre>";
 
 try {
-    // Find all variation_ids that have SYS-GAPFILL rows
-    $gfVarStmt = $conn->query("SELECT DISTINCT variation_id FROM stock_movements WHERE reference = 'SYS-GAPFILL'");
-    $gfVarIds = $gfVarStmt->fetchAll(PDO::FETCH_COLUMN);
-
-    $totalGfDeleted = 0;
-    foreach ($gfVarIds as $varId) {
-        // Get count of gapfill rows for this variation
-        $count = (int)$conn->prepare("SELECT COUNT(*) FROM stock_movements WHERE variation_id = ? AND reference = 'SYS-GAPFILL'")->execute([$varId]) ?
-                 $conn->query("SELECT COUNT(*) FROM stock_movements WHERE variation_id = {$varId} AND reference = 'SYS-GAPFILL'")->fetchColumn() : 0;
-        
-        if ($count <= 1) {
-            logLine("  var #{$varId}: Only {$count} SYS-GAPFILL row — keeping as-is");
-            continue;
-        }
-
-        // Keep only the lowest movement_id, delete the rest
-        $minId = (int)$conn->query("SELECT MIN(movement_id) FROM stock_movements WHERE variation_id = {$varId} AND reference = 'SYS-GAPFILL'")->fetchColumn();
-        
+    $count = (int)$conn->query("SELECT COUNT(*) FROM stock_movements WHERE reference = 'SYS-GAPFILL'")->fetchColumn();
+    if ($count > 0) {
         $conn->beginTransaction();
-        $del = $conn->prepare("DELETE FROM stock_movements WHERE variation_id = ? AND reference = 'SYS-GAPFILL' AND movement_id > ?");
-        $del->execute([$varId, $minId]);
-        $deleted = $del->rowCount();
+        $conn->exec("DELETE FROM stock_movements WHERE reference = 'SYS-GAPFILL'");
         $conn->commit();
-        
-        $totalGfDeleted += $deleted;
-        logLine("  var #{$varId}: Deleted {$deleted} duplicate SYS-GAPFILL rows (kept movement_id={$minId})");
+        logLine("Deleted {$count} SYS-GAPFILL rows ✓", 'warn');
+        $totalChanges += $count;
+    } else {
+        logLine("No SYS-GAPFILL rows found — already clean ✓");
     }
-
-    $totalChanges += $totalGfDeleted;
-    logLine("Fix 1 complete: Deleted {$totalGfDeleted} total duplicate SYS-GAPFILL rows ✓");
-
 } catch (Exception $e) {
-    if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
+    if ($conn->inTransaction()) $conn->rollBack();
     logLine("Fix 1 ERROR: " . $e->getMessage(), 'err');
     $errors[] = "Fix 1: " . $e->getMessage();
 }
@@ -200,21 +179,28 @@ try {
 echo "</pre></div>";
 
 // ════════════════════════════════════════════════════════════
-// FIX 0 (Undo): Delete any wrong SYS-RECONCILE movements
-//               inserted by previous run of this script
+// FIX 0 (Undo): Delete ALL junk movements from previous runs
 // ════════════════════════════════════════════════════════════
-echo "<div class='section'><h2>🔁 Fix 0: Remove Any Previously Added SYS-RECONCILE Movements</h2><pre>";
+echo "<div class='section'><h2>🔁 Fix 0: Remove All Junk System Movements From Previous Runs</h2><pre>";
 
 try {
-    $reconcileCount = (int)$conn->query("SELECT COUNT(*) FROM stock_movements WHERE reference = 'SYS-RECONCILE'")->fetchColumn();
-    if ($reconcileCount === 0) {
-        logLine("No SYS-RECONCILE movements found — nothing to undo ✓");
+    $junkRefs = ['SYS-RECONCILE', 'SYS-SHOPEE-FIX'];
+    $totalJunk = 0;
+    foreach ($junkRefs as $ref) {
+        $cnt = (int)$conn->query("SELECT COUNT(*) FROM stock_movements WHERE reference = '{$ref}'")->fetchColumn();
+        if ($cnt > 0) {
+            $conn->beginTransaction();
+            $conn->exec("DELETE FROM stock_movements WHERE reference = '{$ref}'");
+            $conn->commit();
+            logLine("Deleted {$cnt} '{$ref}' movements", 'warn');
+            $totalJunk += $cnt;
+        }
+    }
+    if ($totalJunk === 0) {
+        logLine("No junk movements found — already clean ✓");
     } else {
-        $conn->beginTransaction();
-        $conn->exec("DELETE FROM stock_movements WHERE reference = 'SYS-RECONCILE'");
-        $conn->commit();
-        logLine("Deleted {$reconcileCount} wrong SYS-RECONCILE movements ✓", 'warn');
-        $totalChanges += $reconcileCount;
+        logLine("Total junk removed: {$totalJunk} ✓");
+        $totalChanges += $totalJunk;
     }
 } catch (Exception $e) {
     if ($conn->inTransaction()) $conn->rollBack();
@@ -225,69 +211,94 @@ try {
 echo "</pre></div>";
 
 // ════════════════════════════════════════════════════════════
-// FIX 3: Correct inventory to match movement history (ALL)
-//         Movement history is ALWAYS the source of truth.
-//         Do NOT add fake movements — just fix the number.
+// FIX 3: Rebuild Physical Stock History Chains and Reconcile Inventory
+//
+// Since running totals (new_stock) can be corrupted by out-of-order
+// records, Shopee bugs, or gap-smoothing, the only clean way to fix
+// this is to rebuild the balance chain chronologically from the actual
+// transaction quantities, and then update the inventory table to match.
 // ════════════════════════════════════════════════════════════
-echo "<div class='section'><h2>⚖️ Fix 3: Set Inventory = Movement History (All Products)</h2><pre>";
-logLine("Rule: movement history = source of truth. Inventory will be corrected to match.");
-logLine("(No fake movement records will be added)\n");
+echo "<div class='section'><h2>⚖️ Fix 3: Rebuild Stock Chains and Sync Inventory</h2><pre>";
+logLine("Method: Recalculate previous_stock and new_stock chronologically for all products.");
+logLine("Then set inventory.quantity to the final running balance of the rebuilt chain.\n");
 
 try {
-    // Fetch ALL discrepancies — no LIMIT, no size filter
-    $allDiscrepStmt = $conn->query("
-        SELECT
-            i.variation_id,
-            COALESCE(sm_sum.movement_total, 0) AS movement_total,
-            i.quantity AS current_qty,
-            (i.quantity - COALESCE(sm_sum.movement_total, 0)) AS discrepancy
-        FROM inventory i
-        LEFT JOIN (
-            SELECT variation_id,
-                   COALESCE(SUM(new_stock - previous_stock), 0) AS movement_total
-            FROM stock_movements
-            WHERE store_id = 1
-              AND type IN ('stock_in','stock_out','sales','adjustment','return',
-                           'allocation_to_online','allocation_to_physical','shopee_balance_sync')
-              AND reference NOT IN ('SYS-RECONCILE','SYS-SHOPEE-FIX')
-            GROUP BY variation_id
-        ) sm_sum ON sm_sum.variation_id = i.variation_id
-        WHERE i.store_id = 1
-          AND ABS(i.quantity - COALESCE(sm_sum.movement_total, 0)) > 0
-        ORDER BY ABS(i.quantity - COALESCE(sm_sum.movement_total, 0)) DESC
+    // 1. Get all distinct variation_ids that have movements on store_id = 1
+    $gfVarStmt = $conn->query("SELECT DISTINCT variation_id FROM stock_movements WHERE store_id = 1");
+    $gfVarIds = $gfVarStmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    logLine("Found " . count($gfVarIds) . " products with stock history on store_id=1. Rebuilding...");
+
+    $conn->beginTransaction();
+
+    $updMov = $conn->prepare("UPDATE stock_movements SET previous_stock = ?, new_stock = ? WHERE movement_id = ?");
+    $updInv = $conn->prepare("UPDATE inventory SET quantity = ? WHERE variation_id = ? AND store_id = 1");
+
+    $movQuery = $conn->prepare("
+        SELECT movement_id, type, quantity, previous_stock, new_stock
+        FROM stock_movements
+        WHERE variation_id = ? AND store_id = 1
+        ORDER BY created_at ASC, movement_id ASC
     ");
-    $allDiscrepancies = $allDiscrepStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (empty($allDiscrepancies)) {
-        logLine("✓ All inventory quantities already match movement history. Nothing to fix.");
-    } else {
-        $underCount = 0; $overCount = 0;
-        foreach ($allDiscrepancies as $r) {
-            if ($r['discrepancy'] < 0) $underCount++;
-            else $overCount++;
+    $deduction_types = ['stock_out', 'sales', 'allocation_to_online'];
+    $totalFixedMovements = 0;
+    $totalFixedInventory = 0;
+    $totalProcessed = 0;
+
+    foreach ($gfVarIds as $varId) {
+        $movQuery->execute([$varId]);
+        $movements = $movQuery->fetchAll(PDO::FETCH_ASSOC);
+        if (empty($movements)) continue;
+
+        // Start running balance with the first movement's previous_stock
+        $runningBalance = (float)$movements[0]['previous_stock'];
+        
+        foreach ($movements as $m) {
+            $movId = $m['movement_id'];
+            $qtyAbs = abs((float)$m['quantity']);
+            $change = in_array($m['type'], $deduction_types) ? -$qtyAbs : $qtyAbs;
+            if ($m['type'] === 'adjustment') {
+                $change = (float)$m['quantity']; // adjustments are signed
+            }
+
+            $prevStock = $runningBalance;
+            $newStock = $runningBalance + $change;
+            if ($newStock < 0) {
+                $newStock = 0.0;
+            }
+
+            // Only update DB if values changed
+            if (abs((float)$m['previous_stock'] - $prevStock) > 0.01 || abs((float)$m['new_stock'] - $newStock) > 0.01) {
+                $updMov->execute([$prevStock, $newStock, $movId]);
+                $totalFixedMovements++;
+            }
+
+            $runningBalance = $newStock;
         }
-        logLine("Found " . count($allDiscrepancies) . " products with discrepancy:");
-        logLine("  • {$overCount} over-counted (inventory too HIGH vs movement history → will be lowered)");
-        logLine("  • {$underCount} under-counted (inventory too LOW vs movement history → will be raised)\n");
 
-        $conn->beginTransaction();
-        foreach ($allDiscrepancies as $row) {
-            $varId    = (int)$row['variation_id'];
-            $movSays  = (int)$row['movement_total'];
-            $actual   = (int)$row['current_qty'];
-            $diff     = $actual - $movSays;
-            $arrow    = $diff > 0 ? '[OVER ↓]' : '[UNDER↑]';
-
-            // Always trust movement history: set inventory = what movements say
-            $conn->prepare("UPDATE inventory SET quantity = ? WHERE variation_id = ? AND store_id = 1")
-                 ->execute([$movSays, $varId]);
-
-            logLine("  {$arrow} var #{$varId}: {$actual} → {$movSays} (diff was " . ($diff > 0 ? '+' : '') . "{$diff})");
-            $totalChanges++;
+        // Reconcile inventory quantity
+        $currentInv = $conn->query("SELECT quantity FROM inventory WHERE variation_id = {$varId} AND store_id = 1")->fetchColumn();
+        if ($currentInv === false) {
+            // Insert missing inventory row
+            $conn->prepare("INSERT INTO inventory (variation_id, store_id, quantity) VALUES (?, 1, ?)")
+                 ->execute([$varId, $runningBalance]);
+            $totalFixedInventory++;
+        } elseif (abs((float)$currentInv - $runningBalance) > 0.01) {
+            $updInv->execute([$runningBalance, $varId]);
+            $totalFixedInventory++;
+            logLine("  var #{$varId}: Stock reconciled {$currentInv} → {$runningBalance}");
         }
-        $conn->commit();
-        logLine("\nFix 3 complete: corrected " . count($allDiscrepancies) . " products ✓");
+        
+        $totalProcessed++;
     }
+
+    $conn->commit();
+    $totalChanges += $totalFixedInventory;
+    logLine("\nFix 3 complete:");
+    logLine("  • Processed {$totalProcessed} products");
+    logLine("  • Corrected {$totalFixedMovements} stock movement records");
+    logLine("  • Reconciled {$totalFixedInventory} inventory quantities ✓");
 
 } catch (Exception $e) {
     if ($conn->inTransaction()) $conn->rollBack();
@@ -306,17 +317,21 @@ $newTotalMov = (int)$conn->query("SELECT COUNT(*) FROM stock_movements")->fetchC
 $newGapfillRows = (int)$conn->query("SELECT COUNT(*) FROM stock_movements WHERE reference = 'SYS-GAPFILL'")->fetchColumn();
 $newWrongRows = (int)$conn->query("SELECT COUNT(*) FROM stock_movements WHERE type = 'online_sale' AND store_id = 1")->fetchColumn();
 
-// Check remaining discrepancies
+// Check remaining discrepancies (inventory quantity vs last movement's new_stock)
 $remainingDiscrep = (int)$conn->query("
     SELECT COUNT(*)
     FROM inventory i
-    LEFT JOIN (
-        SELECT variation_id, COALESCE(SUM(new_stock - previous_stock), 0) AS movement_total
-        FROM stock_movements
-        WHERE store_id = 1 AND type IN ('stock_in','stock_out','sales','adjustment','return','allocation_to_online','allocation_to_physical','shopee_balance_sync')
-        GROUP BY variation_id
-    ) sm_sum ON sm_sum.variation_id = i.variation_id
-    WHERE i.store_id = 1 AND ABS(i.quantity - COALESCE(sm_sum.movement_total, 0)) > 0
+    INNER JOIN (
+        SELECT sm1.variation_id, sm1.new_stock
+        FROM stock_movements sm1
+        INNER JOIN (
+            SELECT variation_id, MAX(movement_id) as max_id
+            FROM stock_movements
+            WHERE store_id = 1
+            GROUP BY variation_id
+        ) sm2 ON sm1.movement_id = sm2.max_id
+    ) last_mov ON last_mov.variation_id = i.variation_id
+    WHERE i.store_id = 1 AND ABS(i.quantity - last_mov.new_stock) > 0.01
 ")->fetchColumn();
 
 logLine("Total stock_movements rows: {$newTotalMov} (was {$totalMov})");
