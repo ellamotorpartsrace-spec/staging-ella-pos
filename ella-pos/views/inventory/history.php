@@ -29,8 +29,8 @@ $sqlProd = "
         p.product_name, p.brand_name, 
         v.variation_name, v.sku, v.barcode, v.unit_type,
         COALESCE(i_phys.quantity, 0) as physical_stock,
-        0 as online_stock,
-        COALESCE(i_phys.quantity, 0) as total_stock,
+        COALESCE(i_online.quantity, 0) as online_stock,
+        COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as total_stock,
         CAST((
             SELECT COALESCE(MAX(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
             FROM shopee_product_mappings m
@@ -42,6 +42,7 @@ $sqlProd = "
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
+    LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
     WHERE v.variation_id = :id
 ";
 $stmt = $conn->prepare($sqlProd);
@@ -66,6 +67,7 @@ $sqlHist = "
     FROM stock_movements m
     LEFT JOIN users u ON m.created_by = u.id
     WHERE m.variation_id = :id AND m.store_id = 1 
+    AND m.type NOT IN ('online_sale', 'online_adjustment')
     ORDER BY m.created_at DESC, m.movement_id DESC
     LIMIT 100
 ";
@@ -213,8 +215,8 @@ $type_config = [
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-0 border-bottom">
                     <ul class="nav nav-tabs border-0" id="historyTabs" role="tablist">
-                        <li class="nav-item" role="presentation" style="flex: 1; border-right: 1px solid #dee2e6;">
-                            <button class="nav-link w-100 py-3 active fw-bold border-0 text-primary" id="physical-tab" data-bs-toggle="tab" data-bs-target="#physical-history" type="button" role="tab" style="background: none; border-bottom: 2px solid #0d6efd !important;">
+                        <li class="nav-item flex-fill text-center" role="presentation">
+                            <button class="nav-link active w-100 py-3 fw-bold border-0 text-primary" id="pos-tab" data-bs-toggle="tab" data-bs-target="#pos-history" type="button" role="tab" style="background: none; border-bottom: 2px solid transparent !important;">
                                 <i class="fa-solid fa-store me-1"></i> Physical POS History
                             </button>
                         </li>
