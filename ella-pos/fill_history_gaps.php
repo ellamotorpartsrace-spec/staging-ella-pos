@@ -49,8 +49,11 @@ $variationIds = array_column($varStmt2->fetchAll(PDO::FETCH_ASSOC), 'variation_i
 $totalFixed = 0;
 $report     = [];
 $errors     = [];
+$maxFixes   = 500;
 
 foreach ($variationIds as $variationId) {
+    if ($totalFixed >= $maxFixes) break;
+
     // Fetch movements for this variation ordered oldest→newest
     $movStmt = $conn->prepare("
         SELECT movement_id, type, quantity, previous_stock, new_stock, created_at
@@ -59,6 +62,7 @@ foreach ($variationIds as $variationId) {
           AND store_id = 1
           AND status = 'active'
           AND type NOT IN ('online_sale', 'online_adjustment')
+          AND reference != 'SYS-GAPFILL'
         ORDER BY created_at ASC, movement_id ASC
     ");
     $movStmt->execute([$variationId]);
@@ -67,6 +71,7 @@ foreach ($variationIds as $variationId) {
     if (count($movements) < 2) continue;
 
     for ($i = 1; $i < count($movements); $i++) {
+        if ($totalFixed >= $maxFixes) break;
         $older  = $movements[$i - 1]; // earlier movement
         $newer  = $movements[$i];     // later movement
 
@@ -118,13 +123,6 @@ foreach ($variationIds as $variationId) {
                     'older_mov'    => $older['movement_id'],
                     'newer_mov'    => $newer['movement_id'],
                 ];
-
-                // Re-fetch movements for this variation to account for newly inserted row
-                $movStmt->execute([$variationId]);
-                $movements = $movStmt->fetchAll(PDO::FETCH_ASSOC);
-                // Restart check for this variation
-                $i = 0;
-
             } catch (Exception $e) {
                 $errors[] = "variation_id {$variationId}: " . $e->getMessage();
             }
