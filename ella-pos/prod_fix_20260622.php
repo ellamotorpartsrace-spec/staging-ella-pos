@@ -243,8 +243,6 @@ try {
         $s3 = 0.0; // store_id = 3 (Lazada)
         
         $hasS1 = false;
-        $hasS2 = false;
-        $hasS3 = false;
         
         foreach ($movements as $m) {
             $storeId = (int)$m['store_id'];
@@ -252,12 +250,6 @@ try {
             if ($storeId === 1 && !$hasS1) {
                 $s1 = $prev;
                 $hasS1 = true;
-            } elseif ($storeId === 2 && !$hasS2) {
-                $s2 = $prev;
-                $hasS2 = true;
-            } elseif ($storeId === 3 && !$hasS3) {
-                $s3 = $prev;
-                $hasS3 = true;
             }
         }
         
