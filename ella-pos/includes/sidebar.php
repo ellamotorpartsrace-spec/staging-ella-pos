@@ -259,12 +259,7 @@ try {
                             <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Shopee Dashboard</span>
                         </a>
                     </li>
-                    <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Sales &amp; Income" href="<?= BASE_URL ?>views/shopee/sales_income.php"
-                            class="<?= $current_page === 'sales_income.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-money-bill-trend-up"></i> <span class="nav-text">Sales & Income</span>
-                        </a>
-                    </li>
+
                     <li>
                         <a data-bs-toggle="tooltip" data-sidebar-tooltip="Shopee Products" href="<?= BASE_URL ?>views/shopee/products.php"
                             class="<?= $current_page === 'products.php' && strpos($_SERVER['REQUEST_URI'], 'shopee') !== false ? 'active' : '' ?>">
@@ -307,70 +302,6 @@ try {
             </div>
         <?php endif; ?>
 
-        <!-- LAZADA STORE -->
-        <?php if ($canViewLazada): ?>
-            <div class="sidebar-heading text-uppercase text-white-50 small fw-bold px-3 mt-3 mb-1 d-flex justify-content-between align-items-center"
-                style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#lazadaStoreCollapse">
-                <span class="nav-text">Lazada Store</span>
-                <i class="fa-solid fa-chevron-down small transition-transform" id="lazadaStoreChevron"></i>
-            </div>
-            <div class="collapse <?= strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'show' : '' ?>"
-                id="lazadaStoreCollapse">
-
-                <?php if ($canViewLazada): ?>
-                    <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Dashboard" href="<?= BASE_URL ?>views/lazada/laz_index.php"
-                            class="<?= strpos($_SERVER['REQUEST_URI'], 'lazada') !== false && $current_page === 'laz_index.php' ? 'active' : '' ?>">
-                            <i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Lazada Dashboard</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Laz Sales&Income" href="<?= BASE_URL ?>views/lazada/laz_sales_income.php"
-                            class="<?= $current_page === 'laz_sales_income.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-money-bill-trend-up"></i> <span class="nav-text">Laz Sales&Income</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Products" href="<?= BASE_URL ?>views/lazada/laz_products.php"
-                            class="<?= $current_page === 'laz_products.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-bag-shopping"></i> <span class="nav-text">Lazada Products</span>
-                        </a>
-                    </li>
-                    <?php if (hasPermission('shopee_mapping')): ?>
-                    <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Mapping" href="<?= BASE_URL ?>views/lazada/laz_mapping.php"
-                            class="<?= $current_page === 'laz_mapping.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-link"></i> <span class="nav-text">Lazada Mapping</span>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                    <?php if (hasPermission('shopee_allocation')): ?>
-                    <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Allocation" href="<?= BASE_URL ?>views/lazada/laz_allocation.php"
-                            class="<?= $current_page === 'laz_allocation.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-sliders"></i> <span class="nav-text">Lazada Allocation</span>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                    <?php if (in_array($role, ['admin', 'super_admin'])): ?>
-                    <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Sync Logs" href="<?= BASE_URL ?>views/lazada/laz_logs.php"
-                            class="<?= $current_page === 'laz_logs.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-clock-rotate-left"></i> <span class="nav-text">Lazada Sync Logs</span>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                    <?php if (in_array($role, ['admin', 'super_admin'])): ?>
-                    <li>
-                        <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Settings" href="<?= BASE_URL ?>views/lazada/laz_settings.php"
-                            class="<?= $current_page === 'laz_settings.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
-                            <i class="fa-solid fa-gear"></i> <span class="nav-text">Lazada Settings</span>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </div>
-        <?php endif; ?>
 
         <!-- CUSTOMERS -->
         <?php if ($canViewCustomers): ?>
