@@ -38,7 +38,7 @@ $db   = new Database();
 $conn = $db->getConnection();
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-set_time_limit(300);
+set_time_limit(600); // Allow up to 10 minutes for large production databases
 
 header('Content-Type: text/html; charset=UTF-8');
 ?>
@@ -200,13 +200,13 @@ try {
 echo "</pre></div>";
 
 // ════════════════════════════════════════════════════════════
-// FIX 3: Reconcile inventory discrepancies
+// FIX 3: Reconcile ALL inventory discrepancies (no limits)
 // ════════════════════════════════════════════════════════════
 echo "<div class='section'><h2>⚖️ Fix 3: Reconcile Inventory vs Movement History</h2><pre>";
 
 try {
-    // Find products where inventory is LOWER than movements say (under-counted)
-    $discrepStmt = $conn->query("
+    // Fetch ALL products with any discrepancy (no LIMIT, no size restriction)
+    $allDiscrepStmt = $conn->query("
         SELECT 
             i.variation_id,
             COALESCE(sm_sum.movement_total, 0) AS movement_total,
@@ -224,73 +224,54 @@ try {
         ) sm_sum ON sm_sum.variation_id = i.variation_id
         WHERE i.store_id = 1
           AND ABS(i.quantity - COALESCE(sm_sum.movement_total, 0)) > 0
-          AND (i.quantity - COALESCE(sm_sum.movement_total, 0)) < 0
-        ORDER BY discrepancy ASC
-        LIMIT 50
+        ORDER BY ABS(i.quantity - COALESCE(sm_sum.movement_total, 0)) DESC
     ");
-    $underCounted = $discrepStmt->fetchAll(PDO::FETCH_ASSOC);
+    $allDiscrepancies = $allDiscrepStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (empty($underCounted)) {
-        logLine("No under-counted products found — inventory already matches movements ✓");
+    if (empty($allDiscrepancies)) {
+        logLine("No discrepancies found — inventory already matches movements ✓");
     } else {
-        logLine("Found " . count($underCounted) . " products where inventory is LOWER than movements");
+        $underCount = 0; $overCount = 0;
+        foreach ($allDiscrepancies as $r) {
+            if ($r['discrepancy'] < 0) $underCount++;
+            else $overCount++;
+        }
+        logLine("Found " . count($allDiscrepancies) . " total discrepancies ({$underCount} under-counted, {$overCount} over-counted)");
+        logLine("Fixing all now...\n");
+
         $conn->beginTransaction();
-        foreach ($underCounted as $row) {
-            $varId = (int)$row['variation_id'];
-            $correct = (int)$row['movement_total'];
-            $actual = (int)$row['current_qty'];
-            $conn->prepare("UPDATE inventory SET quantity=? WHERE variation_id=? AND store_id=1")->execute([$correct, $varId]);
-            logLine("  var #{$varId}: corrected {$actual} → {$correct}");
+
+        foreach ($allDiscrepancies as $row) {
+            $varId       = (int)$row['variation_id'];
+            $movSays     = (int)$row['movement_total'];
+            $actual      = (int)$row['current_qty'];
+            $diff        = $actual - $movSays; // positive = over, negative = under
+
+            if ($diff < 0) {
+                // Inventory is LOWER than movements say — raise inventory to match movements
+                $conn->prepare("UPDATE inventory SET quantity=? WHERE variation_id=? AND store_id=1")
+                     ->execute([$movSays, $varId]);
+                logLine("  [UNDER] var #{$varId}: inventory raised {$actual} → {$movSays} (missing " . abs($diff) . " units)");
+
+            } else {
+                // Inventory is HIGHER than movements say — log a corrective movement record
+                // so the audit trail matches the actual inventory (inventory is source of truth here,
+                // since propagateStockToPos and mass updates set inventory without logging)
+                $conn->prepare("
+                    INSERT INTO stock_movements
+                    (variation_id, store_id, type, quantity, previous_stock, new_stock,
+                     reference, remarks, created_by, created_at)
+                    VALUES (?, 1, 'adjustment', ?, ?, ?, 'SYS-RECONCILE',
+                            'System reconcile: unlogged inventory change (Shopee sync or mass update)', 1, NOW())
+                ")->execute([$varId, $diff, $movSays, $actual]);
+                logLine("  [OVER]  var #{$varId}: logged +{$diff} corrective movement ({$movSays}→{$actual})");
+            }
+
             $totalChanges++;
         }
-        $conn->commit();
-        logLine("Fix 3 complete ✓");
-    }
 
-    // Also log corrective adjustment movements for over-counted that match the Shopee fix IDs
-    // (find any remaining +discrepancy that don't have a logged correction yet)
-    $overStmt = $conn->query("
-        SELECT 
-            i.variation_id,
-            COALESCE(sm_sum.movement_total, 0) AS movement_total,
-            i.quantity AS current_qty,
-            (i.quantity - COALESCE(sm_sum.movement_total, 0)) AS discrepancy
-        FROM inventory i
-        LEFT JOIN (
-            SELECT variation_id,
-                   COALESCE(SUM(new_stock - previous_stock), 0) AS movement_total
-            FROM stock_movements
-            WHERE store_id = 1
-              AND type IN ('stock_in','stock_out','sales','adjustment','return',
-                           'allocation_to_online','allocation_to_physical','shopee_balance_sync')
-            GROUP BY variation_id
-        ) sm_sum ON sm_sum.variation_id = i.variation_id
-        WHERE i.store_id = 1
-          AND ABS(i.quantity - COALESCE(sm_sum.movement_total, 0)) > 0
-          AND (i.quantity - COALESCE(sm_sum.movement_total, 0)) BETWEEN 1 AND 10
-        ORDER BY discrepancy DESC
-        LIMIT 50
-    ");
-    $overCounted = $overStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    if (!empty($overCounted)) {
-        logLine("\nFound " . count($overCounted) . " products with small over-count (likely from Shopee fix). Logging corrective adjustments...");
-        $conn->beginTransaction();
-        foreach ($overCounted as $row) {
-            $varId = (int)$row['variation_id'];
-            $movementSays = (int)$row['movement_total'];
-            $actual = (int)$row['current_qty'];
-            $diff = $actual - $movementSays;
-            $conn->prepare("
-                INSERT INTO stock_movements
-                (variation_id, store_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, created_at)
-                VALUES (?, 1, 'adjustment', ?, ?, ?, 'SYS-SHOPEE-FIX', 'Shopee fix: restored wrongly deducted POS stock', 1, NOW())
-            ")->execute([$varId, $diff, $movementSays, $actual]);
-            logLine("  var #{$varId}: logged corrective adjustment +{$diff} ({$movementSays}→{$actual})");
-            $totalChanges++;
-        }
         $conn->commit();
-        logLine("Corrective adjustments logged ✓");
+        logLine("\nFix 3 complete: reconciled " . count($allDiscrepancies) . " products ✓");
     }
 
 } catch (Exception $e) {
