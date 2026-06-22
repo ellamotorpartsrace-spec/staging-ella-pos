@@ -66,7 +66,6 @@ $sqlHist = "
     FROM stock_movements m
     LEFT JOIN users u ON m.created_by = u.id
     WHERE m.variation_id = :id AND m.store_id = 1 
-    AND m.type NOT IN ('online_sale', 'online_adjustment')
     ORDER BY m.created_at DESC, m.movement_id DESC
     LIMIT 100
 ";
