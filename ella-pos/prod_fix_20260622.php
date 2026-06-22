@@ -230,7 +230,7 @@ try {
     foreach ($allVarIds as $varId) {
         // Fetch all active movements for this variation across ALL stores
         $movStmt = $conn->prepare("
-            SELECT movement_id, store_id, type, quantity, remarks
+            SELECT movement_id, store_id, type, quantity, remarks, previous_stock
             FROM stock_movements
             WHERE variation_id = ? AND status = 'active'
             ORDER BY created_at ASC, movement_id ASC
@@ -241,6 +241,25 @@ try {
         $s1 = 0.0; // store_id = 1 (Physical POS)
         $s2 = 0.0; // store_id = 2 (Shopee)
         $s3 = 0.0; // store_id = 3 (Lazada)
+        
+        $hasS1 = false;
+        $hasS2 = false;
+        $hasS3 = false;
+        
+        foreach ($movements as $m) {
+            $storeId = (int)$m['store_id'];
+            $prev = (float)($m['previous_stock'] ?? 0);
+            if ($storeId === 1 && !$hasS1) {
+                $s1 = $prev;
+                $hasS1 = true;
+            } elseif ($storeId === 2 && !$hasS2) {
+                $s2 = $prev;
+                $hasS2 = true;
+            } elseif ($storeId === 3 && !$hasS3) {
+                $s3 = $prev;
+                $hasS3 = true;
+            }
+        }
         
         foreach ($movements as $m) {
             $movId = (int)$m['movement_id'];
