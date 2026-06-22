@@ -200,14 +200,43 @@ try {
 echo "</pre></div>";
 
 // ════════════════════════════════════════════════════════════
-// FIX 3: Reconcile ALL inventory discrepancies (no limits)
+// FIX 0 (Undo): Delete any wrong SYS-RECONCILE movements
+//               inserted by previous run of this script
 // ════════════════════════════════════════════════════════════
-echo "<div class='section'><h2>⚖️ Fix 3: Reconcile Inventory vs Movement History</h2><pre>";
+echo "<div class='section'><h2>🔁 Fix 0: Remove Any Previously Added SYS-RECONCILE Movements</h2><pre>";
 
 try {
-    // Fetch ALL products with any discrepancy (no LIMIT, no size restriction)
+    $reconcileCount = (int)$conn->query("SELECT COUNT(*) FROM stock_movements WHERE reference = 'SYS-RECONCILE'")->fetchColumn();
+    if ($reconcileCount === 0) {
+        logLine("No SYS-RECONCILE movements found — nothing to undo ✓");
+    } else {
+        $conn->beginTransaction();
+        $conn->exec("DELETE FROM stock_movements WHERE reference = 'SYS-RECONCILE'");
+        $conn->commit();
+        logLine("Deleted {$reconcileCount} wrong SYS-RECONCILE movements ✓", 'warn');
+        $totalChanges += $reconcileCount;
+    }
+} catch (Exception $e) {
+    if ($conn->inTransaction()) $conn->rollBack();
+    logLine("Fix 0 ERROR: " . $e->getMessage(), 'err');
+    $errors[] = "Fix 0: " . $e->getMessage();
+}
+
+echo "</pre></div>";
+
+// ════════════════════════════════════════════════════════════
+// FIX 3: Correct inventory to match movement history (ALL)
+//         Movement history is ALWAYS the source of truth.
+//         Do NOT add fake movements — just fix the number.
+// ════════════════════════════════════════════════════════════
+echo "<div class='section'><h2>⚖️ Fix 3: Set Inventory = Movement History (All Products)</h2><pre>";
+logLine("Rule: movement history = source of truth. Inventory will be corrected to match.");
+logLine("(No fake movement records will be added)\n");
+
+try {
+    // Fetch ALL discrepancies — no LIMIT, no size filter
     $allDiscrepStmt = $conn->query("
-        SELECT 
+        SELECT
             i.variation_id,
             COALESCE(sm_sum.movement_total, 0) AS movement_total,
             i.quantity AS current_qty,
@@ -220,6 +249,7 @@ try {
             WHERE store_id = 1
               AND type IN ('stock_in','stock_out','sales','adjustment','return',
                            'allocation_to_online','allocation_to_physical','shopee_balance_sync')
+              AND reference NOT IN ('SYS-RECONCILE','SYS-SHOPEE-FIX')
             GROUP BY variation_id
         ) sm_sum ON sm_sum.variation_id = i.variation_id
         WHERE i.store_id = 1
@@ -229,53 +259,38 @@ try {
     $allDiscrepancies = $allDiscrepStmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($allDiscrepancies)) {
-        logLine("No discrepancies found — inventory already matches movements ✓");
+        logLine("✓ All inventory quantities already match movement history. Nothing to fix.");
     } else {
         $underCount = 0; $overCount = 0;
         foreach ($allDiscrepancies as $r) {
             if ($r['discrepancy'] < 0) $underCount++;
             else $overCount++;
         }
-        logLine("Found " . count($allDiscrepancies) . " total discrepancies ({$underCount} under-counted, {$overCount} over-counted)");
-        logLine("Fixing all now...\n");
+        logLine("Found " . count($allDiscrepancies) . " products with discrepancy:");
+        logLine("  • {$overCount} over-counted (inventory too HIGH vs movement history → will be lowered)");
+        logLine("  • {$underCount} under-counted (inventory too LOW vs movement history → will be raised)\n");
 
         $conn->beginTransaction();
-
         foreach ($allDiscrepancies as $row) {
-            $varId       = (int)$row['variation_id'];
-            $movSays     = (int)$row['movement_total'];
-            $actual      = (int)$row['current_qty'];
-            $diff        = $actual - $movSays; // positive = over, negative = under
+            $varId    = (int)$row['variation_id'];
+            $movSays  = (int)$row['movement_total'];
+            $actual   = (int)$row['current_qty'];
+            $diff     = $actual - $movSays;
+            $arrow    = $diff > 0 ? '[OVER ↓]' : '[UNDER↑]';
 
-            if ($diff < 0) {
-                // Inventory is LOWER than movements say — raise inventory to match movements
-                $conn->prepare("UPDATE inventory SET quantity=? WHERE variation_id=? AND store_id=1")
-                     ->execute([$movSays, $varId]);
-                logLine("  [UNDER] var #{$varId}: inventory raised {$actual} → {$movSays} (missing " . abs($diff) . " units)");
+            // Always trust movement history: set inventory = what movements say
+            $conn->prepare("UPDATE inventory SET quantity = ? WHERE variation_id = ? AND store_id = 1")
+                 ->execute([$movSays, $varId]);
 
-            } else {
-                // Inventory is HIGHER than movements say — log a corrective movement record
-                // so the audit trail matches the actual inventory (inventory is source of truth here,
-                // since propagateStockToPos and mass updates set inventory without logging)
-                $conn->prepare("
-                    INSERT INTO stock_movements
-                    (variation_id, store_id, type, quantity, previous_stock, new_stock,
-                     reference, remarks, created_by, created_at)
-                    VALUES (?, 1, 'adjustment', ?, ?, ?, 'SYS-RECONCILE',
-                            'System reconcile: unlogged inventory change (Shopee sync or mass update)', 1, NOW())
-                ")->execute([$varId, $diff, $movSays, $actual]);
-                logLine("  [OVER]  var #{$varId}: logged +{$diff} corrective movement ({$movSays}→{$actual})");
-            }
-
+            logLine("  {$arrow} var #{$varId}: {$actual} → {$movSays} (diff was " . ($diff > 0 ? '+' : '') . "{$diff})");
             $totalChanges++;
         }
-
         $conn->commit();
-        logLine("\nFix 3 complete: reconciled " . count($allDiscrepancies) . " products ✓");
+        logLine("\nFix 3 complete: corrected " . count($allDiscrepancies) . " products ✓");
     }
 
 } catch (Exception $e) {
-    if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
+    if ($conn->inTransaction()) $conn->rollBack();
     logLine("Fix 3 ERROR: " . $e->getMessage(), 'err');
     $errors[] = "Fix 3: " . $e->getMessage();
 }
