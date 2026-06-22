@@ -248,7 +248,7 @@ try {
         
         foreach ($movements as $m) {
             $storeId = (int)$m['store_id'];
-            $prev = (float)($m['previous_stock'] ?? 0);
+            $prev = max(0.0, (float)($m['previous_stock'] ?? 0));
             if ($storeId === 1 && !$hasS1) {
                 $s1 = $prev;
                 $hasS1 = true;
@@ -309,6 +309,9 @@ try {
             }
         }
         
+        $s1 = max(0.0, $s1);
+        $s2 = max(0.0, $s2);
+        $s3 = max(0.0, $s3);
         $finalBalances[$varId] = ['s1' => $s1, 's2' => $s2, 's3' => $s3];
     }
     
@@ -354,7 +357,7 @@ try {
         $movements = $movQuery->fetchAll(PDO::FETCH_ASSOC);
         if (empty($movements)) continue;
 
-        $runningBalance = (float)$movements[0]['previous_stock'];
+        $runningBalance = max(0.0, (float)$movements[0]['previous_stock']);
         
         foreach ($movements as $m) {
             $movId = $m['movement_id'];
