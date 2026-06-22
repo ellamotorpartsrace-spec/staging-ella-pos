@@ -53,7 +53,7 @@ if (!function_exists('propagateStockToPos')) {
             }
             
             $stmtSum = $conn->prepare("
-                SELECT COALESCE(MAX(m.lazada_stock * COALESCE(u.multiplier, 1)), 0) 
+                SELECT COALESCE(SUM(m.lazada_stock * COALESCE(u.multiplier, 1)), 0) 
                 FROM lazada_product_mappings m
                 LEFT JOIN product_units u ON m.pos_unit_id = u.id
                 WHERE (m.pos_product_id = ? OR (m.matched_pos_sku = ? AND m.matched_pos_sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null')))

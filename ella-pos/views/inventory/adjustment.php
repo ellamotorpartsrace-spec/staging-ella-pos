@@ -27,7 +27,7 @@ if (!empty($search)) {
                p.product_name, p.brand_name, p.image_path,
                COALESCE(inv.total_qty, 0) as current_stock,
                (
-                   SELECT COALESCE(MAX(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+                   SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
                    FROM shopee_product_mappings m
                    LEFT JOIN product_units u ON m.pos_unit_id = u.id
                    WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
@@ -54,7 +54,7 @@ if (isset($_GET['id'])) {
         SELECT v.*, p.product_name, p.brand_name, p.image_path,
                COALESCE(inv.total_qty, 0) as current_stock,
                (
-                   SELECT COALESCE(MAX(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+                   SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
                    FROM shopee_product_mappings m
                    LEFT JOIN product_units u ON m.pos_unit_id = u.id
                    WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')

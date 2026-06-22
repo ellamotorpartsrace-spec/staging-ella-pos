@@ -13,7 +13,7 @@ $stmt = $conn->query("
         COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0) as total_stock,
         COALESCE(i_lazada.quantity, 0) as lazada_allocated,
         (
-            SELECT COALESCE(MAX(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
             FROM shopee_product_mappings m
             LEFT JOIN product_units u ON m.pos_unit_id = u.id
             WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
