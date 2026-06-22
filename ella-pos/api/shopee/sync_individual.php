@@ -88,7 +88,7 @@ try {
             $posSku = trim((string)$skuStmt->fetchColumn());
         }
         $sumStmt = $conn->prepare("
-            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
+            SELECT COALESCE(MAX(m.shopee_stock * COALESCE(u.multiplier, 1)), 0) 
             FROM shopee_product_mappings m
             LEFT JOIN product_units u ON m.pos_unit_id = u.id
             WHERE (m.pos_product_id = ? OR (m.matched_pos_sku = ? AND m.matched_pos_sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null')))

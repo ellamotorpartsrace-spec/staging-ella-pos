@@ -1014,3 +1014,31 @@ Start index.php
 After sidebar.php: 61.31ms
 After sqlStats: 138.93ms
 After sqlProducts: 197.91ms
+Start index.php
+After sidebar.php: 59.96ms
+After sqlStats: 166.56ms
+After sqlProducts: 244.36ms
+Start index.php
+After sidebar.php: 62.62ms
+After sqlStats: 133.5ms
+After sqlProducts: 203.16ms
+Start index.php
+After sidebar.php: 56.07ms
+After sqlStats: 80.13ms
+After sqlProducts: 106.26ms
+Start index.php
+After sidebar.php: 42.56ms
+After sqlStats: 68.74ms
+After sqlProducts: 93.36ms
+Start index.php
+After sidebar.php: 50.93ms
+After sqlStats: 145.03ms
+After sqlProducts: 216.99ms
+Start index.php
+After sidebar.php: 48.71ms
+After sqlStats: 133.48ms
+After sqlProducts: 200.52ms
+Start index.php
+After sidebar.php: 48.69ms
+After sqlStats: 120.45ms
+After sqlProducts: 187.52ms

@@ -31,7 +31,7 @@ $sql = "
         v.price_capital, v.price_retail, v.price_wholesale, v.price_dealer, v.low_stock_threshold, v.status,
         COALESCE(inv.total_qty, 0) as current_stock,
         (
-            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
+            SELECT COALESCE(MAX(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
             FROM shopee_product_mappings m
             LEFT JOIN product_units u ON m.pos_unit_id = u.id
             WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')

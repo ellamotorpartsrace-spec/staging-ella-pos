@@ -109,7 +109,7 @@ function assertPhysicalStockAvailable(PDO $conn, array $requirements, array $lab
                 (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE variation_id = :vid1)
                 - 
                 COALESCE(
-                    (SELECT SUM(m.shopee_stock * COALESCE(u.multiplier, 1))
+                    (SELECT MAX(m.shopee_stock * COALESCE(u.multiplier, 1))
                      FROM shopee_product_mappings m
                      LEFT JOIN product_units u ON m.pos_unit_id = u.id
                      WHERE m.mapping_status IN ('auto','manual')

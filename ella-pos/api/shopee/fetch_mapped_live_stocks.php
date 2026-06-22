@@ -131,7 +131,7 @@ try {
                     LEFT JOIN (
                         SELECT
                             m.pos_product_id,
-                            SUM(m.shopee_stock * COALESCE(u.multiplier, 1)) AS reserved_base_qty
+                            MAX(m.shopee_stock * COALESCE(u.multiplier, 1)) AS reserved_base_qty
                         FROM shopee_product_mappings m
                         LEFT JOIN product_units u ON u.id = m.pos_unit_id
                         WHERE m.mapping_status IN ('auto','manual')
@@ -147,7 +147,7 @@ try {
                 $otherBundleReserveStmt = $conn->prepare("
                     SELECT
                         si.component_variation_id,
-                        SUM(m.shopee_stock * si.component_qty * COALESCE(cu.multiplier, 1)) AS reserved_base_qty
+                        MAX(m.shopee_stock * si.component_qty * COALESCE(cu.multiplier, 1)) AS reserved_base_qty
                     FROM shopee_product_mappings m
                     INNER JOIN product_unit_set_items si ON si.product_set_id = m.pos_bundle_set_id
                     LEFT JOIN product_units cu ON cu.id = si.component_unit_id

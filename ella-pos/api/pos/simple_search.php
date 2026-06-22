@@ -169,7 +169,7 @@ try {
     // Calculate Shopee deductions ONLY for the returned top 50 rows (Highly Optimized)
     if (!empty($rows)) {
         $deductSql = "
-            SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0)
+            SELECT COALESCE(MAX(m.shopee_stock * COALESCE(u_inner.multiplier, 1)), 0)
             FROM shopee_product_mappings m
             LEFT JOIN product_units u_inner ON m.pos_unit_id = u_inner.id
             WHERE m.mapping_status IN ('auto','manual')
