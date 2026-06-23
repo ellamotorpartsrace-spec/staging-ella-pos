@@ -39,4 +39,16 @@ try {
     echo "\n\nINVENTORY TABLE FOR 6192:\n";
     print_r($stmt3->fetchAll(PDO::FETCH_ASSOC));
 
+    require_once 'api/inventory/sync_inventory.php';
+    // buildSyncReport is now loaded
+    // we want to run buildSyncReport and find the row for 6192
+    echo "\n\nSYNC INVENTORY REPORT FOR 6192:\n";
+    $report = buildSyncReport($conn);
+    foreach ($report['rows'] as $r) {
+        if ($r['variation_id'] == 6192) {
+            print_r($r);
+            break;
+        }
+    }
+
 } catch(Exception $e) { echo "ERROR: " . $e->getMessage(); }
