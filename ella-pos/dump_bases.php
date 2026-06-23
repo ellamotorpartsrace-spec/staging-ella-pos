@@ -32,4 +32,11 @@ try {
     echo "\n\nLATEST 5 ROWS FOR 6192 IN STORE 1:\n";
     print_r($stmt2->fetchAll(PDO::FETCH_ASSOC));
 
+    $stmt3 = $conn->query("
+        SELECT * FROM inventory 
+        WHERE variation_id = 6192
+    ");
+    echo "\n\nINVENTORY TABLE FOR 6192:\n";
+    print_r($stmt3->fetchAll(PDO::FETCH_ASSOC));
+
 } catch(Exception $e) { echo "ERROR: " . $e->getMessage(); }
