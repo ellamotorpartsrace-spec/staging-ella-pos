@@ -464,8 +464,8 @@ function handleRestore(PDO $conn): void
             $conn->prepare("
                 UPDATE shopee_product_mappings m
                 INNER JOIN inventory_snapshot_items si
-                    ON si.variation_id = m.pos_product_id
-                   AND si.snapshot_id  = ?
+                    ON si.snapshot_id  = ?
+                   AND (si.variation_id = m.pos_product_id OR (si.sku != '' AND m.matched_pos_sku = si.sku COLLATE utf8mb4_unicode_ci))
                 LEFT JOIN product_units u ON m.pos_unit_id = u.id
                 SET m.shopee_stock  = FLOOR((si.total_stock / COALESCE(u.multiplier, 1)) * (m.stock_allocation_ratio / 100.0)),
                     m.updated_at   = NOW()
@@ -484,8 +484,10 @@ function handleRestore(PDO $conn): void
                 INSERT INTO shopee_sync_queue (mapping_id, pos_product_id, shopee_item_id, shopee_model_id, target_stock, status)
                 SELECT m.id, m.pos_product_id, m.shopee_item_id, m.shopee_model_id, GREATEST(0, CAST(m.shopee_stock AS SIGNED) - ?), 'pending'
                 FROM shopee_product_mappings m
-                INNER JOIN inventory_snapshot_items si ON si.variation_id = m.pos_product_id
-                WHERE si.snapshot_id = ? AND m.mapping_status IN ('auto', 'manual')
+                INNER JOIN inventory_snapshot_items si 
+                    ON si.snapshot_id = ? 
+                   AND (si.variation_id = m.pos_product_id OR (si.sku != '' AND m.matched_pos_sku = si.sku COLLATE utf8mb4_unicode_ci))
+                WHERE m.mapping_status IN ('auto', 'manual')
             ");
             $queueStmt->execute([$bufferStock, $snapshotId]);
             $pushedCount = $queueStmt->rowCount();
