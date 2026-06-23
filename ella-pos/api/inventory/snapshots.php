@@ -474,44 +474,21 @@ function handleRestore(PDO $conn): void
 
         // ── Step D2: Shopee Push (If enabled) ──────────────────────────────
         $pushedCount = 0;
+        $shopeeQueued = false;
         if ($shopeeSync && $restoreShopee) {
             $shopeeCfg = $conn->query("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-            if ($shopeeCfg && !empty($shopeeCfg['access_token'])) {
-                require_once __DIR__ . '/../../classes/ShopeeAPI.php';
-                $isTest = $shopeeCfg['environment'] === 'test';
-                $api = new ShopeeAPI($shopeeCfg['partner_id'], $shopeeCfg['partner_key'], $isTest);
+            $bufferStock = (int)($shopeeCfg['buffer_stock'] ?? 0);
 
-                $mapStmt = $conn->prepare("
-                    SELECT m.id, m.shopee_item_id, m.shopee_model_id, m.shopee_stock, m.shopee_product_name, m.shopee_variation_name
-                    FROM shopee_product_mappings m
-                    INNER JOIN inventory_snapshot_items si ON si.variation_id = m.pos_product_id
-                    WHERE si.snapshot_id = ? AND m.mapping_status IN ('auto', 'manual')
-                ");
-                $mapStmt->execute([$snapshotId]);
-                $maps = $mapStmt->fetchAll(PDO::FETCH_ASSOC);
-
-                $bufferStock = (int)($shopeeCfg['buffer_stock'] ?? 0);
-
-                foreach ($maps as $map) {
-                    $pushedStock = max(0, (int)$map['shopee_stock'] - $bufferStock);
-                    $stockItem = [ 'seller_stock' => [ [ 'stock' => $pushedStock ] ] ];
-                    if (!empty($map['shopee_model_id'])) {
-                        $stockItem['model_id'] = (int)$map['shopee_model_id'];
-                    }
-
-                    $body = [
-                        'item_id' => (int)$map['shopee_item_id'],
-                        'stock_list' => [$stockItem]
-                    ];
-
-                    try {
-                        $api->post('/api/v2/product/update_stock', $body, $shopeeCfg['access_token'], $shopeeCfg['shop_id']);
-                        $pushedCount++;
-                    } catch (Exception $e) {
-                        // Silently skip failed pushes during bulk restore to avoid breaking the transaction
-                    }
-                }
-            }
+            $queueStmt = $conn->prepare("
+                INSERT INTO shopee_sync_queue (mapping_id, pos_product_id, shopee_item_id, shopee_model_id, target_stock, status)
+                SELECT m.id, m.pos_product_id, m.shopee_item_id, m.shopee_model_id, GREATEST(0, CAST(m.shopee_stock AS SIGNED) - ?), 'pending'
+                FROM shopee_product_mappings m
+                INNER JOIN inventory_snapshot_items si ON si.variation_id = m.pos_product_id
+                WHERE si.snapshot_id = ? AND m.mapping_status IN ('auto', 'manual')
+            ");
+            $queueStmt->execute([$bufferStock, $snapshotId]);
+            $pushedCount = $queueStmt->rowCount();
+            $shopeeQueued = true;
         }
 
         // ── Step E: Audit log ───────────────────────────────────────────────
@@ -532,12 +509,18 @@ function handleRestore(PDO $conn): void
 
         $conn->commit();
 
+        $msg = "Restored \"{$snapshot['snapshot_name']}\" — {$affected} products.";
+        if ($shopeeQueued && $pushedCount > 0) {
+            $msg .= " {$pushedCount} items queued for background Shopee sync.";
+        }
+
         echo json_encode([
             'success'               => true,
-            'message'               => "Restored \"{$snapshot['snapshot_name']}\" — {$affected} products.",
+            'message'               => $msg,
             'products_restored'     => $affected,
             'qty_restored'          => $affectedQty,
             'pushed_to_shopee'      => $pushedCount,
+            'shopee_queued'         => $shopeeQueued,
             'pre_restore_snap_id'   => $preRestoreId,
             'pre_restore_snap_name' => $preRestoreName,
         ]);
