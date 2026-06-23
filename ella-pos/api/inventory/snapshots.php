@@ -466,7 +466,8 @@ function handleRestore(PDO $conn): void
                 INNER JOIN inventory_snapshot_items si
                     ON si.variation_id = m.pos_product_id
                    AND si.snapshot_id  = ?
-                SET m.shopee_stock  = si.shopee_allocated,
+                LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                SET m.shopee_stock  = FLOOR((si.total_stock / COALESCE(u.multiplier, 1)) * (m.stock_allocation_ratio / 100.0)),
                     m.updated_at   = NOW()
                 WHERE m.mapping_status IN ('mapped','auto','manual')
             ")->execute([$snapshotId]);
