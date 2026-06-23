@@ -111,9 +111,8 @@ function fetchCurrentInventory(PDO $conn): array
     return $inventory;
 }
 
-function fetchBaseStock(PDO $conn, array $stockChangingTypes, bool $hasStatusColumn): array
+function fetchBaseStock(PDO $conn, bool $hasStatusColumn): array
 {
-    $placeholders = implode(',', array_fill(0, count($stockChangingTypes), '?'));
     $statusSql = $hasStatusColumn ? "AND COALESCE(sm.status, '') <> 'voided'" : '';
 
     $stmt = $conn->prepare("
@@ -122,11 +121,11 @@ function fetchBaseStock(PDO $conn, array $stockChangingTypes, bool $hasStatusCol
             COALESCE(SUM(sm.new_stock - sm.previous_stock), 0) AS base_stock
         FROM stock_movements sm
         INNER JOIN product_variations v ON v.variation_id = sm.variation_id
-        WHERE sm.type IN ($placeholders)
+        WHERE sm.store_id = 1
           $statusSql
         GROUP BY sm.variation_id
     ");
-    $stmt->execute($stockChangingTypes);
+    $stmt->execute();
 
     $baseStock = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -214,7 +213,7 @@ function fetchShopeeAllocation(PDO $conn, bool $hasBundleColumn, array &$warning
     return ['allocation' => $allocation, 'activeMapped' => $activeMapped, 'bundleRows' => $bundleRows];
 }
 
-function buildSyncReport(PDO $conn, array $stockChangingTypes): array
+function buildSyncReport(PDO $conn): array
 {
     $warnings = [];
     $hasStatusColumn = columnExists($conn, 'stock_movements', 'status');
@@ -226,7 +225,7 @@ function buildSyncReport(PDO $conn, array $stockChangingTypes): array
 
     $labels = fetchProductLabels($conn);
     $inventory = fetchCurrentInventory($conn);
-    $baseStock = fetchBaseStock($conn, $stockChangingTypes, $hasStatusColumn);
+    $baseStock = fetchBaseStock($conn, $hasStatusColumn);
     $shopee = fetchShopeeAllocation($conn, $hasBundleColumn, $warnings);
     $allocation = $shopee['allocation'];
     $activeMapped = $shopee['activeMapped'];
@@ -251,16 +250,13 @@ function buildSyncReport(PDO $conn, array $stockChangingTypes): array
         'negative_base_floors' => 0,
         'active_mapped_variations' => count($activeMapped),
         'bundle_component_rows' => (int)$shopee['bundleRows'],
-    ];
-
     foreach ($variationIds as $variationId) {
         $variationId = (int)$variationId;
         $rawBaseStock = (int)($baseStock[$variationId] ?? 0);
-        $baseWasNegative = $rawBaseStock < 0;
-        $targetTotalStock = max(0, $rawBaseStock);
+        $targetPhysicalStock = max(0, $rawBaseStock);
         $rawShopeeAllocation = max(0, (int)($allocation[$variationId] ?? 0));
-        $targetOnlineStock = min($targetTotalStock, $rawShopeeAllocation);
-        $targetPhysicalStock = max(0, $targetTotalStock - $targetOnlineStock);
+        $targetOnlineStock = $rawShopeeAllocation;
+        $targetTotalStock = $targetPhysicalStock + $targetOnlineStock;
 
         $currentPhysicalStock = $inventory[$variationId][1] ?? null;
         $currentOnlineStock = $inventory[$variationId][2] ?? null;
