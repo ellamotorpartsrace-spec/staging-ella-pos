@@ -392,7 +392,7 @@ try {
                     $stmtMove->execute([
                         $var_id,
                         $movement_type,
-                        abs($stock_diff),
+                        $stock_diff,
                         $currentStock,
                         $new_stock,
                         'MASS-UPDATE-' . date('YmdHis'),

@@ -402,6 +402,45 @@ function handleRestore(PDO $conn): void
 
         // ── Step B: Restore Physical POS stock (store_id = 1) ─────────────
         if ($restorePos) {
+            // Log stock movements for changed items before updating inventory
+            $diffStmt = $conn->prepare("
+                SELECT si.variation_id, 
+                       (si.total_stock - si.shopee_allocated) as snapshot_qty,
+                       COALESCE(i.quantity, 0) as current_qty,
+                       COALESCE(pv.price_capital, 0) as price_capital
+                FROM inventory_snapshot_items si
+                LEFT JOIN inventory i ON si.variation_id = i.variation_id AND i.store_id = 1
+                LEFT JOIN product_variations pv ON si.variation_id = pv.variation_id
+                WHERE si.snapshot_id = ?
+                HAVING snapshot_qty != current_qty
+            ");
+            $diffStmt->execute([$snapshotId]);
+            $diffs = $diffStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!empty($diffs)) {
+                $moveStmt = $conn->prepare("
+                    INSERT INTO stock_movements 
+                    (variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, store_id, capital_cost) 
+                    VALUES (?, 'adjustment', ?, ?, ?, ?, ?, ?, 1, ?)
+                ");
+                $ref = 'RESTORE-' . $snapshotId;
+                $rem = 'System Restore from Snapshot: ' . $snapshot['snapshot_name'];
+                foreach ($diffs as $d) {
+                    $qtyChange = $d['snapshot_qty'] - $d['current_qty'];
+                    $moveStmt->execute([
+                        $d['variation_id'],
+                        $qtyChange,
+                        $d['current_qty'],
+                        $d['snapshot_qty'],
+                        $ref,
+                        $rem,
+                        $currentUserId,
+                        $d['price_capital']
+                    ]);
+                }
+            }
+
+            // Apply stock updates
             $conn->prepare("
                 INSERT INTO inventory (variation_id, store_id, quantity)
                 SELECT variation_id, 1, (total_stock - shopee_allocated)
