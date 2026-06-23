@@ -113,7 +113,7 @@ function fetchCurrentInventory(PDO $conn): array
 
 function fetchBaseStock(PDO $conn, bool $hasStatusColumn): array
 {
-    $statusSql = $hasStatusColumn ? "AND COALESCE(status, '') <> 'voided'" : '';
+    $statusSql = $hasStatusColumn ? "AND COALESCE(sm.status, '') <> 'voided'" : '';
 
     $stmt = $conn->prepare("
         SELECT 
