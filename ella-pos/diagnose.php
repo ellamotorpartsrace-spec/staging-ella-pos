@@ -43,7 +43,7 @@ $stmt = $conn->query("
 $out['last_valid'] = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // 4. Mappings
-$stmt = $conn->query("SELECT id, shopee_item_id, shopee_stock, mapping_status, pos_product_id, matched_pos_sku, stock_allocation_ratio FROM shopee_product_mappings WHERE pos_product_id = $varId OR matched_pos_sku = (SELECT sku FROM product_variations WHERE variation_id = $varId)");
+$stmt = $conn->query("SELECT id, shopee_item_id, shopee_stock, mapping_status, pos_product_id, matched_pos_sku, stock_allocation_ratio FROM shopee_product_mappings WHERE pos_product_id = $varId OR matched_pos_sku = (SELECT sku FROM product_variations WHERE variation_id = $varId LIMIT 1) COLLATE utf8mb4_unicode_ci");
 $out['mappings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 5. Inventory
