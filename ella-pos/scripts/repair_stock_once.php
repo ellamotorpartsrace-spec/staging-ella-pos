@@ -68,17 +68,13 @@ foreach ($batches as $batch) {
         foreach ($batch as $varId) {
             $varId = (int)$varId;
 
-            // Find last valid movement before today's bad restores
+            // Find last valid movement before today's nightmare started (True Time-Travel to yesterday's closing balance)
             $lastValidStmt = $conn->prepare("
                 SELECT new_stock, created_at
                 FROM stock_movements
                 WHERE variation_id = ?
                   AND store_id = 1
-                  AND NOT (
-                        type = 'adjustment'
-                        AND DATE(created_at) = DATE(NOW())
-                        AND (remarks LIKE 'System Restore%' OR remarks LIKE 'Stock Repair%')
-                      )
+                  AND created_at < CURDATE()
                 ORDER BY created_at DESC
                 LIMIT 1
             ");
