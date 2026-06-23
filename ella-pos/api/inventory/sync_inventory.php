@@ -113,23 +113,29 @@ function fetchCurrentInventory(PDO $conn): array
 
 function fetchBaseStock(PDO $conn, bool $hasStatusColumn): array
 {
-    $statusSql = $hasStatusColumn ? "AND COALESCE(sm.status, '') <> 'voided'" : '';
+    $statusSql = $hasStatusColumn ? "AND COALESCE(status, '') <> 'voided'" : '';
 
     $stmt = $conn->prepare("
-        SELECT
-            sm.variation_id,
-            COALESCE(SUM(sm.new_stock - sm.previous_stock), 0) AS base_stock
-        FROM stock_movements sm
-        INNER JOIN product_variations v ON v.variation_id = sm.variation_id
-        WHERE sm.store_id = 1
-          $statusSql
-        GROUP BY sm.variation_id
+        SELECT 
+            v.variation_id,
+            (
+                SELECT new_stock 
+                FROM stock_movements sm 
+                WHERE sm.variation_id = v.variation_id 
+                  AND sm.store_id = 1 
+                  $statusSql
+                ORDER BY created_at DESC, movement_id DESC 
+                LIMIT 1
+            ) AS base_stock
+        FROM product_variations v
     ");
     $stmt->execute();
 
     $baseStock = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $baseStock[(int)$row['variation_id']] = (int)$row['base_stock'];
+        if ($row['base_stock'] !== null) {
+            $baseStock[(int)$row['variation_id']] = (int)$row['base_stock'];
+        }
     }
 
     return $baseStock;
