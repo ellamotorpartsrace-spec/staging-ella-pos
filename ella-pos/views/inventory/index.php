@@ -83,7 +83,8 @@ $sqlStats = "
     SELECT 
         COUNT(*) as total_items,
         SUM(v.price_capital * (COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0))) as total_asset_value,
-        SUM(CASE WHEN COALESCE(i_phys.quantity, 0) <= v.low_stock_threshold THEN 1 ELSE 0 END) as low_stock_count
+        SUM(CASE WHEN COALESCE(i_phys.quantity, 0) <= v.low_stock_threshold THEN 1 ELSE 0 END) as low_stock_count,
+        SUM(COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0)) as total_stock_sum
     " . $baseSql;
 
 $stmtStats = $conn->prepare($sqlStats);
@@ -94,6 +95,7 @@ file_put_contents('load_profile.log', "After sqlStats: " . round((microtime(true
 $total_items = $stats['total_items'] ?? 0;
 $total_asset_value = $stats['total_asset_value'] ?? 0;
 $low_stock_count = $stats['low_stock_count'] ?? 0;
+$total_stock_sum = $stats['total_stock_sum'] ?? 0;
 $total_pages = ceil($total_items / $limit);
 
 // 2. Fetch Paginated Data
@@ -301,24 +303,32 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
 <div class="container-fluid p-4">
 
     <div class="row g-3 mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card shadow-sm border-start border-4 border-primary h-100">
                 <div class="card-body">
                     <div class="text-secondary small text-uppercase fw-bold">Total Products</div>
-                    <div class="h3 mb-0 fw-bold" style="color: var(--text-primary);"><?= number_format($total_items) ?>
-                    </div>
+                    <div class="h3 mb-0 fw-bold" id="card-total-products" style="color: var(--text-primary);"><?= number_format($total_items) ?></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm border-start border-4 border-info h-100">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase fw-bold">Total Stock Quantity</div>
+                    <div class="h3 mb-0 fw-bold" id="card-total-stock" style="color: var(--text-primary);"><?= number_format($total_stock_sum) ?></div>
                 </div>
             </div>
         </div>
 
         <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'])): ?>
-            <div class="col-md-4 capital-col">
+            <div class="col-md-3 capital-col">
                 <div class="card shadow-sm border-start border-4 border-success h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start gap-2">
                             <div>
                                 <div class="text-secondary small text-uppercase fw-bold">Total Stock Value (Cost)</div>
-                                <div class="h3 mb-0 fw-bold" style="color: var(--text-primary);">
+                                <div class="h3 mb-0 fw-bold" id="card-total-value" style="color: var(--text-primary);">
                                     &#8369;<?= number_format($total_asset_value, 2) ?></div>
                             </div>
                             <button type="button" class="btn btn-outline-secondary btn-sm capital-copy-btn"
@@ -332,7 +342,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
             </div>
         <?php endif; ?>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <a href="index.php?filter=low_stock" class="text-decoration-none">
                 <div
                     class="card shadow-sm border-start border-4 border-danger h-100 <?= $filter === 'low_stock' ? 'bg-danger-subtle' : '' ?> transition-hover">
@@ -340,7 +350,7 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="text-secondary small text-uppercase fw-bold">Low Stock Items</div>
-                                <div class="h3 mb-0 text-danger fw-bold"><?= number_format($low_stock_count) ?></div>
+                                <div class="h3 mb-0 text-danger fw-bold" id="card-low-stock"><?= number_format($low_stock_count) ?></div>
                             </div>
                             <i class="fa-solid fa-triangle-exclamation fa-2x text-danger opacity-25"></i>
                         </div>
@@ -936,9 +946,26 @@ file_put_contents('load_profile.log', "After sqlProducts: " . round((microtime(t
             this.isFetching = false;
             const products = data.products || [];
             const pagination = data.pagination || {};
+            const stats = data.stats || {};
             
             this.hasMore = this.currentPage < (pagination.total_pages || 1);
             
+            // Only update cards if we are not appending (new search)
+            if (!isAppending) {
+                if (document.getElementById('card-total-products')) {
+                    document.getElementById('card-total-products').innerHTML = new Intl.NumberFormat('en-US').format(pagination.total_items || 0);
+                }
+                if (document.getElementById('card-total-stock')) {
+                    document.getElementById('card-total-stock').innerHTML = new Intl.NumberFormat('en-US').format(stats.total_stock_sum || 0);
+                }
+                if (document.getElementById('card-total-value')) {
+                    document.getElementById('card-total-value').innerHTML = '&#8369;' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(stats.total_asset_value || 0);
+                }
+                if (document.getElementById('card-low-stock')) {
+                    document.getElementById('card-low-stock').innerHTML = new Intl.NumberFormat('en-US').format(stats.low_stock_count || 0);
+                }
+            }
+
             this.renderResults(products, isAppending);
             this.updatePagination(pagination);
         },

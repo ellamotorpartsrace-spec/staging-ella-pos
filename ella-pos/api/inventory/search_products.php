@@ -95,8 +95,14 @@ try {
         $params[':category'] = $category;
     }
 
-    // 1. Get Total Count (for pagination)
-    $countSql = "SELECT COUNT(*) as total_items " . $baseSql;
+    // 1. Get Total Count (for pagination) and stats
+    $countSql = "
+        SELECT 
+            COUNT(*) as total_items,
+            SUM(v.price_capital * (COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0))) as total_asset_value,
+            SUM(CASE WHEN COALESCE(i_phys.quantity, 0) <= v.low_stock_threshold THEN 1 ELSE 0 END) as low_stock_count,
+            SUM(COALESCE(i_phys.quantity, 0) + COALESCE(i_shopee.quantity, 0) + COALESCE(i_lazada.quantity, 0)) as total_stock_sum
+        " . $baseSql;
     // We need to bind params twice, so let's just re-use $params
     $stmtCount = $conn->prepare($countSql);
     foreach ($params as $key => $val) {
@@ -104,7 +110,8 @@ try {
     }
     $stmtCount->bindValue(':status', $status);
     $stmtCount->execute();
-    $totalItems = $stmtCount->fetch(PDO::FETCH_ASSOC)['total_items'];
+    $statsResult = $stmtCount->fetch(PDO::FETCH_ASSOC);
+    $totalItems = $statsResult['total_items'] ?? 0;
     $totalPages = ceil($totalItems / $limit);
 
     $relevanceSelect = "";
@@ -237,6 +244,11 @@ try {
     echo json_encode([
         'success' => true,
         'products' => $results,
+        'stats' => [
+            'total_asset_value' => $statsResult['total_asset_value'] ?? 0,
+            'low_stock_count' => $statsResult['low_stock_count'] ?? 0,
+            'total_stock_sum' => $statsResult['total_stock_sum'] ?? 0
+        ],
         'pagination' => [
             'current_page' => $page,
             'total_pages' => $totalPages,
