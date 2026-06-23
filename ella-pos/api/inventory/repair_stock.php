@@ -21,7 +21,11 @@ require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
 requireLogin();
-if (!isSuperAdmin()) { die('Unauthorized'); }
+$role = $_SESSION['role'] ?? '';
+if (!in_array($role, ['admin', 'super_admin'])) {
+    http_response_code(403);
+    die('Unauthorized — Admin only.');
+}
 
 $db = new Database();
 $conn = $db->getConnection();
