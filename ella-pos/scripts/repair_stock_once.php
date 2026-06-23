@@ -68,7 +68,7 @@ foreach ($batches as $batch) {
                         AND DATE(created_at) = DATE(NOW())
                         AND (remarks LIKE 'System Restore%' OR remarks LIKE 'Stock Repair%')
                       )
-                ORDER BY created_at DESC, id DESC
+                ORDER BY created_at DESC
                 LIMIT 1
             ");
             $lastValidStmt->execute([$varId]);
