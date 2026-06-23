@@ -131,6 +131,7 @@ foreach ($batches as $batch) {
                 ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
             ")->execute([$varId, $correctShopee]);
 
+            // Fix shopee_product_mappings by pos_product_id
             $conn->prepare("
                 UPDATE shopee_product_mappings m
                 LEFT JOIN product_units u ON m.pos_unit_id = u.id
@@ -141,6 +142,49 @@ foreach ($batches as $batch) {
                   AND m.mapping_status IN ('auto','manual')
                   AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
             ")->execute([$correctTotal, $varId]);
+
+            // ALSO fix mappings matched via SKU (matched_pos_sku) 
+            $skuStmt = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
+            $skuStmt->execute([$varId]);
+            $sku = $skuStmt->fetchColumn();
+            if (!empty($sku) && !in_array($sku, ['', '-', 'N/A', 'NA', 'none', 'null'])) {
+                $conn->prepare("
+                    UPDATE shopee_product_mappings m
+                    LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                    SET m.shopee_stock = FLOOR(
+                        (? / COALESCE(u.multiplier, 1)) * (m.stock_allocation_ratio / 100.0)
+                    ), m.updated_at = NOW()
+                    WHERE m.matched_pos_sku = ? COLLATE utf8mb4_unicode_ci
+                      AND m.mapping_status IN ('auto','manual')
+                      AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+                ")->execute([$correctTotal, $sku]);
+
+                // Queue the corrected stock for each mapping so Shopee gets updated too
+                // This prevents auto_sync from reading back the old inflated value
+                $mapStmt = $conn->prepare("
+                    SELECT m.shopee_item_id, m.shopee_model_id,
+                           FLOOR((? / COALESCE(u.multiplier, 1)) * (m.stock_allocation_ratio / 100.0)) as new_shopee_stock
+                    FROM shopee_product_mappings m
+                    LEFT JOIN product_units u ON m.pos_unit_id = u.id
+                    WHERE (m.pos_product_id = ? OR m.matched_pos_sku = ? COLLATE utf8mb4_unicode_ci)
+                      AND m.mapping_status IN ('auto','manual')
+                      AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+                ");
+                $mapStmt->execute([$correctTotal, $varId, $sku]);
+                $maps = $mapStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($maps as $map) {
+                    // Remove stale queue entries first
+                    $conn->prepare("DELETE FROM shopee_sync_queue WHERE shopee_item_id = ? AND shopee_model_id <=> ? AND status = 'pending'")
+                         ->execute([$map['shopee_item_id'], $map['shopee_model_id']]);
+                    // Queue the corrected stock
+                    $conn->prepare("
+                        INSERT INTO shopee_sync_queue (shopee_item_id, shopee_model_id, target_stock, status, created_at)
+                        VALUES (?, ?, ?, 'pending', NOW())
+                    ")->execute([$map['shopee_item_id'], $map['shopee_model_id'], max(0, (int)$map['new_shopee_stock'])]);
+                }
+            }
+
 
             // Audit log
             $capitalStmt = $conn->prepare("SELECT COALESCE(price_capital, 0) FROM product_variations WHERE variation_id = ?");
