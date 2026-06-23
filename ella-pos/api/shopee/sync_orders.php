@@ -244,6 +244,7 @@ try {
         }
 
         $variationsToUpdate = [];
+        $mappingsToUpdate = [];
 
         if (isset($order['item_list'])) {
             foreach ($order['item_list'] as $item) {
@@ -261,6 +262,11 @@ try {
                     $capitalCost = (float)($map['price_capital'] ?? 0.0);
 
                     if ($shouldDeduct || $shouldRestock) {
+                        if (!isset($mappingsToUpdate[$mapKey])) {
+                            $mappingsToUpdate[$mapKey] = 0;
+                        }
+                        $mappingsToUpdate[$mapKey] += $purchasedQty;
+
                         if (!empty($map['pos_bundle_set_id'])) {
                             $setId = $map['pos_bundle_set_id'];
                             if (isset($bundleDict[$setId])) {
@@ -322,6 +328,19 @@ try {
                 $moveStmt->execute([
                     $varId, $type, $absQty, $currentStock, $newStock, $ref, $remarks, $userId, $data['capital']
                 ]);
+            }
+        }
+
+        if (!empty($mappingsToUpdate)) {
+            $qtyMultiplier = $shouldDeduct ? -1 : 1;
+            $mappingUpdateStmt = $conn->prepare("UPDATE shopee_product_mappings SET shopee_stock = GREATEST(0, shopee_stock + ?) WHERE shopee_item_id = ? AND shopee_model_id = ?");
+            
+            foreach ($mappingsToUpdate as $mKey => $mQty) {
+                $qtyChange = $mQty * $qtyMultiplier;
+                $parts = explode('_', $mKey);
+                $mappingItemId = $parts[0];
+                $mappingModelId = $parts[1] ?? 0;
+                $mappingUpdateStmt->execute([$qtyChange, $mappingItemId, $mappingModelId]);
             }
         }
     }

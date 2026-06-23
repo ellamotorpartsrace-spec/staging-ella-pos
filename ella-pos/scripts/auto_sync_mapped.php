@@ -98,13 +98,13 @@ try {
                 $liveStock = (int)$liveData['stock'];
                 $livePrice = (float)$liveData['price'];
 
-                // Update shopee_stock with the live Shopee value.
-                // This reflects actual stock on Shopee (e.g., allocation was 50, buyer
-                // ordered 5, Shopee now reports 45 → shopee_stock becomes 45).
-                // We do NOT add reservedQty here — that was causing inflation (e.g., 97+704=801).
-                // We do NOT call propagateStockToPos — POS inventory only changes on user Save.
-                $updCache = $conn->prepare("UPDATE shopee_product_mappings SET shopee_stock = ?, shopee_price = ?, last_synced_at = NOW(), updated_at = NOW() WHERE id = ?");
-                $updCache->execute([$liveStock, $livePrice, $mapId]);
+                // We only update shopee_price and last_synced_at here.
+                // We MUST NOT update shopee_stock with the live value!
+                // shopee_stock represents the internal POS allocation. Overwriting it with
+                // live Shopee stock causes POS physical stock to incorrectly increase when an item is bought online.
+                // The sync_orders.php script will properly deduct sold items from shopee_stock.
+                $updCache = $conn->prepare("UPDATE shopee_product_mappings SET shopee_price = ?, last_synced_at = NOW(), updated_at = NOW() WHERE id = ?");
+                $updCache->execute([$livePrice, $mapId]);
 
                 // Create OOS alert if live stock just hit 0 and it wasn't 0 before
                 if ($liveStock == 0 && (int)$map['shopee_stock'] > 0 && isset($config['out_of_stock_alerts']) && (int)$config['out_of_stock_alerts'] === 1) {
