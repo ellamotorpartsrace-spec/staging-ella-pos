@@ -250,6 +250,8 @@ function buildSyncReport(PDO $conn): array
         'negative_base_floors' => 0,
         'active_mapped_variations' => count($activeMapped),
         'bundle_component_rows' => (int)$shopee['bundleRows'],
+    ];
+
     foreach ($variationIds as $variationId) {
         $variationId = (int)$variationId;
         $rawBaseStock = (int)($baseStock[$variationId] ?? 0);
