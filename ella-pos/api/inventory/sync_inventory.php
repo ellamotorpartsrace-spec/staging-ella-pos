@@ -155,7 +155,7 @@ function fetchShopeeAllocation(PDO $conn, bool $hasBundleColumn, array &$warning
     $stmt = $conn->query("
         SELECT
             m.pos_product_id AS variation_id,
-            COALESCE(MAX(GREATEST(m.shopee_stock, 0) * COALESCE(NULLIF(u.multiplier, 0), 1)), 0) AS allocated_stock,
+            COALESCE(SUM(GREATEST(m.shopee_stock, 0) * COALESCE(NULLIF(u.multiplier, 0), 1)), 0) AS allocated_stock,
             COUNT(*) AS mapping_count
         FROM shopee_product_mappings m
         LEFT JOIN product_units u ON u.id = m.pos_unit_id
@@ -178,7 +178,7 @@ function fetchShopeeAllocation(PDO $conn, bool $hasBundleColumn, array &$warning
             $bundleStmt = $conn->query("
                 SELECT
                     si.component_variation_id AS variation_id,
-                    COALESCE(MAX(
+                    COALESCE(SUM(
                         GREATEST(m.shopee_stock, 0)
                         * si.component_qty
                         * COALESCE(NULLIF(cu.multiplier, 0), 1)
