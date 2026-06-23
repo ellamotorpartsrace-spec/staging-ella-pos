@@ -1427,7 +1427,11 @@ document.getElementById('rsBtn4C').addEventListener('click',async()=>{
         logLine(log,'✓ Pre-Restore Backup created: '+(d.pre_restore_snap_name ? d.pre_restore_snap_name : '(Skipped: Undo Action)'),'ok');
         logLine(log,'✓ Stock restored — '+fmtN(d.products_restored)+' products / '+fmtN(d.qty_restored)+' items updated.','ok');
         if (payload.shopee_sync) {
-            logLine(log,'✓ Shopee Sync — '+fmtN(d.pushed_to_shopee)+' allocations pushed to Shopee API.','ok');
+            if (d.shopee_queued) {
+                logLine(log,'✓ Shopee Sync — '+fmtN(d.pushed_to_shopee)+' allocations queued for background sync.','ok');
+            } else {
+                logLine(log,'✓ Shopee Sync — '+fmtN(d.pushed_to_shopee)+' allocations pushed to Shopee API.','ok');
+            }
         }
         logLine(log,'✓ Audit log recorded.','ok');
         logLine(log,'✓ Restore complete!','ok');
