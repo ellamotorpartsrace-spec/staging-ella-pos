@@ -21,7 +21,7 @@ try {
 
     $fixed = 0;
     foreach ($variations as $varId) {
-        $lastStmt = $conn->prepare("SELECT new_stock FROM stock_movements WHERE variation_id = ? AND store_id = 1 ORDER BY created_at DESC LIMIT 1");
+        $lastStmt = $conn->prepare("SELECT new_stock FROM stock_movements WHERE variation_id = ? AND store_id = 1 ORDER BY created_at DESC, movement_id DESC LIMIT 1");
         $lastStmt->execute([$varId]);
         $last = $lastStmt->fetch(PDO::FETCH_ASSOC);
 
