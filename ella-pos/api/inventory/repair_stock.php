@@ -1,14 +1,14 @@
 <?php
 /**
- * api/inventory/repair_stock.php
+ * api/inventory/repair_stock.php — STOCK REPAIR SCRIPT v4
  *
- * STOCK REPAIR SCRIPT v3
+ * For every product that was touched by today's bad System Restore adjustments,
+ * this script finds the LAST REAL movement BEFORE the bad restores and
+ * sets the physical stock back to that correct balance.
  *
- * The physical stock (store_id=1) is now correct.
- * The problem: Shopee allocation (store_id=2) is inflated beyond the total stock.
+ * Then it recalculates the Shopee allocation using the saved stock_allocation_ratio.
  *
- * Fix: For EVERY mapped product, recalculate store_id=2 using stock_allocation_ratio.
- * Also update shopee_product_mappings.shopee_stock per-mapping.
+ * Safe: wrapped in a transaction. If anything fails, NOTHING changes.
  */
 
 header('Content-Type: text/plain');
@@ -24,47 +24,76 @@ if (!in_array($role, ['admin', 'super_admin'])) {
     die('Unauthorized — Admin only.');
 }
 
-$db = new Database();
+$db   = new Database();
 $conn = $db->getConnection();
 
-echo "=== STOCK REPAIR SCRIPT v3 ===\n";
+echo "=== STOCK REPAIR SCRIPT v4 ===\n";
 echo "Run at: " . date('Y-m-d H:i:s') . "\n";
-echo "Goal: Recalculate Shopee allocation for all mapped products using saved ratio\n\n";
+echo "Goal: Set each product's stock to its last REAL movement before today's bad restores.\n\n";
 
-// Get all distinct POS products that have Shopee mappings
-$mappedProdsStmt = $conn->query("
-    SELECT DISTINCT m.pos_product_id, COALESCE(i_phys.quantity, 0) as physical_qty
-    FROM shopee_product_mappings m
-    LEFT JOIN inventory i_phys ON i_phys.variation_id = m.pos_product_id AND i_phys.store_id = 1
-    WHERE m.pos_product_id IS NOT NULL
-      AND m.mapping_status IN ('auto', 'manual')
-      AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+// ── Step 1: Find all variation_ids that were touched by today's bad restores ──
+$affectedStmt = $conn->query("
+    SELECT DISTINCT variation_id
+    FROM stock_movements
+    WHERE store_id = 1
+      AND type = 'adjustment'
+      AND remarks LIKE 'System Restore%'
+      AND DATE(created_at) = '2026-06-23'
 ");
-$mappedProds = $mappedProdsStmt->fetchAll(PDO::FETCH_ASSOC);
+$affected = $affectedStmt->fetchAll(PDO::FETCH_COLUMN);
 
-echo "Found " . count($mappedProds) . " products with Shopee mappings to check.\n\n";
+echo "Found " . count($affected) . " products affected by today's bad restores.\n\n";
+
+if (empty($affected)) {
+    echo "Nothing to fix!\n";
+    exit;
+}
 
 $fixedCount   = 0;
 $skippedCount = 0;
-$errorCount   = 0;
+$ref = 'STOCK-REPAIR-' . date('Ymd-His');
 
 $conn->beginTransaction();
 
 try {
-    foreach ($mappedProds as $prod) {
-        $varId       = (int)$prod['pos_product_id'];
-        $physicalQty = (float)$prod['physical_qty'];
+    foreach ($affected as $varId) {
+        $varId = (int)$varId;
 
-        // Get the total stock (physical + current shopee) as the baseline
-        $currentShopeeStmt = $conn->prepare("SELECT COALESCE(quantity, 0) FROM inventory WHERE variation_id = ? AND store_id = 2");
-        $currentShopeeStmt->execute([$varId]);
-        $currentShopee = (float)$currentShopeeStmt->fetchColumn();
+        // ── Step 2: Find last valid physical movement BEFORE today's bad restores ──
+        // Exclude: System Restore adjustments from today AND any Stock Repair adjustments
+        $lastValidStmt = $conn->prepare("
+            SELECT new_stock, created_at, type, remarks
+            FROM stock_movements
+            WHERE variation_id = ?
+              AND store_id = 1
+              AND NOT (
+                    type = 'adjustment'
+                    AND DATE(created_at) = '2026-06-23'
+                    AND (remarks LIKE 'System Restore%' OR remarks LIKE 'Stock Repair%')
+                  )
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+        ");
+        $lastValidStmt->execute([$varId]);
+        $lastValid = $lastValidStmt->fetch(PDO::FETCH_ASSOC);
 
-        // Total stock = physical + shopee (this is the real total units for this product)
-        $totalStock = $physicalQty + $currentShopee;
+        if (!$lastValid) {
+            echo "Skipped #{$varId}: no valid movement history found.\n";
+            $skippedCount++;
+            continue;
+        }
 
-        // Recalculate correct shopee allocation from ratio
-        // Sum across all mappings for this product: FLOOR(total / multiplier * ratio / 100) * multiplier
+        $correctPhysical = max(0, (float)$lastValid['new_stock']);
+
+        // ── Step 3: Get current physical stock ────────────────────────────────
+        $curStmt = $conn->prepare("SELECT COALESCE(quantity, 0) FROM inventory WHERE variation_id = ? AND store_id = 1");
+        $curStmt->execute([$varId]);
+        $currentPhysical = (float)$curStmt->fetchColumn();
+
+        // ── Step 4: Recalculate Shopee allocation using ratio ──────────────────
+        // Total stock = the correct physical amount (since physical history tracks the real total)
+        $totalStock = $correctPhysical;
+
         $correctShopeeStmt = $conn->prepare("
             SELECT COALESCE(SUM(
                 FLOOR((? / COALESCE(u.multiplier, 1)) * (m.stock_allocation_ratio / 100.0))
@@ -79,35 +108,29 @@ try {
         $correctShopeeStmt->execute([$totalStock, $varId]);
         $correctShopee = (float)$correctShopeeStmt->fetchColumn();
 
-        // Correct physical = total - shopee
-        $correctPhysical = max(0, $totalStock - $correctShopee);
+        // Physical store holds everything MINUS what's reserved for Shopee
+        $correctPhysicalStore = max(0, $correctPhysical - $correctShopee);
 
-        // Only fix if something is actually wrong
-        $shopeeWrong   = abs($correctShopee - $currentShopee) >= 1;
-        $physicalWrong = abs($correctPhysical - $physicalQty) >= 1;
+        $currentShopeeStmt = $conn->prepare("SELECT COALESCE(quantity, 0) FROM inventory WHERE variation_id = ? AND store_id = 2");
+        $currentShopeeStmt->execute([$varId]);
+        $currentShopee = (float)$currentShopeeStmt->fetchColumn();
 
-        if (!$shopeeWrong && !$physicalWrong) {
-            $skippedCount++;
-            continue;
-        }
+        // ── Step 5: Apply corrections ──────────────────────────────────────────
+        // Fix physical store (store_id = 1)
+        $conn->prepare("
+            INSERT INTO inventory (variation_id, store_id, quantity)
+            VALUES (?, 1, ?)
+            ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
+        ")->execute([$varId, $correctPhysicalStore]);
 
-        // Fix store_id=2 (Shopee allocated)
+        // Fix Shopee allocated (store_id = 2)
         $conn->prepare("
             INSERT INTO inventory (variation_id, store_id, quantity)
             VALUES (?, 2, ?)
             ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
         ")->execute([$varId, $correctShopee]);
 
-        // Fix store_id=1 (Physical) if needed
-        if ($physicalWrong) {
-            $conn->prepare("
-                INSERT INTO inventory (variation_id, store_id, quantity)
-                VALUES (?, 1, ?)
-                ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
-            ")->execute([$varId, $correctPhysical]);
-        }
-
-        // Fix shopee_product_mappings.shopee_stock per mapping
+        // Fix shopee_product_mappings.shopee_stock per-mapping
         $conn->prepare("
             UPDATE shopee_product_mappings m
             LEFT JOIN product_units u ON m.pos_unit_id = u.id
@@ -121,7 +144,27 @@ try {
               AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
         ")->execute([$totalStock, $varId]);
 
-        echo "Fixed #{$varId}: Physical {$physicalQty}→{$correctPhysical} | Shopee {$currentShopee}→{$correctShopee} (total={$totalStock})\n";
+        // Log a clean repair entry
+        $capitalStmt = $conn->prepare("SELECT price_capital FROM product_variations WHERE variation_id = ?");
+        $capitalStmt->execute([$varId]);
+        $capital = (float)($capitalStmt->fetchColumn() ?? 0);
+
+        if (abs($correctPhysicalStore - $currentPhysical) >= 0.001) {
+            $conn->prepare("
+                INSERT INTO stock_movements
+                (variation_id, store_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, capital_cost)
+                VALUES (?, 1, 'adjustment', ?, ?, ?, ?, 'Stock Repair: Reset to last valid movement before bad restores', 1, ?)
+            ")->execute([
+                $varId,
+                $correctPhysicalStore - $currentPhysical,
+                $currentPhysical,
+                $correctPhysicalStore,
+                $ref,
+                $capital
+            ]);
+        }
+
+        echo "Fixed #{$varId}: Physical {$currentPhysical}→{$correctPhysicalStore} | Shopee {$currentShopee}→{$correctShopee} | Last valid: '{$lastValid['created_at']}' (balance was {$correctPhysical})\n";
         $fixedCount++;
     }
 
@@ -129,13 +172,12 @@ try {
 
     echo "\n=== DONE ===\n";
     echo "Fixed:   {$fixedCount} products\n";
-    echo "Skipped: {$skippedCount} (already correct)\n";
-    echo "\nShopee allocation recalculated from your saved ratios.\n";
-    echo "shopee_product_mappings.shopee_stock also updated.\n";
-    echo "\nYou can now queue Shopee sync from the Backup & Recovery or Shopee Allocation page.\n";
+    echo "Skipped: {$skippedCount}\n";
+    echo "\nAll affected products restored to their last real stock movement balance.\n";
+    echo "Shopee allocation recalculated from saved ratios.\n";
 
 } catch (Exception $e) {
     $conn->rollBack();
     echo "\nERROR: " . $e->getMessage() . "\n";
-    echo "All changes ROLLED BACK. Nothing was changed.\n";
+    echo "All changes ROLLED BACK. Nothing changed.\n";
 }
