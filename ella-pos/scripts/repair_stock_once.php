@@ -19,14 +19,25 @@ $conn = $db->getConnection();
 echo "=== STOCK REPAIR SCRIPT ===\n";
 echo "Run at: " . date('Y-m-d H:i:s') . "\n\n";
 
-// Find all products affected by today's bad System Restore adjustments
+// Find ALL corrupted products:
+// 1. Products that had a System Restore adjustment today
+// 2. Products where Shopee allocated stock > total physical stock (inflated Shopee side)
 $affectedStmt = $conn->query("
-    SELECT DISTINCT variation_id
-    FROM stock_movements
-    WHERE store_id = 1
-      AND type = 'adjustment'
-      AND remarks LIKE 'System Restore%'
-      AND DATE(created_at) = DATE(NOW())
+    SELECT DISTINCT variation_id FROM (
+        SELECT variation_id
+        FROM stock_movements
+        WHERE store_id = 1
+          AND type = 'adjustment'
+          AND remarks LIKE 'System Restore%'
+          AND DATE(created_at) = DATE(NOW())
+        UNION
+        SELECT i1.variation_id
+        FROM inventory i1
+        LEFT JOIN inventory i2 ON i1.variation_id = i2.variation_id AND i2.store_id = 2
+        WHERE i1.store_id = 1
+          AND COALESCE(i2.quantity, 0) > i1.quantity
+          AND i1.quantity >= 0
+    ) combined
 ");
 $affected = $affectedStmt->fetchAll(PDO::FETCH_COLUMN);
 $total    = count($affected);
@@ -151,7 +162,6 @@ foreach ($batches as $batch) {
                 ]);
             }
 
-            echo "  Fixed #{$varId}: {$currentPhysical} → {$correctPhysicalStore} (total={$correctTotal}, shopee={$correctShopee})\n";
             $fixedCount++;
         }
 
