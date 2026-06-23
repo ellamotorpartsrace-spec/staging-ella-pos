@@ -102,6 +102,10 @@ foreach ($batches as $batch) {
             $currentShopee = (float)$curShopeeStmt->fetchColumn();
 
             // Recalculate Shopee from ratio
+            $skuStmt = $conn->prepare("SELECT sku FROM product_variations WHERE variation_id = ?");
+            $skuStmt->execute([$varId]);
+            $sku = $skuStmt->fetchColumn();
+
             $correctShopeeStmt = $conn->prepare("
                 SELECT COALESCE(SUM(
                     FLOOR((? / COALESCE(u.multiplier, 1)) * (m.stock_allocation_ratio / 100.0))
@@ -109,11 +113,11 @@ foreach ($batches as $batch) {
                 ), 0)
                 FROM shopee_product_mappings m
                 LEFT JOIN product_units u ON m.pos_unit_id = u.id
-                WHERE m.pos_product_id = ?
+                WHERE (m.pos_product_id = ? OR (? != '' AND m.matched_pos_sku = ? COLLATE utf8mb4_unicode_ci))
                   AND m.mapping_status IN ('auto','manual')
                   AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
             ");
-            $correctShopeeStmt->execute([$correctTotal, $varId]);
+            $correctShopeeStmt->execute([$correctTotal, $varId, $sku ?? '', $sku ?? '']);
             $correctShopee = (float)$correctShopeeStmt->fetchColumn();
 
             $correctPhysicalStore = max(0, $correctTotal - $correctShopee);
