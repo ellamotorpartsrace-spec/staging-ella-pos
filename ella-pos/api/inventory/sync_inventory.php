@@ -255,6 +255,7 @@ function buildSyncReport(PDO $conn): array
     foreach ($variationIds as $variationId) {
         $variationId = (int)$variationId;
         $rawBaseStock = (int)($baseStock[$variationId] ?? 0);
+        $baseWasNegative = $rawBaseStock < 0;
         $targetPhysicalStock = max(0, $rawBaseStock);
         $rawShopeeAllocation = max(0, (int)($allocation[$variationId] ?? 0));
         $targetOnlineStock = $rawShopeeAllocation;
