@@ -52,7 +52,7 @@ try {
             
             SELECT v.variation_id as var_id, MAX(m.shopee_stock) as max_alloc
             FROM shopee_product_mappings m
-            JOIN product_variations v ON v.sku = m.matched_pos_sku
+            JOIN product_variations v ON v.sku = m.matched_pos_sku COLLATE utf8mb4_unicode_ci
             WHERE m.mapping_status IN ('auto','manual') AND m.matched_pos_sku != ''
             GROUP BY v.variation_id
         ) max_allocs ON i.variation_id = max_allocs.var_id
