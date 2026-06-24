@@ -88,6 +88,9 @@ try {
         
         $new_stock = $actual_current + $quantity;
 
+        // Determine the record owner (requester)
+        $record_owner_id = $req['requested_by'] ?: $user_id;
+
         // 2. Update Price
         if ($cost > 0) {
             $stmtOld = $conn->prepare("SELECT price_capital FROM product_variations WHERE variation_id = ?");
@@ -101,7 +104,7 @@ try {
                     (variation_id, user_id, old_capital, new_capital, old_retail, new_retail, old_wholesale, new_wholesale, old_dealer, new_dealer, changed_at)
                     SELECT ?, ?, price_capital, ?, price_retail, price_retail, price_wholesale, price_wholesale, price_dealer, price_dealer, NOW()
                     FROM product_variations WHERE variation_id = ?
-                ")->execute([$variation_id, $user_id, $cost, $variation_id]);
+                ")->execute([$variation_id, $record_owner_id, $cost, $variation_id]);
                 
                 $conn->prepare("UPDATE product_variations SET price_capital = ? WHERE variation_id = ?")->execute([$cost, $variation_id]);
             }
@@ -112,8 +115,6 @@ try {
         $requester_name = $req['requester_name'] ?: ('User #' . $req['requested_by']);
         
         $remarks = "Approved Restock: " . ($req['supplier_name'] ?: 'Unknown') . " | Approved by: " . $super_admin_name . " | Requested by: " . $requester_name;
-        
-        $record_owner_id = $req['requested_by'] ?: $user_id;
 
         $conn->prepare("
             INSERT INTO stock_movements 
