@@ -256,7 +256,7 @@ $type_config = [
                                     ];
 
                                     // Determine the sign from the actual quantity value
-                                    $qty = (int)$row['quantity'];
+                                    $qty = (float)$row['quantity'];
                                     
                                     // Some movement types are inherently deductions from the physical stock,
                                     // even if the database stores the absolute quantity.
@@ -264,6 +264,8 @@ $type_config = [
                                     
                                     if (in_array($type, $deduction_types)) {
                                         $displayQty = -abs($qty);
+                                    } elseif ($type === 'adjustment') {
+                                        $displayQty = (float)$row['new_stock'] - (float)$row['previous_stock'];
                                     } else {
                                         $displayQty = $qty; // For adjustment, it could already be negative
                                     }
@@ -275,6 +277,8 @@ $type_config = [
                                     // Build a clear human-readable description
                                     $humanDesc = '';
                                     $absQty = abs($displayQty);
+                                    // Format cleanly if it's a whole number
+                                    if (floor($absQty) == $absQty) $absQty = (int)$absQty;
                                     switch ($type) {
                                         case 'allocation_to_online':
                                             $humanDesc = $absQty . ' moved to Shopee';
@@ -299,7 +303,7 @@ $type_config = [
                                             $humanDesc = $absQty . ' returned';
                                             break;
                                         case 'adjustment':
-                                            $humanDesc = 'Adjusted by ' . ($displayQty >= 0 ? '+' : '') . $displayQty;
+                                            $humanDesc = 'Adjusted by ' . ($displayQty >= 0 ? '+' : '-') . $absQty;
                                             break;
                                         default:
                                             $humanDesc = $cfg['desc'] ?? '';
