@@ -4,6 +4,7 @@ header("Content-Type: application/json");
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
+require_once '../../includes/reference_attachment_storage.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -71,6 +72,10 @@ try {
         $stmtAtt = $conn->prepare("SELECT id, image_path, original_filename FROM reference_attachments WHERE reference_number = ?");
         $stmtAtt->execute([$reference]);
         $attachments = $stmtAtt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($attachments as &$att) {
+            $att['public_url'] = referenceAttachmentPublicPath($att);
+        }
     }
 
     $grand_total = 0;

@@ -21,7 +21,7 @@ class Database
         } else {
             $h = $_SERVER['HTTP_HOST'] ?? 'localhost';
             $hOnly = explode(':', $h)[0];
-            $isLocal = in_array($hOnly, ['localhost', '127.0.0.1', '::1']) || str_ends_with($hOnly, '.test') || str_contains($hOnly, 'ngrok');
+            $isLocal = in_array($hOnly, ['localhost', '127.0.0.1', '::1']) || str_ends_with($hOnly, '.test') || str_contains($hOnly, 'ngrok') || preg_match('/^(192\.168|10\.|172\.(1[6-9]|2[0-9]|3[0-1]))\./', $hOnly);
         }
 
         if ($isLocal) {
@@ -63,7 +63,8 @@ class Database
                 $isLocal = (DIRECTORY_SEPARATOR === '\\');
             } else {
                 $h = $_SERVER['HTTP_HOST'] ?? 'localhost';
-                $isLocal = in_array($h, ['localhost', '127.0.0.1', '::1']) || str_ends_with($h, '.test') || str_contains($h, 'ngrok');
+                $hOnly = explode(':', $h)[0];
+                $isLocal = in_array($hOnly, ['localhost', '127.0.0.1', '::1']) || str_ends_with($hOnly, '.test') || str_contains($hOnly, 'ngrok') || preg_match('/^(192\.168|10\.|172\.(1[6-9]|2[0-9]|3[0-1]))\./', $hOnly);
             }
 
             if ($isLocal) {

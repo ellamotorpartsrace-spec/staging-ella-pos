@@ -12,7 +12,7 @@ if (php_sapi_name() === 'cli') {
 } else {
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     $hOnly = explode(':', $host)[0];
-    $isLocal = in_array($hOnly, ['localhost', '127.0.0.1', '::1']) || str_ends_with($hOnly, '.test') || str_contains($hOnly, 'ngrok');
+    $isLocal = in_array($hOnly, ['localhost', '127.0.0.1', '::1']) || str_ends_with($hOnly, '.test') || str_contains($hOnly, 'ngrok') || preg_match('/^(192\.168|10\.|172\.(1[6-9]|2[0-9]|3[0-1]))\./', $hOnly);
 }
 
 // Configure session cookie parameters BEFORE starting session
@@ -51,7 +51,8 @@ error_reporting(E_ALL);
    ============================================== */
 // Auto-detect the Root URL from the server's host
 // This allows the app to work from localhost, IP address, or any hostname
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+$protocol = $isHttps ? 'https' : 'http';
 $basePath = $isLocal ? '/ella-pos/' : '/';
 define('BASE_URL', $protocol . '://' . $host . $basePath);
 

@@ -289,7 +289,7 @@ function viewDetails(batchId, requestId, groupId) {
     const tbody = document.getElementById('detailsTbody');
     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><i class="fa-solid fa-spinner fa-spin fa-2x text-primary"></i></td></tr>';
     
-    let url = '../../api/inventory/get_restock_details.php?';
+    let url = '../../api/inventory/get_restock_details.php?t=' + Date.now() + '&';
     if (batchId) url += 'batch_id=' + batchId;
     else url += 'request_id=' + requestId;
 
@@ -338,8 +338,8 @@ function viewDetails(batchId, requestId, groupId) {
                 attachmentsContainer.innerHTML = '';
                 data.attachments.forEach(att => {
                     attachmentsContainer.innerHTML += `
-                        <a href="../../${att.image_path}" target="_blank" class="border rounded p-1 d-inline-block shadow-sm" style="background: #fff;">
-                            <img src="../../${att.image_path}" alt="${att.original_filename}" style="height: 60px; object-fit: cover; border-radius: 4px;">
+                        <a href="${att.public_url}" target="_blank" class="border rounded p-1 d-inline-block shadow-sm" style="background: #fff;">
+                            <img src="${att.public_url}" alt="${att.original_filename}" style="height: 60px; object-fit: cover; border-radius: 4px;">
                         </a>
                     `;
                 });
