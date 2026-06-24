@@ -26,7 +26,7 @@ try {
 
     if ($supplier_id === 'all') {
         $supplier_name = 'All Suppliers';
-        $supplierFilter = "1=1";
+        $supplierFilter = "sm.remarks NOT LIKE 'Initial Stock%'";
         $params = [];
     } elseif ($supplier_id === 'none') {
         $supplier_name = 'No Supplier / Unknown';

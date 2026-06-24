@@ -106,7 +106,25 @@ try {
     }
     $new_movement_id = $conn->lastInsertId();
 
-    // 4. Update Financial Payables (if PO exists)
+    // 4. Update Product Variation Capital Price if it changed
+    $stmtOldCap = $conn->prepare("SELECT price_capital FROM product_variations WHERE variation_id = ?");
+    $stmtOldCap->execute([$variation_id]);
+    $oldCapRow = $stmtOldCap->fetch(PDO::FETCH_ASSOC);
+    $old_capital = $oldCapRow ? (float) $oldCapRow['price_capital'] : 0.0;
+
+    if (abs($old_capital - $capital_cost) > 0.001) {
+        $conn->prepare("
+            INSERT INTO product_price_history 
+            (variation_id, user_id, old_capital, new_capital, old_retail, new_retail, old_wholesale, new_wholesale, old_dealer, new_dealer, changed_at)
+            SELECT ?, ?, price_capital, ?, price_retail, price_retail, price_wholesale, price_wholesale, price_dealer, price_dealer, NOW()
+            FROM product_variations WHERE variation_id = ?
+        ")->execute([$variation_id, $user_id, $capital_cost, $variation_id]);
+
+        $conn->prepare("UPDATE product_variations SET price_capital = ? WHERE variation_id = ?")
+             ->execute([$capital_cost, $variation_id]);
+    }
+
+    // 5. Update Financial Payables (if PO exists)
     if ($po) {
         syncSupplierPayableForReference($conn, $reference);
     }
