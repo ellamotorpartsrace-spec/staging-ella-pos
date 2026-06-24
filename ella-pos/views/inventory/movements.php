@@ -601,8 +601,25 @@ function displayStoreStockValue($value): int
                                     $skuText = trim((string) ($row['sku'] ?? ''));
 
                                     // Determine sign and color based on actual quantity value
-                                    // Sales are always deductions but stored as positive numbers
-                                    $is_positive = $row['quantity'] >= 0 && $row['type'] !== 'sales';
+                                    $is_deduction = false;
+                                    if ((float)$row['new_stock'] < (float)$row['previous_stock']) {
+                                        $is_deduction = true;
+                                    } elseif ((float)$row['new_stock'] > (float)$row['previous_stock']) {
+                                        $is_deduction = false;
+                                    } else {
+                                        // Fallback if previous == new (e.g., zero movement, or negative stock floored to 0)
+                                        if ($row['quantity'] < 0) {
+                                            $is_deduction = true;
+                                        } elseif (in_array($row['type'], ['sales', 'online_sale', 'stock_out'])) {
+                                            $is_deduction = true;
+                                        } elseif ($row['type'] === 'allocation_to_online' && $row['store_id'] == 1) {
+                                            $is_deduction = true;
+                                        } elseif ($row['type'] === 'allocation_to_physical' && $row['store_id'] == 2) {
+                                            $is_deduction = true;
+                                        }
+                                    }
+
+                                    $is_positive = !$is_deduction;
                                     $qty_sign = $is_positive ? '+' : '-';
                                     $qty_color = $is_positive ? 'success' : 'danger';
                                     
@@ -755,8 +772,26 @@ function displayStoreStockValue($value): int
                         $displayNewStock = displayStoreStockValue($row['new_stock']);
                         $skuText = trim((string) ($row['sku'] ?? ''));
 
-                        // Sales are always deductions but stored as positive numbers
-                        $is_positive = $row['quantity'] >= 0 && $row['type'] !== 'sales';
+                        // Determine sign and color based on actual quantity value
+                        $is_deduction = false;
+                        if ((float)$row['new_stock'] < (float)$row['previous_stock']) {
+                            $is_deduction = true;
+                        } elseif ((float)$row['new_stock'] > (float)$row['previous_stock']) {
+                            $is_deduction = false;
+                        } else {
+                            // Fallback if previous == new (e.g., zero movement, or negative stock floored to 0)
+                            if ($row['quantity'] < 0) {
+                                $is_deduction = true;
+                            } elseif (in_array($row['type'], ['sales', 'online_sale', 'stock_out'])) {
+                                $is_deduction = true;
+                            } elseif ($row['type'] === 'allocation_to_online' && $row['store_id'] == 1) {
+                                $is_deduction = true;
+                            } elseif ($row['type'] === 'allocation_to_physical' && $row['store_id'] == 2) {
+                                $is_deduction = true;
+                            }
+                        }
+
+                        $is_positive = !$is_deduction;
                         $qty_sign = $is_positive ? '+' : '-';
                         $qty_color = $is_positive ? 'success' : 'danger';
                         

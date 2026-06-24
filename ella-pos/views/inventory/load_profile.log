@@ -1118,3 +1118,51 @@ Start index.php
 After sidebar.php: 18.57ms
 After sqlStats: 92.99ms
 After sqlProducts: 180.87ms
+Start index.php
+After sidebar.php: 67.09ms
+After sqlStats: 167.46ms
+After sqlProducts: 246.38ms
+Start index.php
+After sidebar.php: 34.8ms
+After sqlStats: 99.1ms
+After sqlProducts: 180.17ms
+Start index.php
+After sidebar.php: 39.59ms
+After sqlStats: 158.78ms
+After sqlProducts: 240.66ms
+Start index.php
+After sidebar.php: 51.2ms
+After sqlStats: 131.44ms
+After sqlProducts: 205.15ms
+Start index.php
+After sidebar.php: 42.01ms
+After sqlStats: 141.02ms
+After sqlProducts: 223.69ms
+Start index.php
+After sidebar.php: 40.13ms
+After sqlStats: 138.85ms
+After sqlProducts: 221.2ms
+Start index.php
+After sidebar.php: 69.4ms
+After sqlStats: 181.88ms
+After sqlProducts: 256.08ms
+Start index.php
+After sidebar.php: 26.3ms
+After sqlStats: 133.85ms
+After sqlProducts: 208.12ms
+Start index.php
+After sidebar.php: 49.65ms
+After sqlStats: 128.54ms
+After sqlProducts: 197.57ms
+Start index.php
+After sidebar.php: 35.05ms
+After sqlStats: 113.11ms
+After sqlProducts: 186.84ms
+Start index.php
+After sidebar.php: 25.69ms
+After sqlStats: 107.48ms
+After sqlProducts: 179.21ms
+Start index.php
+After sidebar.php: 24.26ms
+After sqlStats: 124.29ms
+After sqlProducts: 207.95ms
