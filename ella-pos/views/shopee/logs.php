@@ -36,11 +36,10 @@ if (!empty($where)) {
 
 $stmt = $conn->prepare("
     SELECT l.*, u.full_name AS user_name,
-           (SELECT CONCAT(IFNULL(b.brand_name, ''), '|||', p.product_name)
+           (SELECT CONCAT(IFNULL(p.brand_name, ''), '|||', p.product_name)
             FROM shopee_product_mappings m 
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             JOIN products p ON v.product_id = p.product_id
-            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE m.shopee_item_id = l.shopee_item_id 
             ORDER BY m.id DESC LIMIT 1) as mapped_pos_name_data,
            (SELECT v.variation_name 
@@ -48,20 +47,18 @@ $stmt = $conn->prepare("
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             WHERE m.shopee_item_id = l.shopee_item_id 
             ORDER BY m.id DESC LIMIT 1) as mapped_pos_variation,
-           (SELECT CONCAT(IFNULL(b.brand_name, ''), '|||', p.product_name)
+           (SELECT CONCAT(IFNULL(p.brand_name, ''), '|||', p.product_name)
             FROM product_variations v 
             JOIN products p ON v.product_id = p.product_id 
-            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
             LIMIT 1) as fallback_pos_name_data,
            (SELECT v.variation_name 
             FROM product_variations v 
             WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
             LIMIT 1) as fallback_pos_variation,
-           (SELECT CONCAT(IFNULL(b.brand_name, ''), '|||', p.product_name)
+           (SELECT CONCAT(IFNULL(p.brand_name, ''), '|||', p.product_name)
             FROM product_variations v 
             JOIN products p ON v.product_id = p.product_id 
-            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.old_value) COLLATE utf8mb4_unicode_ci 
             LIMIT 1) as fallback_old_pos_name_data,
            (SELECT v.variation_name 
