@@ -21,13 +21,15 @@ try {
     $rows = $conn->query("
         SELECT
             m.*,
-            u.unit_name as pos_unit_name,
-            u.multiplier as pos_unit_multiplier,
+            u_unit.unit_name as pos_unit_name,
+            u_unit.multiplier as pos_unit_multiplier,
             s.set_name as pos_bundle_name,
-            s.set_sku as pos_bundle_sku
+            s.set_sku as pos_bundle_sku,
+            u_user.full_name as mapped_by_name
         FROM shopee_product_mappings m
-        LEFT JOIN product_units u ON m.pos_unit_id = u.id
+        LEFT JOIN product_units u_unit ON m.pos_unit_id = u_unit.id
         LEFT JOIN product_unit_sets s ON m.pos_bundle_set_id = s.id
+        LEFT JOIN users u_user ON m.mapped_by = u_user.id
         ORDER BY m.shopee_product_name ASC, m.shopee_variation_name ASC
     ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -59,6 +61,8 @@ try {
             'posUnitMultiplier' => $r['pos_unit_multiplier'] ? (int)$r['pos_unit_multiplier'] : 1,
             'mapStatus' => $r['mapping_status'],
             'matchedPosSku' => $r['matched_pos_sku'] ?? null,
+            'updatedAt' => $r['updated_at'] ? date('M d, Y g:i A', strtotime($r['updated_at'])) : null,
+            'mappedByName' => $r['mapped_by_name'] ?? 'System',
         ];
     }
 

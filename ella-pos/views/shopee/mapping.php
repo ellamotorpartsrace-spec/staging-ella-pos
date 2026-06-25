@@ -440,9 +440,9 @@ async function runAutoMatch(isReRun = false, btn = null) {
     let count = 0;
     pendingAutoMatches = [];
 
-    // If re-running, process all non-missing items; otherwise only unmapped ones
+    // If re-running, process all non-missing items except manual mappings; otherwise only unmapped ones
     const filterCondition = isReRun
-        ? (v => v.mapStatus !== 'missing_sku')
+        ? (v => v.mapStatus !== 'missing_sku' && v.mapStatus !== 'manual')
         : (v => !v.mapped && v.mapStatus !== 'missing_sku');
 
     const itemsToProcess = ALL_ITEMS.filter(filterCondition);
@@ -613,7 +613,8 @@ function renderTable(){
                     if (posItem.variation_name) subtextParts.push(`<span style='color:#ee4d2d'>${escHtml(posItem.variation_name)}</span>`);
                     const varHtml = subtextParts.length > 0 ? `<div style='font-size:0.75rem;margin-top:2px;font-weight:600'>${subtextParts.join(" <span style='color:#cbd5e1'>|</span> ")}</div>` : '';
                     const unitHtml = posItem.item_type === 'unit' ? `<div style='font-size:0.72rem;color:#6366f1;margin-top:3px;font-weight:600;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px'>1 Shopee unit deducts ${posItem.multiplier || 1} ${escHtml(posItem.base_unit_type || 'pcs')}</div>` : '';
-                    let popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}${unitHtml}</div>`;
+                    const dateHtml = v.updatedAt ? `<div style='font-size:0.7rem;color:#94a3b8;margin-top:4px;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px;display:flex;justify-content:space-between;align-items:center;'><span><i class="fa-solid fa-clock me-1"></i>${v.updatedAt}</span><span class="ms-2" style="color:#64748b;"><i class="fa-solid fa-user me-1"></i>${escHtml(v.mappedByName || 'System')}</span></div>` : '';
+                    let popContent = `<div style='text-align:left;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b;text-align:center;'>${safeName}</div><div style="text-align:center;">${varHtml}${unitHtml}</div>${dateHtml}</div>`;
                     popContent = popContent.replace(/"/g, '&quot;');
                     linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                 }
@@ -701,7 +702,8 @@ function renderTable(){
                     if (pos.variation_name) subtextParts.push(`<span style='color:#ee4d2d'>${escHtml(pos.variation_name)}</span>`);
                     const varHtml = subtextParts.length > 0 ? `<div style='font-size:0.75rem;margin-top:2px;font-weight:600'>${subtextParts.join(" <span style='color:#cbd5e1'>|</span> ")}</div>` : '';
                     const unitHtml = pos.item_type === 'unit' ? `<div style='font-size:0.72rem;color:#6366f1;margin-top:3px;font-weight:600;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px'>1 Shopee unit deducts ${pos.multiplier || 1} ${escHtml(pos.base_unit_type || 'pcs')}</div>` : '';
-                    let popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}${unitHtml}</div>`;
+                    const dateHtml = v.updatedAt ? `<div style='font-size:0.7rem;color:#94a3b8;margin-top:4px;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px;display:flex;justify-content:space-between;align-items:center;'><span><i class="fa-solid fa-clock me-1"></i>${v.updatedAt}</span><span class="ms-2" style="color:#64748b;"><i class="fa-solid fa-user me-1"></i>${escHtml(v.mappedByName || 'System')}</span></div>` : '';
+                    let popContent = `<div style='text-align:left;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b;text-align:center;'>${safeName}</div><div style="text-align:center;">${varHtml}${unitHtml}</div>${dateHtml}</div>`;
                     popContent = popContent.replace(/"/g, '&quot;');
                     linkPopover = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="shopee-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
                 }

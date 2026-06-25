@@ -56,7 +56,8 @@ try {
         pos_unit_id = ?,
         pos_bundle_set_id = ?,
         mapping_status = ?, 
-        updated_at = NOW() 
+        updated_at = NOW(),
+        mapped_by = ?
         WHERE id = ?");
 
     foreach ($mappings as $map) {
@@ -97,6 +98,7 @@ try {
             $newUnitId,
             $newBundleSetId,
             $newStatus,
+            $_SESSION['user_id'] ?? null,
             $map['id']
         ]);
 

@@ -58,7 +58,7 @@ $stmt = $conn->prepare("
     LEFT JOIN users u ON l.created_by = u.id
     $whereSql
     ORDER BY l.created_at DESC 
-    LIMIT 1000
+    LIMIT 5000
 ");
 $stmt->execute($params);
 $dbLogs = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -429,7 +429,11 @@ function renderLogs() {
     });
 
     if (!items.length) {
-        body.innerHTML = '<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-clock-rotate-left d-block"></i><h5>No logs found</h5><p>Try adjusting your filters.</p></div></td></tr>';
+        if (LOGS.length >= 5000) {
+            body.innerHTML = '<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-triangle-exclamation text-warning d-block" style="font-size:2rem;margin-bottom:10px;"></i><h5>Too many logs in this date range</h5><p>We loaded the 5,000 most recent logs, but your search wasn\\'t found among them. Please narrow down your Date filter to find older records.</p></div></td></tr>';
+        } else {
+            body.innerHTML = '<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-clock-rotate-left d-block"></i><h5>No logs found</h5><p>Try adjusting your filters or search term.</p></div></td></tr>';
+        }
         return;
     }
     // Aggressively remove any stuck popovers from the DOM
