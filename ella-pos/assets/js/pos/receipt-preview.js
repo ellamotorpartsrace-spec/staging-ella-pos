@@ -1149,6 +1149,7 @@ window.ReceiptPreview = {
                                 ${i.returned_qty > 0 ? `<span style="color:#881337; font-weight:bold; margin-left:5px;">(Returned: ${i.returned_qty})</span>` : ''}
                             </div>
                             ${unitBreakdownA4}
+                            ${!i.sku ? `<div style="font-size:${fSizeSub - 1}px; font-family:monospace; display:inline-block; padding:1px 5px; margin-top:1px; visibility:hidden;">SKU: NONE</div>` : ''}
                         </td>
                         <td style="padding:0px 4px; text-align:right; font-size:${fSizeMain}px;">
                             ${hasDiscount ? `<span style="text-decoration:line-through;color:#999;font-size:${fSizeSub}px;">₱${fmt(origPrice)}</span> ` : ''}₱${fmt(i.price)}
