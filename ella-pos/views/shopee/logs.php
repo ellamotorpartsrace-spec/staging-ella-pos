@@ -36,31 +36,34 @@ if (!empty($where)) {
 
 $stmt = $conn->prepare("
     SELECT l.*, u.full_name AS user_name,
-           (SELECT p.product_name 
+           (SELECT CONCAT(IFNULL(b.brand_name, ''), '|||', p.product_name)
             FROM shopee_product_mappings m 
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             JOIN products p ON v.product_id = p.product_id
+            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE m.shopee_item_id = l.shopee_item_id 
-            ORDER BY m.id DESC LIMIT 1) as mapped_pos_name,
+            ORDER BY m.id DESC LIMIT 1) as mapped_pos_name_data,
            (SELECT v.variation_name 
             FROM shopee_product_mappings m 
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             WHERE m.shopee_item_id = l.shopee_item_id 
             ORDER BY m.id DESC LIMIT 1) as mapped_pos_variation,
-           (SELECT p.product_name 
+           (SELECT CONCAT(IFNULL(b.brand_name, ''), '|||', p.product_name)
             FROM product_variations v 
             JOIN products p ON v.product_id = p.product_id 
+            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
-            LIMIT 1) as fallback_pos_name,
+            LIMIT 1) as fallback_pos_name_data,
            (SELECT v.variation_name 
             FROM product_variations v 
             WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.sku) COLLATE utf8mb4_unicode_ci 
             LIMIT 1) as fallback_pos_variation,
-           (SELECT p.product_name 
+           (SELECT CONCAT(IFNULL(b.brand_name, ''), '|||', p.product_name)
             FROM product_variations v 
             JOIN products p ON v.product_id = p.product_id 
+            LEFT JOIN brands b ON p.brand_id = b.id
             WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.old_value) COLLATE utf8mb4_unicode_ci 
-            LIMIT 1) as fallback_old_pos_name,
+            LIMIT 1) as fallback_old_pos_name_data,
            (SELECT v.variation_name 
             FROM product_variations v 
             WHERE TRIM(v.sku) COLLATE utf8mb4_unicode_ci = TRIM(l.old_value) COLLATE utf8mb4_unicode_ci 
@@ -76,6 +79,19 @@ $dbLogs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $logsJson = [];
 foreach ($dbLogs as $l) {
+    $posNameData = $l['mapped_pos_name_data'] ?: ($l['fallback_old_pos_name_data'] ?? $l['fallback_pos_name_data'] ?? '');
+    $posBrand = '';
+    $posName = '';
+    if ($posNameData) {
+        $parts = explode('|||', $posNameData);
+        if (count($parts) === 2) {
+            $posBrand = $parts[0];
+            $posName = $parts[1];
+        } else {
+            $posName = $posNameData;
+        }
+    }
+
     $logsJson[] = [
         'ts' => date('Y-m-d h:i:s A', strtotime($l['created_at'])),
         'product' => $l['product_name'] ?: 'System Event',
@@ -88,7 +104,8 @@ foreach ($dbLogs as $l) {
         'status' => $l['status'],
         'error' => $l['error_message'] ?: '',
         'user' => $l['user_name'] ?: 'System',
-        'posName' => $l['mapped_pos_name'] ?: ($l['fallback_old_pos_name'] ?? $l['fallback_pos_name'] ?? ''),
+        'posBrand' => $posBrand,
+        'posName' => $posName,
         'posVarName' => $l['mapped_pos_variation'] ?: ($l['fallback_old_pos_variation'] ?? $l['fallback_pos_variation'] ?? '')
     ];
 }
@@ -456,8 +473,10 @@ function renderLogs() {
         const getPopoverHtml = (text, iconColor) => {
             const safeName = (l.posName || l.product || 'Unknown Product').replace(/"/g, '&quot;');
             const safeVar = (l.posVarName || '').replace(/"/g, '&quot;');
+            const safeBrand = (l.posBrand || '').replace(/"/g, '&quot;');
+            const brandHtml = safeBrand ? `<div style='font-size:0.7rem;color:#6366f1;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:2px'>${safeBrand}</div>` : '';
             const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
-            const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
+            const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'>${brandHtml}<div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
             const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="logs-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
             return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none;" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}"></i></a>`;
         };
