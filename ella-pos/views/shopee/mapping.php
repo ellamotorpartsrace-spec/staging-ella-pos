@@ -608,8 +608,10 @@ function renderTable(){
                 let linkPopover = '';
                 if (v.mapped && posItem) {
                     const safeName = escHtml(posItem.product_name || '');
-                    const safeVar = posItem.variation_name ? escHtml(posItem.variation_name) : '';
-                    const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
+                    let subtextParts = [];
+                    if (posItem.brand) subtextParts.push(`<span style='color:#64748b'>${escHtml(posItem.brand)}</span>`);
+                    if (posItem.variation_name) subtextParts.push(`<span style='color:#ee4d2d'>${escHtml(posItem.variation_name)}</span>`);
+                    const varHtml = subtextParts.length > 0 ? `<div style='font-size:0.75rem;margin-top:2px;font-weight:600'>${subtextParts.join(" <span style='color:#cbd5e1'>|</span> ")}</div>` : '';
                     const unitHtml = posItem.item_type === 'unit' ? `<div style='font-size:0.72rem;color:#6366f1;margin-top:3px;font-weight:600;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px'>1 Shopee unit deducts ${posItem.multiplier || 1} ${escHtml(posItem.base_unit_type || 'pcs')}</div>` : '';
                     let popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}${unitHtml}</div>`;
                     popContent = popContent.replace(/"/g, '&quot;');
@@ -694,8 +696,10 @@ function renderTable(){
                 let linkPopover = '';
                 if (v.mapped && pos) {
                     const safeName = escHtml(pos.product_name || '');
-                    const safeVar = pos.variation_name ? escHtml(pos.variation_name) : '';
-                    const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
+                    let subtextParts = [];
+                    if (pos.brand) subtextParts.push(`<span style='color:#64748b'>${escHtml(pos.brand)}</span>`);
+                    if (pos.variation_name) subtextParts.push(`<span style='color:#ee4d2d'>${escHtml(pos.variation_name)}</span>`);
+                    const varHtml = subtextParts.length > 0 ? `<div style='font-size:0.75rem;margin-top:2px;font-weight:600'>${subtextParts.join(" <span style='color:#cbd5e1'>|</span> ")}</div>` : '';
                     const unitHtml = pos.item_type === 'unit' ? `<div style='font-size:0.72rem;color:#6366f1;margin-top:3px;font-weight:600;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px'>1 Shopee unit deducts ${pos.multiplier || 1} ${escHtml(pos.base_unit_type || 'pcs')}</div>` : '';
                     let popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}${unitHtml}</div>`;
                     popContent = popContent.replace(/"/g, '&quot;');
