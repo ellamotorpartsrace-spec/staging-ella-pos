@@ -11,12 +11,23 @@ $conn = $db->getConnection();
 $startDate = $_GET['start_date'] ?? date('Y-m-d');
 $endDate = $_GET['end_date'] ?? date('Y-m-d');
 
+$searchQuery = trim($_GET['q'] ?? '');
+
 $where = [];
 $params = [];
 
 $where[] = "DATE(l.created_at) BETWEEN ? AND ?";
 $params[] = $startDate;
 $params[] = $endDate;
+
+if ($searchQuery !== '') {
+    $where[] = "(l.product_name LIKE ? OR l.sku LIKE ? OR l.new_value LIKE ? OR l.old_value LIKE ?)";
+    $likeQ = '%' . $searchQuery . '%';
+    $params[] = $likeQ;
+    $params[] = $likeQ;
+    $params[] = $likeQ;
+    $params[] = $likeQ;
+}
 
 $whereSql = '';
 if (!empty($where)) {
@@ -58,7 +69,7 @@ $stmt = $conn->prepare("
     LEFT JOIN users u ON l.created_by = u.id
     $whereSql
     ORDER BY l.created_at DESC 
-    LIMIT 5000
+    LIMIT 1500
 ");
 $stmt->execute($params);
 $dbLogs = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -334,9 +345,9 @@ require_once '../../includes/sidebar.php';
             <div class="sp-card-body filter-row">
                 
                 <!-- Search Box -->
-                <div class="premium-search-box">
+                <div class="premium-search-box" title="Type to filter instantly, or press Enter to search the entire database">
                     <i class="fa-solid fa-search"></i>
-                    <input type="text" id="logSearch" autocomplete="off" placeholder="Search product, SKU..." oninput="renderLogs()">
+                    <input type="text" id="logSearch" name="q" value="<?= htmlspecialchars($searchQuery) ?>" autocomplete="off" placeholder="Search product, SKU..." oninput="renderLogs()">
                 </div>
                 
                 <!-- Date Frame Selection -->
@@ -429,8 +440,10 @@ function renderLogs() {
     });
 
     if (!items.length) {
-        if (LOGS.length >= 5000) {
-            body.innerHTML = '<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-triangle-exclamation text-warning d-block" style="font-size:2rem;margin-bottom:10px;"></i><h5>Too many logs in this date range</h5><p>We loaded the 5,000 most recent logs, but your search was not found among them. Please narrow down your Date filter to find older records.</p></div></td></tr>';
+        if (LOGS.length >= 1500 && search !== '') {
+            body.innerHTML = '<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-magnifying-glass-arrow-right text-primary d-block" style="font-size:2rem;margin-bottom:10px;"></i><h5>Press Enter to deep search</h5><p>We loaded the 1,500 most recent logs, but your item was not found among them. Press <strong>Enter</strong> to search the entire database.</p></div></td></tr>';
+        } else if (LOGS.length >= 1500) {
+            body.innerHTML = '<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-triangle-exclamation text-warning d-block" style="font-size:2rem;margin-bottom:10px;"></i><h5>Too many logs in this date range</h5><p>We loaded the 1,500 most recent logs. Narrow your date filter or use the search box to find specific older records.</p></div></td></tr>';
         } else {
             body.innerHTML = '<tr><td colspan="7"><div class="sp-empty"><i class="fa-solid fa-clock-rotate-left d-block"></i><h5>No logs found</h5><p>Try adjusting your filters or search term.</p></div></td></tr>';
         }
