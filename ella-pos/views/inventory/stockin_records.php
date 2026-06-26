@@ -155,7 +155,7 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body p-3">
             <form id="filter-form" class="row g-2 align-items-end">
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                     <label class="form-label small fw-bold text-muted mb-1">SUPPLIER</label>
                     <select name="supplier_id" id="supplier-select" class="form-select" required>
                         <option value="all" <?= (empty($selected_supplier) || $selected_supplier === 'all') ? 'selected' : '' ?>>-- All Suppliers --</option>
@@ -167,6 +167,10 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-bold text-muted mb-1">REFERENCE</label>
+                    <input type="text" name="reference_search" id="reference-search" class="form-control" placeholder="Search reference..." value="<?= htmlspecialchars($_GET['reference_search'] ?? '') ?>">
+                </div>
                 <div class="col-6 col-md-2">
                     <label class="form-label small fw-bold text-muted mb-1">FROM</label>
                     <input type="date" name="date_from" id="date-from" class="form-control" value="<?= $date_from ?>">
@@ -175,9 +179,9 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
                     <label class="form-label small fw-bold text-muted mb-1">TO</label>
                     <input type="date" name="date_to" id="date-to" class="form-control" value="<?= $date_to ?>">
                 </div>
-                <div class="col-12 col-md-4 d-flex gap-2">
+                <div class="col-12 col-md-2 d-flex gap-2">
                     <button type="submit" class="btn btn-primary flex-grow-1">
-                        <i class="fa-solid fa-filter me-1"></i>Load
+                        <i class="fa-solid fa-filter"></i>
                     </button>
                     <button type="button" class="btn btn-success" onclick="exportCSV()" title="Export CSV"
                         id="export-btn" disabled>
@@ -399,6 +403,7 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
         currentPage = page;
         const dateFrom = document.getElementById('date-from').value;
         const dateTo = document.getElementById('date-to').value;
+        const referenceSearch = document.getElementById('reference-search').value;
 
         // Show loading
         document.getElementById('loading-overlay').classList.remove('d-none');
@@ -409,6 +414,7 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
                 supplier_id: supplierId,
                 date_from: dateFrom,
                 date_to: dateTo,
+                reference_search: referenceSearch,
                 page: page
             });
 
@@ -436,6 +442,8 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
                 else url.searchParams.delete('date_from');
                 if (dateTo) url.searchParams.set('date_to', dateTo);
                 else url.searchParams.delete('date_to');
+                if (referenceSearch) url.searchParams.set('reference_search', referenceSearch);
+                else url.searchParams.delete('reference_search');
                 window.history.replaceState({}, '', url);
             } else {
                 EllaToast.error('Error: ' + (data.error || 'Unknown error'));
@@ -711,6 +719,7 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
 
     function resetFilters() {
         document.getElementById('supplier-select').value = 'all';
+        document.getElementById('reference-search').value = '';
         document.getElementById('date-from').value = '';
         document.getElementById('date-to').value = '';
         localStorage.removeItem(LAST_SUPPLIER_KEY);
@@ -727,11 +736,13 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
 
         const dateFrom = document.getElementById('date-from').value;
         const dateTo = document.getElementById('date-to').value;
+        const referenceSearch = document.getElementById('reference-search').value;
 
         const params = new URLSearchParams({
             supplier_id: supplierId,
             date_from: dateFrom,
-            date_to: dateTo
+            date_to: dateTo,
+            reference_search: referenceSearch
         });
 
         window.location.href = `../../api/inventory/export_stockin_records_csv.php?${params}`;

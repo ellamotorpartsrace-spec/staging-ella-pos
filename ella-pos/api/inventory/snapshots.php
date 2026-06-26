@@ -417,7 +417,23 @@ function handleRestore(PDO $conn): void
             $diffStmt->execute([$snapshotId]);
             $diffs = $diffStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            if (!empty($diffs)) {
+            // Log stock movements for items NOT in snapshot but currently have stock
+            $missingDiffStmt = $conn->prepare("
+                SELECT i.variation_id, 
+                       0 as snapshot_qty,
+                       i.quantity as current_qty,
+                       COALESCE(pv.price_capital, 0) as price_capital
+                FROM inventory i
+                LEFT JOIN inventory_snapshot_items si ON i.variation_id = si.variation_id AND si.snapshot_id = ?
+                LEFT JOIN product_variations pv ON i.variation_id = pv.variation_id
+                WHERE i.store_id = 1 AND si.variation_id IS NULL AND i.quantity > 0
+            ");
+            $missingDiffStmt->execute([$snapshotId]);
+            $missingDiffs = $missingDiffStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $allDiffs = array_merge($diffs, $missingDiffs);
+
+            if (!empty($allDiffs)) {
                 $moveStmt = $conn->prepare("
                     INSERT INTO stock_movements 
                     (variation_id, type, quantity, previous_stock, new_stock, reference, remarks, created_by, store_id, capital_cost) 
@@ -425,7 +441,7 @@ function handleRestore(PDO $conn): void
                 ");
                 $ref = 'RESTORE-' . $snapshotId;
                 $rem = 'System Restore from Snapshot: ' . $snapshot['snapshot_name'];
-                foreach ($diffs as $d) {
+                foreach ($allDiffs as $d) {
                     $qtyChange = $d['snapshot_qty'] - $d['current_qty'];
                     $moveStmt->execute([
                         $d['variation_id'],
@@ -440,6 +456,14 @@ function handleRestore(PDO $conn): void
                 }
             }
 
+            // Zero out POS inventory for items not in snapshot
+            $conn->prepare("
+                UPDATE inventory i
+                LEFT JOIN inventory_snapshot_items si ON i.variation_id = si.variation_id AND si.snapshot_id = ?
+                SET i.quantity = 0
+                WHERE i.store_id = 1 AND si.variation_id IS NULL AND i.quantity > 0
+            ")->execute([$snapshotId]);
+
             // Apply stock updates
             $conn->prepare("
                 INSERT INTO inventory (variation_id, store_id, quantity)
@@ -452,6 +476,15 @@ function handleRestore(PDO $conn): void
 
         // ── Step C: Restore Shopee Allocated stock (store_id = 2) ──────────
         if ($restoreShopee) {
+            // Zero out Shopee allocated inventory for items not in snapshot
+            $conn->prepare("
+                UPDATE inventory i
+                LEFT JOIN inventory_snapshot_items si ON i.variation_id = si.variation_id AND si.snapshot_id = ?
+                SET i.quantity = 0
+                WHERE i.store_id = 2 AND si.variation_id IS NULL AND i.quantity > 0
+            ")->execute([$snapshotId]);
+
+            // Apply stock updates
             $conn->prepare("
                 INSERT INTO inventory (variation_id, store_id, quantity)
                 SELECT variation_id, 2, shopee_allocated
@@ -461,6 +494,17 @@ function handleRestore(PDO $conn): void
             ")->execute([$snapshotId]);
 
             // ── Step D: Sync shopee_product_mappings.shopee_stock ───────────────
+            // Zero out shopee_stock for missing mappings
+            $conn->prepare("
+                UPDATE shopee_product_mappings m
+                LEFT JOIN inventory_snapshot_items si 
+                    ON si.snapshot_id = ? 
+                   AND (si.variation_id = m.pos_product_id OR (si.sku != '' AND m.matched_pos_sku = si.sku COLLATE utf8mb4_unicode_ci))
+                SET m.shopee_stock = 0, m.updated_at = NOW()
+                WHERE m.mapping_status IN ('mapped','auto','manual') AND si.variation_id IS NULL AND m.shopee_stock > 0
+            ")->execute([$snapshotId]);
+
+            // Apply snapshot quantities
             $conn->prepare("
                 UPDATE shopee_product_mappings m
                 INNER JOIN inventory_snapshot_items si
@@ -733,36 +777,49 @@ function handleExportColdBackup(PDO $conn): void
             'inventory_snapshot_audit'
         ];
         
-        $sql = "-- Ella POS Inventory & Snapshot Offline Backup\n";
-        $sql .= "-- Exported At: " . date('Y-m-d H:i:s') . "\n";
-        $sql .= "-- This file can be directly imported into phpMyAdmin for disaster recovery.\n\n";
+        $filename = 'ella_pos_backup_' . date('Ymd_His') . '.sql';
+        
+        // Force download as a .sql file
+        header('Content-Type: application/sql');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-cache, no-store, must-revalidate'); // HTTP 1.1
+        header('Pragma: no-cache'); // HTTP 1.0
+        header('Expires: 0'); // Proxies
 
-        $sql .= "SET FOREIGN_KEY_CHECKS = 0;\n\n";
+        // Disable PDO buffered queries to stream large tables
+        $conn->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+
+        echo "-- Ella POS Inventory & Snapshot Offline Backup\n";
+        echo "-- Exported At: " . date('Y-m-d H:i:s') . "\n";
+        echo "-- This file can be directly imported into phpMyAdmin for disaster recovery.\n\n";
+
+        echo "SET FOREIGN_KEY_CHECKS = 0;\n\n";
 
         foreach ($tables as $table) {
-            $sql .= "-- --------------------------------------------------------\n";
-            $sql .= "-- Data for table `$table`\n";
-            $sql .= "-- --------------------------------------------------------\n";
+            echo "-- --------------------------------------------------------\n";
+            echo "-- Data for table `$table`\n";
+            echo "-- --------------------------------------------------------\n";
             
             // Note: We don't TRUNCATE to avoid accidental data loss if they import blindly,
             // but we can add TRUNCATE so that importing this file restores the exact state.
-            $sql .= "TRUNCATE TABLE `$table`;\n";
+            echo "TRUNCATE TABLE `$table`;\n";
             
             $stmt = $conn->query("SELECT * FROM `$table`");
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            if (count($rows) > 0) {
-                $cols = array_keys($rows[0]);
-                $colStr = "`" . implode("`, `", $cols) . "`";
-                
-                // Chunk to prevent massive queries
-                $chunks = array_chunk($rows, 100);
-                foreach ($chunks as $chunk) {
-                    $sql .= "INSERT INTO `$table` ($colStr) VALUES \n";
+            $chunk = [];
+            $colStr = null;
+
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                if ($colStr === null) {
+                    $cols = array_keys($row);
+                    $colStr = "`" . implode("`, `", $cols) . "`";
+                }
+                $chunk[] = $row;
+                if (count($chunk) >= 100) {
+                    echo "INSERT INTO `$table` ($colStr) VALUES \n";
                     $valStrings = [];
-                    foreach ($chunk as $row) {
+                    foreach ($chunk as $r) {
                         $escapedVals = [];
-                        foreach ($row as $val) {
+                        foreach ($r as $val) {
                             if ($val === null) {
                                 $escapedVals[] = "NULL";
                             } else {
@@ -772,25 +829,35 @@ function handleExportColdBackup(PDO $conn): void
                         }
                         $valStrings[] = "(" . implode(", ", $escapedVals) . ")";
                     }
-                    $sql .= implode(",\n", $valStrings) . ";\n";
+                    echo implode(",\n", $valStrings) . ";\n";
+                    $chunk = [];
                 }
             }
-            $sql .= "\n";
+
+            if (!empty($chunk)) {
+                echo "INSERT INTO `$table` ($colStr) VALUES \n";
+                $valStrings = [];
+                foreach ($chunk as $r) {
+                    $escapedVals = [];
+                    foreach ($r as $val) {
+                        if ($val === null) {
+                            $escapedVals[] = "NULL";
+                        } else {
+                            $escaped = str_replace(["\\", "'", "\n", "\r"], ["\\\\", "''", "\\n", "\\r"], (string)$val);
+                            $escapedVals[] = "'" . $escaped . "'";
+                        }
+                    }
+                    $valStrings[] = "(" . implode(", ", $escapedVals) . ")";
+                }
+                echo implode(",\n", $valStrings) . ";\n";
+            }
+            echo "\n";
         }
 
-        $sql .= "SET FOREIGN_KEY_CHECKS = 1;\n";
-        
-        $filename = 'ella_pos_backup_' . date('Ymd_His') . '.sql';
-        
-        // Force download as a .sql file
-        header('Content-Type: application/sql');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Length: ' . strlen($sql));
-        header('Cache-Control: no-cache, no-store, must-revalidate'); // HTTP 1.1
-        header('Pragma: no-cache'); // HTTP 1.0
-        header('Expires: 0'); // Proxies
-        
-        echo $sql;
+        echo "SET FOREIGN_KEY_CHECKS = 1;\n";
+
+        // Re-enable buffered queries for subsequent operations if needed
+        $conn->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
         exit;
     } catch (Exception $e) {
         if (!headers_sent()) {

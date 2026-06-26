@@ -13,6 +13,7 @@ if (!in_array($_SESSION['role'], ['admin', 'super_admin']) && !hasPermission('ad
 $supplier_id = $_GET['supplier_id'] ?? null;
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
+$reference_search = $_GET['reference_search'] ?? '';
 
 if (!$supplier_id) {
     $supplier_id = 'all';
@@ -108,6 +109,11 @@ try {
     if (!empty($date_to)) {
         $sql .= " AND DATE(sm.created_at) <= ?";
         $params[] = $date_to;
+    }
+
+    if (!empty($reference_search)) {
+        $sql .= " AND sm.reference LIKE ?";
+        $params[] = '%' . $reference_search . '%';
     }
 
     $sql .= " ORDER BY sm.created_at DESC";

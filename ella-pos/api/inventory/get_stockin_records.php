@@ -11,6 +11,7 @@ requireLogin();
 $supplier_id = $_GET['supplier_id'] ?? null;
 $date_from = $_GET['date_from'] ?? '';
 $date_to = $_GET['date_to'] ?? '';
+$reference_search = $_GET['reference_search'] ?? '';
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $per_page = 50;
 $offset = ($page - 1) * $per_page;
@@ -131,6 +132,11 @@ try {
         $params[] = $date_to;
     }
 
+    if (!empty($reference_search)) {
+        $sql .= " AND sm.reference LIKE ?";
+        $params[] = '%' . $reference_search . '%';
+    }
+
     // Count total
     $countSql = "SELECT COUNT(*) FROM (" . $sql . ") as sub";
     $stmtCount = $conn->prepare($countSql);
@@ -182,6 +188,10 @@ try {
     if (!empty($date_to)) {
         $statsSql .= " AND DATE(sm.created_at) <= ?";
         $statsParams[] = $date_to;
+    }
+    if (!empty($reference_search)) {
+        $statsSql .= " AND sm.reference LIKE ?";
+        $statsParams[] = '%' . $reference_search . '%';
     }
 
     $stmtStats = $conn->prepare($statsSql);
