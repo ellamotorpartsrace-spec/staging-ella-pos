@@ -351,6 +351,18 @@ if (strpos($return_url, 'edit.php') !== false || strpos($return_url, 'update_pro
                                                     <input type="text" name="stock_adj_remarks" class="form-control form-select-sm shadow-none" placeholder="Remarks...">
                                                 </div>
                                             </div>
+                                            <div class="row g-2 mt-1">
+                                                <div class="col-12">
+                                                    <input list="requestedByOptions" name="stock_adj_requested_by" class="form-control form-select-sm shadow-none" placeholder="Requested By / Reason (Optional)">
+                                                    <datalist id="requestedByOptions">
+                                                        <option value="Requested by: ">
+                                                        <option value="Inventory Count">
+                                                        <option value="Damaged Item">
+                                                        <option value="Returned Item">
+                                                        <option value="Wrong Entry">
+                                                    </datalist>
+                                                </div>
+                                            </div>
                                         </div>
                                         <?php endif; ?>
                                     </div>

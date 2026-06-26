@@ -186,6 +186,12 @@ try {
     $adj_type = $_POST['stock_adj_type'] ?? null;
     $adj_qty = (float) ($_POST['stock_adj_qty'] ?? 0);
     $adj_remarks = trim($_POST['stock_adj_remarks'] ?? '');
+    $adj_requested_by = trim($_POST['stock_adj_requested_by'] ?? '');
+
+    if (!empty($adj_requested_by)) {
+        $adj_remarks = $adj_remarks ? $adj_requested_by . ' - ' . $adj_remarks : $adj_requested_by;
+    }
+
     if (empty($adj_remarks)) {
         $adj_remarks = "Quick adjustment from edit page";
     }
