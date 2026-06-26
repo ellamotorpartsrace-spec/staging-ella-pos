@@ -133,8 +133,13 @@ try {
     }
 
     if (!empty($reference_search)) {
-        $sql .= " AND sm.reference LIKE ?";
-        $params[] = '%' . $reference_search . '%';
+        $searchTerm = '%' . $reference_search . '%';
+        $sql .= " AND (sm.reference LIKE ? OR p.product_name LIKE ? OR pv.sku LIKE ? OR pv.variation_name LIKE ? OR pv.barcode LIKE ?)";
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
     }
 
     // Count total
@@ -157,6 +162,7 @@ try {
             COUNT(DISTINCT sm.reference) as unique_references
         FROM stock_movements sm
         JOIN product_variations pv ON sm.variation_id = pv.variation_id
+        JOIN products p ON pv.product_id = p.product_id
         WHERE sm.type = 'stock_in'
         AND ( $supplierFilter )
     ";
@@ -190,8 +196,13 @@ try {
         $statsParams[] = $date_to;
     }
     if (!empty($reference_search)) {
-        $statsSql .= " AND sm.reference LIKE ?";
-        $statsParams[] = '%' . $reference_search . '%';
+        $searchTerm = '%' . $reference_search . '%';
+        $statsSql .= " AND (sm.reference LIKE ? OR p.product_name LIKE ? OR pv.sku LIKE ? OR pv.variation_name LIKE ? OR pv.barcode LIKE ?)";
+        $statsParams[] = $searchTerm;
+        $statsParams[] = $searchTerm;
+        $statsParams[] = $searchTerm;
+        $statsParams[] = $searchTerm;
+        $statsParams[] = $searchTerm;
     }
 
     $stmtStats = $conn->prepare($statsSql);

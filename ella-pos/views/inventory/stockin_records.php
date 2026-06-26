@@ -168,8 +168,8 @@ $isAdmin = (in_array($_SESSION['role'], ['admin', 'super_admin']));
                     </select>
                 </div>
                 <div class="col-12 col-md-3">
-                    <label class="form-label small fw-bold text-muted mb-1">REFERENCE</label>
-                    <input type="text" name="reference_search" id="reference-search" class="form-control" placeholder="Search reference..." value="<?= htmlspecialchars($_GET['reference_search'] ?? '') ?>">
+                    <label class="form-label small fw-bold text-muted mb-1">SEARCH</label>
+                    <input type="text" name="reference_search" id="reference-search" class="form-control" placeholder="Search ref, product, sku..." value="<?= htmlspecialchars($_GET['reference_search'] ?? '') ?>">
                 </div>
                 <div class="col-6 col-md-2">
                     <label class="form-label small fw-bold text-muted mb-1">FROM</label>
