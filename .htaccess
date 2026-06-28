@@ -3,4 +3,4 @@ RewriteEngine On
 # Keep URLs as /ella-pos/... while serving files from /ella-pos/ella-pos/...
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ ella-pos/$1 [L,QSA]
+RewriteRule ^(.*)$ testing_site/$1 [L,QSA]
