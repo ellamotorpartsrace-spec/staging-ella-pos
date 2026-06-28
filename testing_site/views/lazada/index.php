@@ -81,11 +81,11 @@ require_once '../../includes/sidebar.php';
             <div class="lz-stat-card" style="animation-delay:0.2s">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="lz-stat-label mb-2">Pending Orders</div>
-                        <div class="lz-stat-value text-danger" id="lzOrders">—</div>
-                        <div class="small text-muted mt-1">Awaiting fulfillment</div>
+                        <div class="lz-stat-label mb-2">Allocated Items</div>
+                        <div class="lz-stat-value text-lazada-blue" id="lzAllocated">—</div>
+                        <div class="small text-muted mt-1">With allocation rules</div>
                     </div>
-                    <div class="lz-icon-box bg-danger"><i class="fa-solid fa-box-open"></i></div>
+                    <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-sliders"></i></div>
                 </div>
             </div>
         </div>
