@@ -35,7 +35,7 @@ class Database
             $this->host = "localhost";
             $this->dbname = "u296077208_testing_site";
             $this->username = "u296077208_testing";
-            $this->password = "ellaTesttingsite098";
+            $this->password = "ellaTestingsite098";
         }
     }
 
