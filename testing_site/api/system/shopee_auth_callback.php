@@ -25,10 +25,7 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    $platform = $_GET['platform'] ?? 'shopee_main';
-
-    $stmt = $conn->prepare("SELECT partner_id, partner_key, is_test FROM api_platforms WHERE platform_name = ?");
-    $stmt->execute([$platform]);
+    $stmt = $conn->query("SELECT partner_id, partner_key, is_test FROM api_platforms WHERE platform_name = 'shopee'");
     $shopee = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$shopee) {
@@ -59,9 +56,9 @@ try {
             token_expiry = ?, 
             is_active = 1,
             updated_at = NOW() 
-        WHERE platform_name = ?
+        WHERE platform_name = 'shopee'
     ");
-    $stmtUpdate->execute([$shop_id, $access_token, $refresh_token, $token_expiry, $platform]);
+    $stmtUpdate->execute([$shop_id, $access_token, $refresh_token, $token_expiry]);
 
     // Redirect user back to the Integrations UI
     header("Location: " . BASE_URL . "views/system/integrations.php?success=shopee_linked");

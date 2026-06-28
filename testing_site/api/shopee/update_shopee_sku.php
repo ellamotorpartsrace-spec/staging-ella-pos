@@ -29,20 +29,15 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
     
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
-
     // 1. Fetch current mapping
     $mapping = null;
     if (!empty($modelId)) {
-        $stmt = $conn->prepare("SELECT * FROM shopee_product_mappings WHERE platform_name = ? AND shopee_item_id = ? AND shopee_model_id = ?");
-        $stmt->execute([$platform, $itemId, $modelId]);
+        $stmt = $conn->prepare("SELECT * FROM shopee_product_mappings WHERE shopee_item_id = ? AND shopee_model_id = ?");
+        $stmt->execute([$itemId, $modelId]);
         $mapping = $stmt->fetch(PDO::FETCH_ASSOC);
     } else {
-        $stmt = $conn->prepare("SELECT * FROM shopee_product_mappings WHERE platform_name = ? AND shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0)");
-        $stmt->execute([$platform, $itemId]);
+        $stmt = $conn->prepare("SELECT * FROM shopee_product_mappings WHERE shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0)");
+        $stmt->execute([$itemId]);
         $mapping = $stmt->fetch(PDO::FETCH_ASSOC);
     }
     
@@ -52,8 +47,7 @@ try {
     }
     
     // 2. Load active Shopee config
-    $configStmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
-    $configStmt->execute([$platform]);
+    $configStmt = $conn->query("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
     $config = $configStmt->fetch(PDO::FETCH_ASSOC);
     if (!$config || empty($config['access_token'])) {
         echo json_encode(['success' => false, 'error' => 'Active Shopee configuration/token not found']);
@@ -229,10 +223,9 @@ try {
     }
 
     $conn->prepare("
-        INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, status, new_value, created_by, created_at)
-        VALUES (?, 'shopee_sku', ?, ?, ?, 'success', ?, ?, NOW())
+        INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, status, new_value, created_by, created_at)
+        VALUES ('shopee_sku', ?, ?, ?, 'success', ?, ?, NOW())
     ")->execute([
-        $platform,
         $mapping['shopee_item_id'],
         $prodName,
         $newSku,
@@ -252,10 +245,9 @@ try {
 
         $shopeeSku = $newSku ?: $mapping['shopee_variation_sku'] ?: $mapping['shopee_parent_sku'] ?: '—';
         $conn->prepare("
-            INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, old_value, new_value, source, status, created_by, created_at)
-            VALUES (?, 'mapping', ?, ?, ?, ?, ?, ?, 'success', ?, NOW())
+            INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, old_value, new_value, source, status, created_by, created_at)
+            VALUES ('mapping', ?, ?, ?, ?, ?, ?, 'success', ?, NOW())
         ")->execute([
-            $platform,
             $mapping['shopee_item_id'],
             $prodName,
             $shopeeSku,
@@ -281,10 +273,9 @@ try {
     try {
         if (isset($conn) && isset($mapping)) {
             $conn->prepare("
-                INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, status, error_message, created_by, created_at)
-                VALUES (?, 'sync_failed', ?, ?, ?, 'failed', ?, ?, NOW())
+                INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, status, error_message, created_by, created_at)
+                VALUES ('sync_failed', ?, ?, ?, 'failed', ?, ?, NOW())
             ")->execute([
-                $mapping['platform_name'] ?? $platform,
                 $mapping['shopee_item_id'],
                 $mapping['shopee_product_name'],
                 $newSku,

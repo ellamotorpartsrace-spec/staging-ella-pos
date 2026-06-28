@@ -15,14 +15,9 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
-
     // 1. Get API Credentials
-    $cfgStmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
-    $cfgStmt->execute([$platform]);
+    $cfgStmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
+    $cfgStmt->execute();
     $config = $cfgStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$config || empty($config['access_token'])) {
@@ -40,14 +35,14 @@ try {
         if (isset($refreshResult['access_token'])) {
             $accessToken = $refreshResult['access_token'];
             $expiresAt = date('Y-m-d H:i:s', time() + ($refreshResult['expire_in'] ?? 14400));
-            $conn->prepare("UPDATE shopee_config SET access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW() WHERE platform_name=?")
-                 ->execute([$accessToken, $refreshResult['refresh_token'], $expiresAt, $platform]);
+            $conn->prepare("UPDATE shopee_config SET access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW() WHERE is_active=1")
+                 ->execute([$accessToken, $refreshResult['refresh_token'], $expiresAt]);
         }
     }
 
     // 3. Get all distinct Shopee Item IDs in our database
-    $stmt = $conn->prepare("SELECT DISTINCT shopee_item_id FROM shopee_product_mappings WHERE platform_name = ?");
-    $stmt->execute([$platform]);
+    $stmt = $conn->prepare("SELECT DISTINCT shopee_item_id FROM shopee_product_mappings");
+    $stmt->execute();
     $localItemIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     if (empty($localItemIds)) {
@@ -86,11 +81,11 @@ try {
             if (!isset($activeItems[$itemIdStr])) {
                 // Item has been completely deleted from Shopee!
                 // Fetch affected POS products to restore their stock
-                $stmtGetAffected = $conn->prepare("SELECT DISTINCT pos_product_id FROM shopee_product_mappings WHERE platform_name = ? AND shopee_item_id = ? AND pos_product_id IS NOT NULL AND mapping_status IN ('auto', 'manual')");
-                $stmtGetAffected->execute([$platform, $itemIdStr]);
+                $stmtGetAffected = $conn->prepare("SELECT DISTINCT pos_product_id FROM shopee_product_mappings WHERE shopee_item_id = ? AND pos_product_id IS NOT NULL AND mapping_status IN ('auto', 'manual')");
+                $stmtGetAffected->execute([$itemIdStr]);
                 $affectedPosIds = $stmtGetAffected->fetchAll(PDO::FETCH_COLUMN);
 
-                $conn->prepare("DELETE FROM shopee_product_mappings WHERE platform_name = ? AND shopee_item_id = ?")->execute([$platform, $itemIdStr]);
+                $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_item_id = ?")->execute([$itemIdStr]);
                 
                 require_once __DIR__ . '/sync_helpers.php';
                 foreach ($affectedPosIds as $posId) {
@@ -104,12 +99,12 @@ try {
                     $itemsWithModels[] = $itemId;
                     
                     // Cleanup orphaned "Main Item" rows for products that now have variations
-                    $stmtGetAffected = $conn->prepare("SELECT DISTINCT pos_product_id FROM shopee_product_mappings WHERE platform_name = ? AND shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0) AND pos_product_id IS NOT NULL AND mapping_status IN ('auto', 'manual')");
-                    $stmtGetAffected->execute([$platform, $itemIdStr]);
+                    $stmtGetAffected = $conn->prepare("SELECT DISTINCT pos_product_id FROM shopee_product_mappings WHERE shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0) AND pos_product_id IS NOT NULL AND mapping_status IN ('auto', 'manual')");
+                    $stmtGetAffected->execute([$itemIdStr]);
                     $affectedPosIds = $stmtGetAffected->fetchAll(PDO::FETCH_COLUMN);
 
-                    $delStmt = $conn->prepare("DELETE FROM shopee_product_mappings WHERE platform_name = ? AND shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0)");
-                    $delStmt->execute([$platform, $itemIdStr]);
+                    $delStmt = $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_item_id = ? AND (shopee_model_id IS NULL OR shopee_model_id = 0)");
+                    $delStmt->execute([$itemIdStr]);
                     
                     if ($delStmt->rowCount() > 0) {
                         require_once __DIR__ . '/sync_helpers.php';
@@ -147,15 +142,15 @@ try {
                 }
                 
                 // Fetch local models for this item
-                $varStmt = $conn->prepare("SELECT shopee_model_id, pos_product_id, mapping_status FROM shopee_product_mappings WHERE platform_name = ? AND shopee_item_id = ? AND shopee_model_id > 0");
-                $varStmt->execute([$platform, $iid]);
+                $varStmt = $conn->prepare("SELECT shopee_model_id, pos_product_id, mapping_status FROM shopee_product_mappings WHERE shopee_item_id = ? AND shopee_model_id > 0");
+                $varStmt->execute([$iid]);
                 $localModels = $varStmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 foreach ($localModels as $localModel) {
                     $localModelIdStr = (string)$localModel['shopee_model_id'];
                     if (!in_array($localModelIdStr, $activeModelIds)) {
                         // Variation was deleted on Shopee!
-                        $conn->prepare("DELETE FROM shopee_product_mappings WHERE platform_name = ? AND shopee_model_id = ?")->execute([$platform, $localModelIdStr]);
+                        $conn->prepare("DELETE FROM shopee_product_mappings WHERE shopee_model_id = ?")->execute([$localModelIdStr]);
                         
                         if (!empty($localModel['pos_product_id']) && in_array($localModel['mapping_status'], ['auto', 'manual'])) {
                             require_once __DIR__ . '/sync_helpers.php';
@@ -189,8 +184,8 @@ try {
     // Insert Log Record
     $userId = $_SESSION['user_id'] ?? 0;
     $logValue = "Checked: " . count($localItemIds) . " items. Removed: {$deletedItemsCount} ghost items, {$deletedVariationsCount} ghost variations.";
-    $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (platform_name, event_type, product_name, source, status, new_value, created_by, created_at) VALUES (?, 'product_import', 'Ghost Product Cleanup', 'Manual Cleanup', 'success', ?, ?, NOW())");
-    $logStmt->execute([$platform, $logValue, $userId]);
+    $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (event_type, product_name, source, status, new_value, created_by, created_at) VALUES ('product_import', 'Ghost Product Cleanup', 'Manual Cleanup', 'success', ?, ?, NOW())");
+    $logStmt->execute([$logValue, $userId]);
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

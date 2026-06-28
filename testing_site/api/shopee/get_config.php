@@ -18,15 +18,13 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
-
     $stmt = $conn->prepare("SELECT id, environment, partner_id, partner_key, shop_id, shop_region, token_expires_at, access_token, shop_name, is_active, low_stock_threshold, out_of_stock_alerts, buffer_stock,
         CASE WHEN access_token IS NOT NULL AND access_token != '' THEN 1 ELSE 0 END as has_token,
         CASE WHEN refresh_token IS NOT NULL AND refresh_token != '' THEN 1 ELSE 0 END as has_refresh,
         CASE WHEN partner_key IS NOT NULL AND partner_key != '' THEN 1 ELSE 0 END as has_key,
         created_at, updated_at
-        FROM shopee_config WHERE platform_name = ? LIMIT 1");
-    $stmt->execute([$platform]);
+        FROM shopee_config WHERE is_active = 1 LIMIT 1");
+    $stmt->execute();
     $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$config) {
@@ -49,12 +47,11 @@ try {
     }
 
     // Count products
-    $countStmt = $conn->prepare("SELECT 
+    $countStmt = $conn->query("SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN mapping_status IN ('auto','manual') THEN 1 ELSE 0 END) as mapped,
         SUM(CASE WHEN mapping_status = 'unmapped' THEN 1 ELSE 0 END) as unmapped
-        FROM shopee_product_mappings WHERE platform_name = ?");
-    $countStmt->execute([$platform]);
+        FROM shopee_product_mappings");
     $counts = $countStmt->fetch(PDO::FETCH_ASSOC);
 
     $isLes = (isset($_SESSION['username']) && strtolower($_SESSION['username']) === 'les@ella') || (isset($_SESSION['user_id']) && $_SESSION['user_id'] == 12);

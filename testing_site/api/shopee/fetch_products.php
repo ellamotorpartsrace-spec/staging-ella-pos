@@ -38,14 +38,9 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
-
     // Load active Shopee config
-    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
-    $stmt->execute([$platform]);
+    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
+    $stmt->execute();
     $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$config || empty($config['access_token'])) {
@@ -64,8 +59,8 @@ try {
         if (isset($refreshResult['access_token'])) {
             $accessToken = $refreshResult['access_token'];
             $expiresAt = date('Y-m-d H:i:s', time() + ($refreshResult['expire_in'] ?? 14400));
-            $conn->prepare("UPDATE shopee_config SET access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW() WHERE platform_name=?")
-                ->execute([$accessToken, $refreshResult['refresh_token'], $expiresAt, $platform]);
+            $conn->prepare("UPDATE shopee_config SET access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW() WHERE is_active=1")
+                ->execute([$accessToken, $refreshResult['refresh_token'], $expiresAt]);
         } else {
             $errorMsg = $refreshResult['message'] ?? (isset($refreshResult['error']) ? json_encode($refreshResult['error']) : 'Unknown error during refresh');
             throw new Exception("Shopee token expired and auto-refresh failed: " . $errorMsg . ". Please go to Settings and re-authorize.");
@@ -279,9 +274,9 @@ try {
         $stmt = $conn->prepare("
             SELECT id, shopee_item_id, shopee_model_id, matched_pos_sku, pos_product_id, mapping_status, sync_hash 
             FROM shopee_product_mappings 
-            WHERE platform_name = ? AND shopee_item_id IN ($placeholders)
+            WHERE shopee_item_id IN ($placeholders)
         ");
-        $stmt->execute(array_merge([$platform], $itemIds));
+        $stmt->execute($itemIds);
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $key = $row['shopee_item_id'] . '_' . ($row['shopee_model_id'] ?? 'parent');
             $existingMappings[$key] = $row;
@@ -432,14 +427,14 @@ try {
             // Insert new
             $stmt = $conn->prepare("
                 INSERT INTO shopee_product_mappings (
-                    platform_name, shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name,
+                    shopee_item_id, shopee_model_id, shopee_product_name, shopee_variation_name,
                     shopee_parent_sku, shopee_variation_sku, has_variation,
                     shopee_stock, shopee_price, shopee_image_url,
                     matched_pos_sku, pos_product_id, mapping_status, stock_allocation_ratio, sync_hash, last_synced_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 100, ?, NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 100, ?, NOW())
             ");
             $stmt->execute([
-                $platform, $product['shopee_item_id'], $product['shopee_model_id'],
+                $product['shopee_item_id'], $product['shopee_model_id'],
                 $product['shopee_product_name'], $product['shopee_variation_name'],
                 $product['shopee_parent_sku'], $product['shopee_variation_sku'],
                 $product['has_variation'], $product['shopee_stock'], $product['shopee_price'],

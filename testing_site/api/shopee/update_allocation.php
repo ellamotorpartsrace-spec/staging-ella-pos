@@ -36,7 +36,7 @@ try {
         COALESCE(u.multiplier, 1) as unit_multiplier,
         u.unit_name
         FROM shopee_product_mappings m
-        JOIN shopee_config c ON c.platform_name = m.platform_name
+        JOIN shopee_config c ON c.is_active = 1
         LEFT JOIN product_units u ON m.pos_unit_id = u.id
         LEFT JOIN inventory i1 ON m.pos_product_id = i1.variation_id AND i1.store_id = 1
         LEFT JOIN inventory i2 ON m.pos_product_id = i2.variation_id AND i2.store_id = 2
@@ -296,10 +296,9 @@ try {
         $productLogName .= ' — ' . $item['shopee_variation_name'];
     }
 
-    $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, old_value, new_value, source, status, created_by, created_at) 
-        VALUES (?, 'stock_update', ?, ?, ?, ?, ?, 'Manual Allocation (Ratio)', 'success', ?, NOW())");
+    $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, old_value, new_value, source, status, created_by, created_at) 
+        VALUES ('stock_update', ?, ?, ?, ?, ?, 'Manual Allocation (Ratio)', 'success', ?, NOW())");
     $logStmt->execute([
-        $item['platform_name'],
         $item['shopee_item_id'],
         $productLogName,
         $item['matched_pos_sku'],
@@ -324,9 +323,8 @@ try {
             if (isset($item) && !empty($item['shopee_variation_name'])) {
                 $productLogName .= ' — ' . $item['shopee_variation_name'];
             }
-            $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, status, error_message, created_by, created_at) VALUES (?, 'stock_update', ?, ?, ?, 'failed', ?, ?, NOW())");
+            $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, status, error_message, created_by, created_at) VALUES ('stock_update', ?, ?, ?, 'failed', ?, ?, NOW())");
             $logStmt->execute([
-                isset($item) ? $item['platform_name'] : ($_SESSION['shopee_active_platform'] ?? 'shopee_main'),
                 isset($item) ? $item['shopee_item_id'] : null,
                 $productLogName,
                 isset($item) ? $item['matched_pos_sku'] : null,

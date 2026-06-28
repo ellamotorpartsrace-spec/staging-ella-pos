@@ -19,11 +19,9 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
-
     // Load active config
-    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
-    $stmt->execute([$platform]);
+    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
+    $stmt->execute();
     $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$config) {
@@ -46,8 +44,7 @@ try {
     // We construct the absolute URL to the callback handler
     // We construct the absolute URL to the callback handler
     // BASE_URL already contains the full absolute path (e.g. https://domain.com/)
-    // We pass the platform in the state or as a GET param in callbackUrl
-    $callbackUrl = rtrim(BASE_URL, '/') . '/api/shopee/callback.php?platform=' . urlencode($platform);
+    $callbackUrl = rtrim(BASE_URL, '/') . '/api/shopee/callback.php';
 
     $authUrl = $shopee->getAuthUrl($callbackUrl);
 

@@ -92,16 +92,6 @@ require_once '../../includes/sidebar.php';
     </div>
 
     <div class="row g-4">
-<?php
-        $db = new Database();
-        $conn = $db->getConnection();
-        $stmt = $conn->query("SELECT platform_name, account_label FROM api_platforms WHERE platform_name LIKE 'shopee%'");
-        $shopee_accounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        foreach($shopee_accounts as $shopee):
-            $pname = $shopee['platform_name'];
-            $label = $shopee['account_label'] ?: 'Shopee';
-        ?>
         <!-- Shopee Integration Card -->
         <div class="col-12 col-xl-6">
             <div class="card integration-card shadow-sm border-0 h-100">
@@ -110,10 +100,10 @@ require_once '../../includes/sidebar.php';
                         <i class="fa-solid fa-bag-shopping"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-0"><?php echo htmlspecialchars($label); ?></h5>
+                        <h5 class="fw-bold mb-0">Shopee Open Platform</h5>
                         <div class="small text-muted mt-1">Official API V2 Integration</div>
                     </div>
-                    <div class="ms-auto" id="<?php echo $pname; ?>-status-badge">
+                    <div class="ms-auto" id="shopee-status-badge">
                         <span
                             class="badge bg-dark bg-opacity-25 text-white border border-white border-opacity-25 py-2 px-3 rounded-pill">
                             <i class="fa-solid fa-spinner fa-spin me-1"></i> Checking...
@@ -131,30 +121,18 @@ require_once '../../includes/sidebar.php';
                         </div>
                     </div>
 
-                    <form id="form-<?php echo $pname; ?>" class="mt-4" onsubmit="saveShopeeConfig(event, '<?php echo $pname; ?>')">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-secondary small text-uppercase">Partner ID</label>
-                            <input type="text" class="form-control" id="<?php echo $pname; ?>-partner-id" placeholder="e.g. 1234567">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-secondary small text-uppercase">Partner Key</label>
-                            <input type="password" class="form-control" id="<?php echo $pname; ?>-partner-key" placeholder="Shopee Partner Secret Key">
-                        </div>
-                        <div class="mb-3 d-none">
-                            <label class="form-label fw-bold text-secondary small text-uppercase">Shop ID (Auto-filled)</label>
-                            <input type="text" class="form-control bg-light" id="<?php echo $pname; ?>-shop-id" readonly>
-                        </div>
+                    <form id="form-shopee" class="mt-4" onsubmit="saveShopeeConfig(event)">
                         <div class="mb-3">
                             <label
                                 class="form-label fw-bold text-secondary small text-uppercase d-block">Environment</label>
                             <div class="btn-group w-100" role="group">
-                                <input type="radio" class="btn-check" name="<?php echo $pname; ?>-env" id="<?php echo $pname; ?>-env-sandbox"
+                                <input type="radio" class="btn-check" name="shopee-env" id="shopee-env-sandbox"
                                     value="1" checked>
-                                <label class="btn btn-outline-secondary fw-bold" for="<?php echo $pname; ?>-env-sandbox">
+                                <label class="btn btn-outline-secondary fw-bold" for="shopee-env-sandbox">
                                     <i class="fa-solid fa-flask me-1"></i> Sandbox
                                 </label>
-                                <input type="radio" class="btn-check" name="<?php echo $pname; ?>-env" id="<?php echo $pname; ?>-env-live" value="0">
-                                <label class="btn btn-outline-success fw-bold" for="<?php echo $pname; ?>-env-live">
+                                <input type="radio" class="btn-check" name="shopee-env" id="shopee-env-live" value="0">
+                                <label class="btn btn-outline-success fw-bold" for="shopee-env-live">
                                     <i class="fa-solid fa-tower-broadcast me-1"></i> Live Production
                                 </label>
                             </div>
@@ -165,15 +143,15 @@ require_once '../../includes/sidebar.php';
                             <button type="submit" class="btn btn-dark fw-bold px-4">
                                 <i class="fa-solid fa-save me-1"></i> Save Keys
                             </button>
-                            <button type="button" class="btn btn-shopee fw-bold flex-grow-1" id="btn-auth-<?php echo $pname; ?>"
-                                onclick="authorizeShopee('<?php echo $pname; ?>')" disabled>
+                            <button type="button" class="btn btn-shopee fw-bold flex-grow-1" id="btn-auth-shopee"
+                                onclick="authorizeShopee()" disabled>
                                 <i class="fa-solid fa-link me-1"></i> Authorize Shop
                             </button>
                         </div>
 
-                        <div class="mt-3 d-none" id="test-connection-section-<?php echo $pname; ?>">
+                        <div class="mt-3 d-none" id="test-connection-section">
                             <button type="button" class="btn btn-outline-primary fw-bold w-100 py-2"
-                                id="btn-test-<?php echo $pname; ?>" onclick="testShopeeConnection('<?php echo $pname; ?>')">
+                                id="btn-test-shopee" onclick="testShopeeConnection()">
                                 <i class="fa-solid fa-vial me-1"></i> Test Connection
                             </button>
                         </div>
@@ -181,7 +159,6 @@ require_once '../../includes/sidebar.php';
                 </div>
             </div>
         </div>
-        <?php endforeach; ?>
 
         <!-- Website Sync Integration Card -->
         <div class="col-12 col-xl-6">
@@ -283,44 +260,38 @@ require_once '../../includes/sidebar.php';
             const data = await res.json();
 
             if (data.success) {
-                // Load Shopee Accounts dynamically
-                for (const key in data.data) {
-                    if (key.startsWith('shopee')) {
-                        const sh = data.data[key];
-                        const pname = key;
-                        
-                        if (document.getElementById(pname + '-partner-id')) {
-                            if (sh.partner_id) document.getElementById(pname + '-partner-id').value = sh.partner_id;
-                            if (sh.partner_key) document.getElementById(pname + '-partner-key').value = sh.partner_key;
-                            if (sh.shop_id) document.getElementById(pname + '-shop-id').value = sh.shop_id;
+                // Load Shopee
+                if (data.data.shopee) {
+                    const sh = data.data.shopee;
+                    if (sh.partner_id) document.getElementById('shopee-partner-id').value = sh.partner_id;
+                    if (sh.partner_key) document.getElementById('shopee-partner-key').value = sh.partner_key;
+                    if (sh.shop_id) document.getElementById('shopee-shop-id').value = sh.shop_id;
 
-                            if (sh.is_test == "0") {
-                                document.getElementById(pname + '-env-live').checked = true;
-                            } else {
-                                document.getElementById(pname + '-env-sandbox').checked = true;
-                            }
+                    if (sh.is_test == "0") {
+                        document.getElementById('shopee-env-live').checked = true;
+                    } else {
+                        document.getElementById('shopee-env-sandbox').checked = true;
+                    }
 
-                            const authBtn = document.getElementById('btn-auth-' + pname);
-                            const badge = document.getElementById(pname + '-status-badge');
-                            const testSection = document.getElementById('test-connection-section-' + pname);
+                    const authBtn = document.getElementById('btn-auth-shopee');
+                    const badge = document.getElementById('shopee-status-badge');
+                    const testSection = document.getElementById('test-connection-section');
 
-                            if (sh.partner_id && sh.partner_key) {
-                                authBtn.disabled = false;
-                            }
+                    if (sh.partner_id && sh.partner_key) {
+                        authBtn.disabled = false;
+                    }
 
-                            if (sh.is_active) {
-                                testSection.classList.remove('d-none');
-                                if (sh.is_expired) {
-                                    badge.innerHTML = `<span class="badge bg-warning text-dark border border-warning py-2 px-3 rounded-pill fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Token Expired</span>`;
-                                } else {
-                                    badge.innerHTML = `<span class="badge bg-white text-success fw-bold py-2 px-3 rounded-pill shadow-sm"><i class="fa-solid fa-circle-check me-1"></i> Connected</span>`;
-                                    authBtn.innerHTML = '<i class="fa-solid fa-rotate me-1"></i> Re-Authorize';
-                                }
-                            } else {
-                                badge.innerHTML = `<span class="badge bg-dark bg-opacity-25 text-white border border-white border-opacity-25 py-2 px-3 rounded-pill fw-bold"><i class="fa-solid fa-link-slash me-1"></i> Disconnected</span>`;
-                                testSection.classList.add('d-none');
-                            }
+                    if (sh.is_active) {
+                        testSection.classList.remove('d-none');
+                        if (sh.is_expired) {
+                            badge.innerHTML = `<span class="badge bg-warning text-dark border border-warning py-2 px-3 rounded-pill fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Token Expired</span>`;
+                        } else {
+                            badge.innerHTML = `<span class="badge bg-white text-success fw-bold py-2 px-3 rounded-pill shadow-sm"><i class="fa-solid fa-circle-check me-1"></i> Connected</span>`;
+                            authBtn.innerHTML = '<i class="fa-solid fa-rotate me-1"></i> Re-Authorize';
                         }
+                    } else {
+                        badge.innerHTML = `<span class="badge bg-dark bg-opacity-25 text-white border border-white border-opacity-25 py-2 px-3 rounded-pill fw-bold"><i class="fa-solid fa-link-slash me-1"></i> Disconnected</span>`;
+                        testSection.classList.add('d-none');
                     }
                 }
 
@@ -344,7 +315,7 @@ require_once '../../includes/sidebar.php';
         }
     }
 
-    async function saveShopeeConfig(e, platform_name) {
+    async function saveShopeeConfig(e) {
         e.preventDefault();
 
         const btn = e.submitter;
@@ -353,11 +324,11 @@ require_once '../../includes/sidebar.php';
         btn.disabled = true;
 
         const payload = {
-            platform: platform_name,
-            partner_id: document.getElementById(platform_name + '-partner-id').value,
-            partner_key: document.getElementById(platform_name + '-partner-key').value,
-            shop_id: document.getElementById(platform_name + '-shop-id').value,
-            is_test: document.querySelector(`input[name="${platform_name}-env"]:checked`).value
+            platform: 'shopee',
+            partner_id: document.getElementById('shopee-partner-id').value,
+            partner_key: document.getElementById('shopee-partner-key').value,
+            shop_id: document.getElementById('shopee-shop-id').value,
+            is_test: document.querySelector('input[name="shopee-env"]:checked').value
         };
 
         try {
@@ -370,7 +341,7 @@ require_once '../../includes/sidebar.php';
 
             if (data.success) {
                 alert('Shopee credentials saved!');
-                document.getElementById('btn-auth-' + platform_name).disabled = false;
+                document.getElementById('btn-auth-shopee').disabled = false;
                 loadIntegrations();
             } else {
                 alert('Error: ' + data.message);
@@ -383,9 +354,9 @@ require_once '../../includes/sidebar.php';
         }
     }
 
-    function authorizeShopee(platform_name) {
+    function authorizeShopee() {
         // Redirect to our backend which generates the Shopee URL
-        window.location.href = '../../api/system/shopee_auth_redirect.php?platform=' + encodeURIComponent(platform_name);
+        window.location.href = '../../api/system/shopee_auth_redirect.php';
     }
 
     async function saveWebsiteConfig(e) {
@@ -456,14 +427,14 @@ require_once '../../includes/sidebar.php';
         }
     }
 
-    async function testShopeeConnection(platform_name) {
-        const btn = document.getElementById('btn-test-' + platform_name);
+    async function testShopeeConnection() {
+        const btn = document.getElementById('btn-test-shopee');
         const ogContent = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Testing Connection...';
         btn.disabled = true;
 
         try {
-            const res = await fetch('../../api/system/test_shopee.php?platform=' + encodeURIComponent(platform_name));
+            const res = await fetch('../../api/system/test_shopee.php');
             const data = await res.json();
 
             if (data.success) {
