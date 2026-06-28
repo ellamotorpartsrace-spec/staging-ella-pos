@@ -130,13 +130,13 @@ require_once '../../includes/sidebar.php';
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/orders.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon bg-gradient-danger" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;">
-                                <i class="fa-solid fa-boxes-packing"></i>
+                        <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
+                            <div class="lz-nav-icon" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;background:var(--lz-info-bg);color:var(--lz-info);">
+                                <i class="fa-solid fa-sliders"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Orders</div>
-                                <div class="lz-nav-desc">Manage Lazada order queue</div>
+                                <div class="lz-nav-title" style="font-size:.95rem;">Stock Allocation</div>
+                                <div class="lz-nav-desc">Manage online stock safety limits and rules</div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>

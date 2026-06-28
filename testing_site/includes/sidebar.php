@@ -335,9 +335,9 @@ try {
                 </li>
 
                 <li>
-                    <a data-bs-toggle="tooltip" data-sidebar-tooltip="Lazada Orders" href="<?= BASE_URL ?>views/lazada/orders.php"
-                        class="<?= $current_page === 'orders.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-boxes-packing"></i> <span class="nav-text">Lazada Orders</span>
+                    <a data-bs-toggle="tooltip" data-sidebar-tooltip="Stock Allocation" href="<?= BASE_URL ?>views/lazada/allocation.php"
+                        class="<?= $current_page === 'allocation.php' && strpos($_SERVER['REQUEST_URI'], 'lazada') !== false ? 'active' : '' ?>">
+                        <i class="fa-solid fa-sliders"></i> <span class="nav-text">Stock Allocation</span>
                     </a>
                 </li>
 
