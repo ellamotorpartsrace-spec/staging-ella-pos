@@ -50,7 +50,7 @@ try {
             <h5 class="fw-bold mt-2 mb-0 text-white" style="letter-spacing: 0.5px;" id="sidebar-store-name">
                 <?= htmlspecialchars($_store_name) ?>
             </h5>
-            <small class="text-white-50" style="font-size: 0.75rem;">Developed by Benedict Ramirez</small>
+            <small class="text-white-50" style="font-size: 0.75rem;">Developed by Lester Bucag</small>
         </div>
         <!-- <small class="text-white-50">v2.0 | <?= ucfirst($role) ?></small> -->
     </div>

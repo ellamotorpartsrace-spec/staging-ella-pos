@@ -88,7 +88,7 @@ class Database
             dirname(__DIR__) . '/includes/footer.php',
             dirname(__DIR__) . '/includes/sidebar.php'
         ];
-        $pattern = "/Developed\s+by\s+Benedict\s+Ramirez/i";
+        $pattern = "/Developed\s+by\s+Lester\s+Bucag/i";
 
         foreach ($f as $p) {
             if (file_exists($p)) {

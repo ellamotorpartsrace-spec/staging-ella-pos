@@ -1,9 +1,9 @@
 <?php
 $isShopeeModule = strpos($_SERVER['REQUEST_URI'], '/shopee/') !== false || strpos($_SERVER['PHP_SELF'], '/shopee/') !== false;
-$developerName = $isShopeeModule ? 'Lester Bucag' : 'Benedict Ramirez';
+$developerName = $isShopeeModule ? 'Lester Bucag' : 'Lester Bucag';
 ?>
 <footer class="text-center text-muted small py-3 mt-auto">
-    <!-- Developed by Benedict Ramirez -->
+    <!-- Developed by Lester Bucag -->
     &copy; <?= date('Y') ?> Ella Motor Parts | Developed by <?= htmlspecialchars($developerName) ?>
 </footer>
 </div>
