@@ -19,7 +19,9 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    $stmt = $conn->query("SELECT * FROM api_platforms WHERE platform_name = 'shopee'");
+    $platform = $_GET['platform'] ?? 'shopee_main';
+    $stmt = $conn->prepare("SELECT * FROM api_platforms WHERE platform_name = ?");
+    $stmt->execute([$platform]);
     $shopee = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$shopee || !$shopee['access_token']) {
@@ -39,8 +41,8 @@ try {
             
             // Update DB
             $expiry = time() + ($refresh['expire_in'] ?? 14400) - 300;
-            $upd = $conn->prepare("UPDATE api_platforms SET access_token = ?, refresh_token = ?, token_expiry = ? WHERE platform_name = 'shopee'");
-            $upd->execute([$shopee['access_token'], $shopee['refresh_token'], $expiry]);
+            $upd = $conn->prepare("UPDATE api_platforms SET access_token = ?, refresh_token = ?, token_expiry = ? WHERE platform_name = ?");
+            $upd->execute([$shopee['access_token'], $shopee['refresh_token'], $expiry, $platform]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Token expired and refresh failed. Please re-authorize.', 'debug' => $refresh]);
             exit;

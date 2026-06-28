@@ -16,7 +16,9 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    $stmt = $conn->query("SELECT partner_id, partner_key, is_test, is_active FROM api_platforms WHERE platform_name = 'shopee'");
+    $platform = $_GET['platform'] ?? 'shopee_main';
+    $stmt = $conn->prepare("SELECT partner_id, partner_key, is_test, is_active FROM api_platforms WHERE platform_name = ?");
+    $stmt->execute([$platform]);
     $shopee = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$shopee || empty($shopee['partner_id']) || empty($shopee['partner_key'])) {
@@ -30,7 +32,7 @@ try {
     // Using a dynamic or static base path depending on the host
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'];
-    $redirect_url = $protocol . '://' . $host . rtrim(dirname(dirname($_SERVER['PHP_SELF'])), '/\\') . '/system/shopee_auth_callback.php';
+    $redirect_url = $protocol . '://' . $host . rtrim(dirname(dirname($_SERVER['PHP_SELF'])), '/\\') . '/system/shopee_auth_callback.php?platform=' . urlencode($platform);
 
     $authUrl = $api->getAuthUrl($redirect_url);
     

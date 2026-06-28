@@ -25,117 +25,124 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    // 1. Get active Shopee config
-    $stmt = $conn->query("SELECT * FROM api_platforms WHERE platform_name = 'shopee' AND is_active = 1");
-    $shopee = $stmt->fetch(PDO::FETCH_ASSOC);
+    // 1. Get active Shopee configs
+    $stmt = $conn->query("SELECT * FROM api_platforms WHERE platform_name LIKE 'shopee%' AND is_active = 1");
+    $shopee_accounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (!$shopee) {
-        die(json_encode(['success' => false, 'message' => 'Shopee API not active.']));
+    if (!$shopee_accounts) {
+        die(json_encode(['success' => false, 'message' => 'No active Shopee APIs found.']));
     }
 
-    $api = new ShopeeAPI($shopee['partner_id'], $shopee['partner_key'], true);
+    $total_processed = 0;
+    $total_errors = 0;
 
-    // 2. Refresh Token if needed
-    if ($shopee['token_expiry'] && (time() + 600) > $shopee['token_expiry']) {
-        $refresh = $api->refreshToken($shopee['refresh_token'], (string) $shopee['shop_id']);
-        if (isset($refresh['access_token'])) {
-            $shopee['access_token'] = $refresh['access_token'];
-            $shopee['refresh_token'] = $refresh['refresh_token'];
-            $shopee['token_expiry'] = time() + (int) $refresh['expire_in'] - 300;
+    foreach ($shopee_accounts as $shopee) {
+        $platform_name = $shopee['platform_name'];
+        $api = new ShopeeAPI($shopee['partner_id'], $shopee['partner_key'], true);
 
-            $upd = $conn->prepare("UPDATE api_platforms SET access_token = ?, refresh_token = ?, token_expiry = ? WHERE platform_name = 'shopee'");
-            $upd->execute([$shopee['access_token'], $shopee['refresh_token'], $shopee['token_expiry']]);
-        }
-    }
+        // 2. Refresh Token if needed
+        if ($shopee['token_expiry'] && (time() + 600) > $shopee['token_expiry']) {
+            $refresh = $api->refreshToken($shopee['refresh_token'], (string) $shopee['shop_id']);
+            if (isset($refresh['access_token'])) {
+                $shopee['access_token'] = $refresh['access_token'];
+                $shopee['refresh_token'] = $refresh['refresh_token'];
+                $shopee['token_expiry'] = time() + (int) $refresh['expire_in'] - 300;
 
-    // 3. Fetch pending items from queue
-    // Processing in small batches to avoid timeouts
-    $stmtQueue = $conn->prepare("
-        SELECT q.queue_id, q.variation_id, q.new_quantity, l.online_product_id, l.online_variation_id 
-        FROM api_sync_queue q
-        JOIN online_platform_links l ON q.variation_id = l.variation_id
-        WHERE q.platform = 'shopee' AND q.status = 'pending' AND l.platform = 'Shopee' AND l.is_active = 1
-        ORDER BY q.created_at ASC
-        LIMIT 20
-    ");
-    $stmtQueue->execute();
-    $jobs = $stmtQueue->fetchAll(PDO::FETCH_ASSOC);
-
-    if (empty($jobs)) {
-        echo json_encode(['success' => true, 'message' => 'No pending items in queue.']);
-        exit;
-    }
-
-    $processed = 0;
-    $errors = 0;
-
-    // 4. Mark jobs as 'processing'
-    $jobIds = array_column($jobs, 'queue_id');
-    $placeholders = implode(',', array_fill(0, count($jobIds), '?'));
-    $conn->prepare("UPDATE api_sync_queue SET status = 'processing' WHERE queue_id IN ($placeholders)")->execute($jobIds);
-
-    // 5. Build batches grouped by online_product_id (item_id)
-    $batches = [];
-    foreach ($jobs as $job) {
-        $pid = $job['online_product_id'];
-        if (!$pid)
-            continue;
-
-        if (!isset($batches[$pid])) {
-            $batches[$pid] = [
-                'item_id' => (int) $pid,
-                'stock_list' => [],
-                'queue_ids' => []
-            ];
+                $upd = $conn->prepare("UPDATE api_platforms SET access_token = ?, refresh_token = ?, token_expiry = ? WHERE platform_name = ?");
+                $upd->execute([$shopee['access_token'], $shopee['refresh_token'], $shopee['token_expiry'], $platform_name]);
+            }
         }
 
-        $stockItem = [
-            'seller_stock' => [
-                [
-                    'stock' => (float) $job['new_quantity']
+        // 3. Fetch pending items from queue
+        // Processing in small batches to avoid timeouts
+        $stmtQueue = $conn->prepare("
+            SELECT q.queue_id, q.variation_id, q.new_quantity, l.online_product_id, l.online_variation_id 
+            FROM api_sync_queue q
+            JOIN online_platform_links l ON q.variation_id = l.variation_id
+            WHERE q.platform = ? AND q.status = 'pending' AND l.platform = ? AND l.is_active = 1
+            ORDER BY q.created_at ASC
+            LIMIT 20
+        ");
+        $stmtQueue->execute([$platform_name, $platform_name]);
+        $jobs = $stmtQueue->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($jobs)) {
+            continue; // Move to next account
+        }
+
+        $processed = 0;
+        $errors = 0;
+
+        // 4. Mark jobs as 'processing'
+        $jobIds = array_column($jobs, 'queue_id');
+        $placeholders = implode(',', array_fill(0, count($jobIds), '?'));
+        $conn->prepare("UPDATE api_sync_queue SET status = 'processing' WHERE queue_id IN ($placeholders)")->execute($jobIds);
+
+        // 5. Build batches grouped by online_product_id (item_id)
+        $batches = [];
+        foreach ($jobs as $job) {
+            $pid = $job['online_product_id'];
+            if (!$pid) continue;
+
+            if (!isset($batches[$pid])) {
+                $batches[$pid] = [
+                    'item_id' => (int) $pid,
+                    'stock_list' => [],
+                    'queue_ids' => []
+                ];
+            }
+
+            $stockItem = [
+                'seller_stock' => [
+                    [
+                        'stock' => (float) $job['new_quantity']
+                    ]
                 ]
-            ]
-        ];
-        if (!empty($job['online_variation_id'])) {
-            $stockItem['model_id'] = (int) $job['online_variation_id'];
-        }
-        $batches[$pid]['stock_list'][] = $stockItem;
-        $batches[$pid]['queue_ids'][] = $job['queue_id'];
-    }
-
-    // 6. Push each batch to Shopee
-    foreach ($batches as $batch) {
-        try {
-            $response = $api->post('/api/v2/product/update_stock', [
-                'item_id' => $batch['item_id'],
-                'stock_list' => $batch['stock_list']
-            ], $shopee['access_token'], (string) $shopee['shop_id']);
-
-            if (isset($response['error']) && !empty($response['error'])) {
-                throw new Exception($response['message'] ?? $response['error']);
+            ];
+            if (!empty($job['online_variation_id'])) {
+                $stockItem['model_id'] = (int) $job['online_variation_id'];
             }
-
-            // Success: Update queue
-            $ids = implode(',', $batch['queue_ids']);
-            $conn->prepare("UPDATE api_sync_queue SET status = 'success' WHERE queue_id IN ($ids)")->execute();
-            $processed += count($batch['queue_ids']);
-
-        } catch (Exception $e) {
-            // Failed: Update queue with error
-            $errMsg = $e->getMessage();
-            $stmtFail = $conn->prepare("UPDATE api_sync_queue SET status = 'failed', last_error = ?, attempts = attempts + 1 WHERE queue_id = ?");
-            foreach ($batch['queue_ids'] as $qid) {
-                $stmtFail->execute([$errMsg, $qid]);
-            }
-            $errors += count($batch['queue_ids']);
+            $batches[$pid]['stock_list'][] = $stockItem;
+            $batches[$pid]['queue_ids'][] = $job['queue_id'];
         }
+
+        // 6. Push each batch to Shopee
+        foreach ($batches as $batch) {
+            try {
+                $response = $api->post('/api/v2/product/update_stock', [
+                    'item_id' => $batch['item_id'],
+                    'stock_list' => $batch['stock_list']
+                ], $shopee['access_token'], (string) $shopee['shop_id']);
+
+                if (isset($response['error']) && !empty($response['error'])) {
+                    throw new Exception($response['message'] ?? $response['error']);
+                }
+
+                // Success: Update queue
+                $ids = implode(',', $batch['queue_ids']);
+                $conn->prepare("UPDATE api_sync_queue SET status = 'success' WHERE queue_id IN ($ids)")->execute();
+                $processed += count($batch['queue_ids']);
+
+            } catch (Exception $e) {
+                // Failed: Update queue with error
+                $errMsg = $e->getMessage();
+                $stmtFail = $conn->prepare("UPDATE api_sync_queue SET status = 'failed', last_error = ?, attempts = attempts + 1 WHERE queue_id = ?");
+                foreach ($batch['queue_ids'] as $qid) {
+                    $stmtFail->execute([$errMsg, $qid]);
+                }
+                $errors += count($batch['queue_ids']);
+            }
+        }
+        
+        $total_processed += $processed;
+        $total_errors += $errors;
     }
 
     echo json_encode([
         'success' => true,
         'summary' => [
-            'processed' => $processed,
-            'errors' => $errors
+            'processed' => $total_processed,
+            'errors' => $total_errors
         ]
     ]);
 

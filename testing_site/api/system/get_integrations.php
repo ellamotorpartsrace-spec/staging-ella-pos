@@ -17,12 +17,13 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    $stmt = $conn->query("SELECT platform_name, partner_id, partner_key, webhook_url, shop_id, is_test, token_expiry, is_active FROM api_platforms");
+    $stmt = $conn->query("SELECT platform_name, account_label, partner_id, partner_key, webhook_url, shop_id, is_test, token_expiry, is_active FROM api_platforms");
     $platforms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $results = [];
     foreach ($platforms as $p) {
         $results[$p['platform_name']] = [
+            'account_label' => $p['account_label'] ?? $p['platform_name'],
             'partner_id' => $p['partner_id'] ?? '',
             'partner_key' => $p['partner_key'] ?? '',
             'webhook_url' => $p['webhook_url'] ?? '',
