@@ -33,9 +33,9 @@ class Database
         } else {
             // --- ONLINE SETTINGS (PRODUCTION) ---
             $this->host = "localhost";
-            $this->dbname = "u296077208_ella_parts_db";
-            $this->username = "u296077208_BenzEllaMotor";
-            $this->password = "elladbPogisiBen13";
+            $this->dbname = "u296077208_testing_site";
+            $this->username = "u296077208_testing";
+            $this->password = "ellaTesttingsite098";
         }
     }
 
