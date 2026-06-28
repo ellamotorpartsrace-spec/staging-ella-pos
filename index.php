@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="3; url=ella-pos/">
+    <meta http-equiv="refresh" content="3; url=testing_site/">
     <title>Redirecting...</title>
     <style>
         :root {
@@ -171,13 +171,13 @@
             <span class="mark"><img src="logo.png" alt=""></span>
         </div>
         <h1>Opening Ella POS</h1>
-        <p>Redirecting you to <a href="ella-pos/">ella-pos</a>.</p>
+        <p>Redirecting you to <a href="testing_site/">Testing Site</a>.</p>
         <div class="bar" aria-hidden="true"><span></span></div>
     </main>
 
     <script>
         window.setTimeout(function () {
-            window.location.href = 'ella-pos/';
+            window.location.href = 'testing_site/';
         }, 3000);
     </script>
 </body>
