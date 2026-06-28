@@ -32,6 +32,7 @@ $authShopId  = $_GET['shop_id'] ?? '';
 
 <div class="sp-page sp-animate">
     <?php require_once __DIR__ . '/shopee_token_warning.php'; ?>
+    <?php require_once __DIR__ . '/account_switcher.php'; ?>
     <div class="sp-breadcrumb">
         <a href="<?= BASE_URL ?>views/shopee/index.php">Shopee Sync</a>
         <i class="fa-solid fa-chevron-right" style="font-size:0.6rem"></i>

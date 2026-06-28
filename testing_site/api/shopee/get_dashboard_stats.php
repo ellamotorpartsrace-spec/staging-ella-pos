@@ -14,42 +14,57 @@ try {
     $db   = new Database();
     $conn = $db->getConnection();
 
+    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
+
     // Parent product count (unique item IDs)
-    $totalParents = (int)$conn->query("SELECT COUNT(DISTINCT shopee_item_id) FROM shopee_product_mappings")->fetchColumn();
+    $stmt = $conn->prepare("SELECT COUNT(DISTINCT shopee_item_id) FROM shopee_product_mappings WHERE platform_name = ?");
+    $stmt->execute([$platform]);
+    $totalParents = (int)$stmt->fetchColumn();
+
     // Total variations (all rows)
-    $totalVars    = (int)$conn->query("SELECT COUNT(*) FROM shopee_product_mappings")->fetchColumn();
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM shopee_product_mappings WHERE platform_name = ?");
+    $stmt->execute([$platform]);
+    $totalVars    = (int)$stmt->fetchColumn();
 
     // Mapping stats
-    $mapStats = $conn->query("
+    $stmt = $conn->prepare("
         SELECT
             SUM(CASE WHEN mapping_status IN ('auto','manual')          THEN 1 ELSE 0 END) AS matched,
             SUM(CASE WHEN mapping_status = 'unmapped'                  THEN 1 ELSE 0 END) AS unmatched,
             SUM(CASE WHEN mapping_status IN ('missing_sku','duplicate') THEN 1 ELSE 0 END) AS errors
-        FROM shopee_product_mappings
-    ")->fetch(PDO::FETCH_ASSOC);
+        FROM shopee_product_mappings WHERE platform_name = ?
+    ");
+    $stmt->execute([$platform]);
+    $mapStats = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Stock stats
-    $stockStats = $conn->query("
+    $stmt = $conn->prepare("
         SELECT
             SUM(CASE WHEN shopee_stock = 0              THEN 1 ELSE 0 END) AS oos,
             SUM(CASE WHEN shopee_stock > 0 AND shopee_stock <= 5 THEN 1 ELSE 0 END) AS low_stock
-        FROM shopee_product_mappings
-    ")->fetch(PDO::FETCH_ASSOC);
+        FROM shopee_product_mappings WHERE platform_name = ?
+    ");
+    $stmt->execute([$platform]);
+    $stockStats = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Waiting for mapping (unmapped + has SKU)
-    $waitingForMapping = (int)$conn->query("
+    $stmt = $conn->prepare("
         SELECT COUNT(*) FROM shopee_product_mappings
-        WHERE mapping_status = 'unmapped'
+        WHERE platform_name = ? AND mapping_status = 'unmapped'
         AND (shopee_variation_sku != '' OR shopee_parent_sku != '')
-    ")->fetchColumn();
+    ");
+    $stmt->execute([$platform]);
+    $waitingForMapping = (int)$stmt->fetchColumn();
 
     // Last sync info fallback strategy
     // 1. Check successful log
-    $lastSyncTime = $conn->query("
+    $stmt = $conn->prepare("
         SELECT created_at FROM shopee_sync_logs
-        WHERE status='success' AND event_type IN ('product_import', 'stock_update')
+        WHERE platform_name = ? AND status='success' AND event_type IN ('product_import', 'stock_update')
         ORDER BY created_at DESC LIMIT 1
-    ")->fetchColumn();
+    ");
+    $stmt->execute([$platform]);
+    $lastSyncTime = $stmt->fetchColumn();
 
     // 2. Fallback to latest queue completion
     if (!$lastSyncTime) {
@@ -60,22 +75,27 @@ try {
         ")->fetchColumn();
     }
 
-    // 3. Fallback to latest product mapping sync
     if (!$lastSyncTime) {
-        $lastSyncTime = $conn->query("
-            SELECT MAX(last_synced_at) FROM shopee_product_mappings
-        ")->fetchColumn();
+        $stmt = $conn->prepare("
+            SELECT MAX(last_synced_at) FROM shopee_product_mappings WHERE platform_name = ?
+        ");
+        $stmt->execute([$platform]);
+        $lastSyncTime = $stmt->fetchColumn();
     }
 
 
     // Recently synced (last 24h)
-    $recentlySynced = (int)$conn->query("
+    $stmt = $conn->prepare("
         SELECT COUNT(DISTINCT shopee_item_id) FROM shopee_product_mappings
-        WHERE last_synced_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-    ")->fetchColumn();
+        WHERE platform_name = ? AND last_synced_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    ");
+    $stmt->execute([$platform]);
+    $recentlySynced = (int)$stmt->fetchColumn();
 
     // Config / connection status
-    $config = $conn->query("SELECT is_active, access_token, token_expires_at, environment, shop_id FROM shopee_config WHERE is_active=1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    $stmt = $conn->prepare("SELECT is_active, access_token, token_expires_at, environment, shop_id FROM shopee_config WHERE platform_name=? LIMIT 1");
+    $stmt->execute([$platform]);
+    $config = $stmt->fetch(PDO::FETCH_ASSOC);
     $connected  = !empty($config) && !empty($config['access_token']);
     $expTs      = $connected ? strtotime($config['token_expires_at'] ?? '') : 0;
     $tokenValid = $expTs && $expTs > time();

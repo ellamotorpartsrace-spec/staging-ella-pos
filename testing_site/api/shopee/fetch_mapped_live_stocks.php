@@ -39,8 +39,13 @@ try {
         exit;
     }
 
-    $cfgStmt = $conn->prepare("SELECT out_of_stock_alerts FROM shopee_config WHERE is_active = 1 LIMIT 1");
-    $cfgStmt->execute();
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
+
+    $cfgStmt = $conn->prepare("SELECT out_of_stock_alerts FROM shopee_config WHERE platform_name = ? LIMIT 1");
+    $cfgStmt->execute([$platform]);
     $config = $cfgStmt->fetch(PDO::FETCH_ASSOC);
 
     $updated = [];
@@ -49,7 +54,7 @@ try {
     // Pre-warm the Shopee API cache using concurrent requests
     if (function_exists('prewarmShopeeApiCache')) {
         $uniqueItemIds = array_unique(array_column($mappings, 'shopee_item_id'));
-        prewarmShopeeApiCache($conn, $uniqueItemIds);
+        prewarmShopeeApiCache($conn, $uniqueItemIds, $platform);
     }
 
     // Loop through each mapping and sync live values
@@ -66,7 +71,7 @@ try {
 
         try {
             // Fetch true live stock and price from Shopee API
-            $liveData = fetchLiveShopeeStockAndPrice($conn, $itemId, $modelId);
+            $liveData = fetchLiveShopeeStockAndPrice($conn, $itemId, $modelId, $platform);
             $liveStock = $liveData['stock'];
             $livePrice = $liveData['price'];
 
@@ -83,8 +88,8 @@ try {
             // Create OOS alert if stock hit 0 and it wasn't 0 before
             if ($allocatedStock == 0 && (int)$map['shopee_stock'] > 0 && !empty($config['out_of_stock_alerts'])) {
                 $alertMsg = "'{$prodName}' has run completely out of stock online! Please restock soon.";
-                $conn->prepare("INSERT INTO shopee_alerts (mapping_id, message) VALUES (?, ?)")
-                     ->execute([$mapId, $alertMsg]);
+                $conn->prepare("INSERT INTO shopee_alerts (platform_name, mapping_id, message) VALUES (?, ?, ?)")
+                     ->execute([$platform, $mapId, $alertMsg]);
             }
 
             // NOTE: Do NOT call propagateStockToPos here.
@@ -321,10 +326,11 @@ try {
 
                 // Log successful sync as a stock_update event
                 $logStmt = $conn->prepare("
-                    INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, old_value, new_value, status, source, created_by, created_at)
-                    VALUES ('stock_update', ?, ?, ?, ?, ?, 'success', 'Live Sync Manual Fetch', ?, NOW())
+                    INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, old_value, new_value, status, source, created_by, created_at)
+                    VALUES (?, 'stock_update', ?, ?, ?, ?, ?, 'success', 'Live Sync Manual Fetch', ?, NOW())
                 ");
                 $logStmt->execute([
+                    $platform,
                     $itemId,
                     $prodName,
                     $skuVal,
@@ -344,10 +350,11 @@ try {
             if (!$skipLog) {
                 // Log sync failure
                 $logStmt = $conn->prepare("
-                    INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, status, error_message, source, created_by, created_at)
-                    VALUES ('stock_update', ?, ?, ?, 'failed', ?, 'Live Sync Manual Fetch', ?, NOW())
+                    INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, status, error_message, source, created_by, created_at)
+                    VALUES (?, 'stock_update', ?, ?, ?, 'failed', ?, 'Live Sync Manual Fetch', ?, NOW())
                 ");
                 $logStmt->execute([
+                    $platform,
                     $itemId,
                     $prodName,
                     $skuVal,

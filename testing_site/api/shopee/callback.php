@@ -8,6 +8,11 @@ require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../classes/ShopeeAPI.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$platform = $_SESSION['shopee_active_platform'] ?? ($_GET['platform'] ?? 'shopee_main');
+
 try {
     $code   = $_GET['code'] ?? '';
     $shopId = $_GET['shop_id'] ?? '';
@@ -20,8 +25,8 @@ try {
     $conn = $db->getConnection();
 
     // Load active config
-    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
+    $stmt->execute([$platform]);
     $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$config) {
@@ -52,16 +57,16 @@ try {
     $stmt = $conn->prepare("
         UPDATE shopee_config 
         SET shop_id = ?, access_token = ?, refresh_token = ?, token_expires_at = ?, updated_at = NOW()
-        WHERE is_active = 1
+        WHERE platform_name = ?
     ");
-    $stmt->execute([$shopId, $accessToken, $refreshToken, $expiresAt]);
+    $stmt->execute([$shopId, $accessToken, $refreshToken, $expiresAt, $platform]);
 
     // Log success
     $stmt = $conn->prepare("
-        INSERT INTO shopee_sync_logs (event_type, source, status, created_at)
-        VALUES ('token_refresh', ?, 'success', NOW())
+        INSERT INTO shopee_sync_logs (platform_name, event_type, source, status, created_at)
+        VALUES (?, 'token_refresh', ?, 'success', NOW())
     ");
-    $stmt->execute(['OAuth authorization — Shop ID: ' . $shopId]);
+    $stmt->execute([$platform, 'OAuth authorization — Shop ID: ' . $shopId]);
 
     // Redirect to settings page with success
     header("Location: " . BASE_URL . "views/shopee/settings.php?auth=success&shop_id=" . $shopId);

@@ -31,7 +31,7 @@ try {
         COALESCE(i2.quantity, 0) as pos_shopee_qty,
         COALESCE(i3.quantity, 0) as pos_lazada_qty
         FROM shopee_product_mappings m
-        JOIN shopee_config c ON c.is_active = 1
+        JOIN shopee_config c ON c.platform_name = m.platform_name
         LEFT JOIN inventory i1 ON m.pos_product_id = i1.variation_id AND i1.store_id = 1
         LEFT JOIN inventory i2 ON m.pos_product_id = i2.variation_id AND i2.store_id = 2
         LEFT JOIN inventory i3 ON m.pos_product_id = i3.variation_id AND i3.store_id = 3
@@ -212,8 +212,9 @@ try {
     $label = ($diff > 0) ? "Added" : ($diff < 0 ? "Deducted" : "Updated");
 
     // 4. Log the success in shopee_sync_logs
-    $conn->prepare("INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, old_value, new_value, source, status, created_by, created_at) VALUES ('stock_update', ?, ?, ?, ?, ?, 'Manual Sync (Individual)', 'success', ?, NOW())")
+    $conn->prepare("INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, old_value, new_value, source, status, created_by, created_at) VALUES (?, 'stock_update', ?, ?, ?, ?, ?, 'Manual Sync (Individual)', 'success', ?, NOW())")
         ->execute([
+            $item['platform_name'],
             $item['shopee_item_id'],
             $item['shopee_product_name'], 
             $item['matched_pos_sku'], 
@@ -232,8 +233,9 @@ try {
     }
     try {
         if (isset($conn)) {
-            $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (event_type, shopee_item_id, product_name, sku, status, error_message, created_by, created_at) VALUES ('stock_update', ?, ?, ?, 'failed', ?, ?, NOW())");
+            $logStmt = $conn->prepare("INSERT INTO shopee_sync_logs (platform_name, event_type, shopee_item_id, product_name, sku, status, error_message, created_by, created_at) VALUES (?, 'stock_update', ?, ?, ?, 'failed', ?, ?, NOW())");
             $logStmt->execute([
+                isset($item) ? $item['platform_name'] : ($_SESSION['shopee_active_platform'] ?? 'shopee_main'),
                 isset($item) ? $item['shopee_item_id'] : null,
                 isset($item) ? $item['shopee_product_name'] : null,
                 isset($item) ? $item['matched_pos_sku'] : null,

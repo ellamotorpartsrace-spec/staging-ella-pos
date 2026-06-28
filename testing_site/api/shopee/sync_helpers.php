@@ -119,13 +119,13 @@ if (!function_exists('fetchLiveShopeeStockAndPrice')) {
     /**
      * Fetch the live stock and price for a specific Shopee item (and model variation if applicable)
      */
-    function fetchLiveShopeeStockAndPrice($conn, $itemId, $modelId = null) {
+    function fetchLiveShopeeStockAndPrice($conn, $itemId, $modelId = null, $platform = 'shopee_main') {
         require_once __DIR__ . '/../../classes/ShopeeAPI.php';
         global $shopeeApiCache;
         if (!is_array($shopeeApiCache)) $shopeeApiCache = [];
 
-        $cfgStmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
-        $cfgStmt->execute();
+        $cfgStmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
+        $cfgStmt->execute([$platform]);
         $config = $cfgStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$config || empty($config['access_token'])) {
@@ -142,8 +142,8 @@ if (!function_exists('fetchLiveShopeeStockAndPrice')) {
             if (isset($refreshResult['access_token'])) {
                 $accessToken = $refreshResult['access_token'];
                 $expiresAt = date('Y-m-d H:i:s', time() + ($refreshResult['expire_in'] ?? 14400));
-                $conn->prepare("UPDATE shopee_config SET access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW() WHERE is_active=1")
-                     ->execute([$accessToken, $refreshResult['refresh_token'], $expiresAt]);
+                $conn->prepare("UPDATE shopee_config SET access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW() WHERE platform_name=?")
+                     ->execute([$accessToken, $refreshResult['refresh_token'], $expiresAt, $platform]);
             }
         }
 
@@ -271,15 +271,15 @@ if (!function_exists('fetchLiveShopeeStockAndPrice')) {
 }
 
 if (!function_exists('prewarmShopeeApiCache')) {
-    function prewarmShopeeApiCache($conn, $itemIds) {
+    function prewarmShopeeApiCache($conn, $itemIds, $platform = 'shopee_main') {
         require_once __DIR__ . '/../../classes/ShopeeAPI.php';
         global $shopeeApiCache;
         if (!is_array($shopeeApiCache)) $shopeeApiCache = [];
 
         if (empty($itemIds)) return;
 
-        $cfgStmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
-        $cfgStmt->execute();
+        $cfgStmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
+        $cfgStmt->execute([$platform]);
         $config = $cfgStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$config || empty($config['access_token'])) return;
@@ -294,8 +294,8 @@ if (!function_exists('prewarmShopeeApiCache')) {
             if (isset($refreshResult['access_token'])) {
                 $accessToken = $refreshResult['access_token'];
                 $expiresAt = date('Y-m-d H:i:s', time() + ($refreshResult['expire_in'] ?? 14400));
-                $conn->prepare("UPDATE shopee_config SET access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW() WHERE is_active=1")
-                     ->execute([$accessToken, $refreshResult['refresh_token'], $expiresAt]);
+                $conn->prepare("UPDATE shopee_config SET access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW() WHERE platform_name=?")
+                     ->execute([$accessToken, $refreshResult['refresh_token'], $expiresAt, $platform]);
             }
         }
 

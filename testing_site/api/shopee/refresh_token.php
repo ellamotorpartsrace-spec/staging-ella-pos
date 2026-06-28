@@ -19,9 +19,11 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
+    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
+
     // Load active Shopee config
-    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
+    $stmt->execute([$platform]);
     $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$config) {
@@ -46,8 +48,8 @@ try {
         $errorMsg = $result['message'] ?? (is_string($result['error']) ? $result['error'] : json_encode($result['error']));
         
         // Log the failure
-        $conn->prepare("INSERT INTO shopee_sync_logs (event_type, source, status, error_message, created_by, created_at) VALUES ('token_refresh', 'Manual Refresh', 'failed', ?, ?, NOW())")
-             ->execute([$errorMsg, $_SESSION['user_id'] ?? null]);
+        $conn->prepare("INSERT INTO shopee_sync_logs (platform_name, event_type, source, status, error_message, created_by, created_at) VALUES (?, 'token_refresh', 'Manual Refresh', 'failed', ?, ?, NOW())")
+             ->execute([$platform, $errorMsg, $_SESSION['user_id'] ?? null]);
 
         echo json_encode(['success' => false, 'error' => 'Shopee API Error: ' . $errorMsg]);
         exit;
@@ -67,13 +69,13 @@ try {
     $stmt = $conn->prepare("
         UPDATE shopee_config 
         SET access_token = ?, refresh_token = ?, token_expires_at = ?, updated_at = NOW()
-        WHERE is_active = 1
+        WHERE platform_name = ?
     ");
-    $stmt->execute([$newAccessToken, $newRefreshToken, $expiresAt]);
+    $stmt->execute([$newAccessToken, $newRefreshToken, $expiresAt, $platform]);
 
     // Log success
-    $conn->prepare("INSERT INTO shopee_sync_logs (event_type, source, status, created_by, created_at) VALUES ('token_refresh', 'Manual Refresh', 'success', ?, NOW())")
-         ->execute([$_SESSION['user_id'] ?? null]);
+    $conn->prepare("INSERT INTO shopee_sync_logs (platform_name, event_type, source, status, created_by, created_at) VALUES (?, 'token_refresh', 'Manual Refresh', 'success', ?, NOW())")
+         ->execute([$platform, $_SESSION['user_id'] ?? null]);
 
     echo json_encode([
         'success' => true, 

@@ -34,9 +34,11 @@ try {
     $oosAlerts   = (int) ($data['out_of_stock_alerts'] ?? 1);
     $bufferStock = (int) ($data['buffer_stock'] ?? 0);
 
+    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
+
     // Fetch existing active config
-    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
+    $stmt->execute([$platform]);
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (empty($partnerId)) {
@@ -74,10 +76,10 @@ try {
         $stmt->execute([$environment, $partnerId, $partnerKey, $shopRegion, $lowStockThresh, $oosAlerts, $bufferStock, $existing['id']]);
     } else {
         $stmt = $conn->prepare("
-            INSERT INTO shopee_config (environment, partner_id, partner_key, shop_region, low_stock_threshold, out_of_stock_alerts, buffer_stock, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+            INSERT INTO shopee_config (platform_name, environment, partner_id, partner_key, shop_region, low_stock_threshold, out_of_stock_alerts, buffer_stock, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
         ");
-        $stmt->execute([$environment, $partnerId, $partnerKey, $shopRegion, $lowStockThresh, $oosAlerts, $bufferStock]);
+        $stmt->execute([$platform, $environment, $partnerId, $partnerKey, $shopRegion, $lowStockThresh, $oosAlerts, $bufferStock]);
     }
 
     echo json_encode(['success' => true, 'message' => 'Shopee credentials saved (' . strtoupper($environment) . ' mode)']);

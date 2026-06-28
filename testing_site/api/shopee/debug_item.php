@@ -15,7 +15,13 @@ try {
     $db = new Database();
     $conn = $db->getConnection();
 
-    $configStmt = $conn->query("SELECT * FROM shopee_config WHERE is_active = 1 LIMIT 1");
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $platform = $_SESSION['shopee_active_platform'] ?? 'shopee_main';
+
+    $configStmt = $conn->prepare("SELECT * FROM shopee_config WHERE platform_name = ? LIMIT 1");
+    $configStmt->execute([$platform]);
     $config = $configStmt->fetch(PDO::FETCH_ASSOC);
     if (!$config || empty($config['access_token'])) {
         throw new Exception("Active Shopee config/token not found");
