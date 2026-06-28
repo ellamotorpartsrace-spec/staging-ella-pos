@@ -45,9 +45,9 @@ require_once '../../includes/sidebar.php';
             <div class="lz-stat-card" style="animation-delay:0.05s">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="lz-stat-label mb-2">Total Listings</div>
-                        <div class="lz-stat-value" id="lzTotalListings">—</div>
-                        <div class="small text-muted mt-1">Lazada products</div>
+                        <div class="lz-stat-label mb-2">Total Products</div>
+                        <div class="lz-stat-value" id="lzTotalProducts">—</div>
+                        <div class="small text-muted mt-1">Lazada listings</div>
                     </div>
                     <div class="lz-icon-box bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
                 </div>
@@ -55,6 +55,18 @@ require_once '../../includes/sidebar.php';
         </div>
         <div class="col-6 col-lg-3">
             <div class="lz-stat-card" style="animation-delay:0.1s">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="lz-stat-label mb-2">Total Variations</div>
+                        <div class="lz-stat-value" id="lzTotalVariations">—</div>
+                        <div class="small text-muted mt-1">Product variants</div>
+                    </div>
+                    <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="lz-stat-card" style="animation-delay:0.15s">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="lz-stat-label mb-2">Mapped Items</div>
@@ -66,26 +78,14 @@ require_once '../../includes/sidebar.php';
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.15s">
+            <div class="lz-stat-card" style="animation-delay:0.2s">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="lz-stat-label mb-2">Unmapped</div>
+                        <div class="lz-stat-label mb-2">Unmapped Items</div>
                         <div class="lz-stat-value text-warning" id="lzUnmapped">—</div>
                         <div class="small text-muted mt-1">Need mapping</div>
                     </div>
                     <div class="lz-icon-box bg-warning"><i class="fa-solid fa-link-slash"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.2s">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="lz-stat-label mb-2">Allocated Items</div>
-                        <div class="lz-stat-value text-lazada-blue" id="lzAllocated">—</div>
-                        <div class="small text-muted mt-1">With allocation rules</div>
-                    </div>
-                    <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-sliders"></i></div>
                 </div>
             </div>
         </div>
