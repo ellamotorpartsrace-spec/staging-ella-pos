@@ -15,6 +15,18 @@ $configData = $stmtToken->fetch(PDO::FETCH_ASSOC);
 $isConnected = $configData && !empty($configData['access_token']);
 $accountName = $isConnected && !empty($configData['account_name']) ? $configData['account_name'] : 'Lazada Store';
 
+// Fetch Lazada Quick Stats
+$stmtTotalLz = $conn->prepare("SELECT COUNT(*) as total FROM lazada_products");
+$stmtTotalLz->execute();
+$totalLazadaProducts = $stmtTotalLz->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+$stmtMapped = $conn->prepare("SELECT COUNT(DISTINCT pos_item_id) as mapped FROM lazada_product_mappings");
+$stmtMapped->execute();
+$totalMappedProducts = $stmtMapped->fetch(PDO::FETCH_ASSOC)['mapped'] ?? 0;
+
+$pendingMap = max(0, $totalLazadaProducts - $totalMappedProducts);
+$mapProgress = $totalLazadaProducts > 0 ? round(($totalMappedProducts / $totalLazadaProducts) * 100) : 0;
+
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 ?>
@@ -276,6 +288,54 @@ require_once '../../includes/sidebar.php';
                             </a>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Sync Overview Card -->
+            <div class="lz-card mt-4" style="animation-delay:0.3s">
+                <div class="lz-card-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="lz-icon-box bg-gradient-info" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div>
+                            <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">Sync Overview</div>
+                            <div class="small text-muted">Your current catalog status</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="lz-card-body p-4">
+                    <!-- Stats Row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-4">
+                            <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; height: 100%;">
+                                <div class="small text-muted mb-1 fw-600">Total Products</div>
+                                <div class="fs-4 fw-bolder" style="color: #0f172a;"><?= number_format($totalLazadaProducts) ?></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="p-3 rounded-3" style="background: #f0fdf4; border: 1px solid #bbf7d0; height: 100%;">
+                                <div class="small fw-600 mb-1" style="color: #166534;">Mapped SKUs</div>
+                                <div class="fs-4 fw-bolder" style="color: #166534;"><?= number_format($totalMappedProducts) ?></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="p-3 rounded-3" style="background: #fffbeb; border: 1px solid #fde68a; height: 100%;">
+                                <div class="small fw-600 mb-1" style="color: #92400e;">Pending Map</div>
+                                <div class="fs-4 fw-bolder" style="color: #92400e;"><?= number_format($pendingMap) ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mapping Progress -->
+                    <div class="mb-2 d-flex justify-content-between align-items-end">
+                        <span class="small fw-600 text-muted">Catalog Mapping Progress</span>
+                        <span class="small fw-bold" style="color: var(--lazada-primary);"><?= $mapProgress ?>%</span>
+                    </div>
+                    <div class="progress" style="height: 8px; border-radius: 10px; background: #e2e8f0;">
+                        <div class="progress-bar bg-blue" role="progressbar" style="width: <?= $mapProgress ?>%" aria-valuenow="<?= $mapProgress ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0"><i class="fa-solid fa-circle-info me-1"></i>Map your products to enable automated stock syncing.</p>
                 </div>
             </div>
         </div>
