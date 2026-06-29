@@ -273,25 +273,39 @@ require_once '../../includes/sidebar.php';
                         </div>
                     </div>
 
-                    <!-- Integrated Health Alerts -->
-                    <div class="d-flex flex-column gap-3 mt-auto">
-                        <h6 class="fw-bold mb-1" style="font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Action Needed</h6>
-                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fff5f5; border-left:4px solid #ef4444;">
-                            <span class="small fw-600" style="color:#991b1b;"><i class="fa-solid fa-triangle-exclamation me-2" style="font-size:1.1rem; color:#ef4444;"></i>Missing SKUs</span>
-                            <span class="fw-bolder text-danger fs-5" id="lzMissingSKU">—</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fff5f5; border-left:4px solid #ef4444;">
-                            <span class="small fw-600" style="color:#991b1b;"><i class="fa-solid fa-circle-xmark me-2" style="font-size:1.1rem; color:#ef4444;"></i>Out of Stock</span>
-                            <span class="fw-bolder text-danger fs-5" id="lzOos">—</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fffbeb; border-left:4px solid #f59e0b;">
-                            <span class="small fw-600" style="color:#92400e;"><i class="fa-solid fa-box-open me-2" style="font-size:1.1rem; color:#f59e0b;"></i>Low Stock</span>
-                            <span class="fw-bolder text-warning fs-5" id="lzLowStock">—</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#ecfdf5; border-left:4px solid #10b981;">
-                            <span class="small fw-600" style="color:#065f46;"><i class="fa-solid fa-rotate me-2" style="font-size:1.1rem; color:#10b981;"></i>Updates (24h)</span>
-                            <span class="fw-bolder text-success fs-5" id="lzRecent">—</span>
-                        </div>
+                    <!-- Overall Status Indicator (Fills remaining height) -->
+                    <div class="mt-auto d-flex flex-column align-items-center justify-content-center p-4 rounded-4" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9); border: 1px solid rgba(0,0,0,0.03);">
+                        
+                        <?php if ($isConnected): ?>
+                            <!-- Connected State -->
+                            <div class="position-relative mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <div class="position-absolute w-100 h-100 rounded-circle" style="background: #10b981; opacity: 0.15; animation: pulse 2s infinite;"></div>
+                                <div class="position-absolute rounded-circle" style="width: 60px; height: 60px; background: #10b981; opacity: 0.25; animation: pulse 2s infinite 0.5s;"></div>
+                                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 44px; height: 44px; background: #10b981; color: white; position: relative; z-index: 2; box-shadow: 0 4px 15px rgba(16,185,129,0.3);">
+                                    <i class="fa-solid fa-check fa-lg"></i>
+                                </div>
+                            </div>
+                            <h5 class="fw-bolder text-dark mb-1">Systems Optimal</h5>
+                            <div class="text-muted small text-center px-3">Your store is securely connected to the Lazada API. Sync services are running smoothly.</div>
+                        <?php else: ?>
+                            <!-- Disconnected State -->
+                            <div class="position-relative mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <div class="position-absolute w-100 h-100 rounded-circle" style="background: #ef4444; opacity: 0.15;"></div>
+                                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 44px; height: 44px; background: #ef4444; color: white; position: relative; z-index: 2; box-shadow: 0 4px 15px rgba(239,68,68,0.3);">
+                                    <i class="fa-solid fa-link-slash fa-lg"></i>
+                                </div>
+                            </div>
+                            <h5 class="fw-bolder text-dark mb-1">Action Required</h5>
+                            <div class="text-muted small text-center px-3">Connection is missing. Please navigate to settings to configure your API tokens.</div>
+                        <?php endif; ?>
+                        
+                        <style>
+                            @keyframes pulse {
+                                0% { transform: scale(0.95); opacity: 0.3; }
+                                50% { transform: scale(1.1); opacity: 0.1; }
+                                100% { transform: scale(0.95); opacity: 0.3; }
+                            }
+                        </style>
                     </div>
                 </div>
             </div>
