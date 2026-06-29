@@ -53,13 +53,13 @@ require_once '../../includes/sidebar.php';
     background: #ffffff;
     border: 1px solid rgba(0,0,0,0.08);
     border-radius: 16px;
-    padding: 2.5rem 1.5rem;
+    padding: 1.75rem 1.25rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     text-decoration: none !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 6px 24px rgba(0,0,0,0.06);
@@ -72,13 +72,13 @@ require_once '../../includes/sidebar.php';
     border-color: rgba(15,19,109,0.15);
 }
 .quick-nav-icon-wrap {
-    width: 64px;
-    height: 64px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     flex-shrink: 0;
     transition: all 0.3s ease;
     margin-bottom: 0.5rem;
@@ -92,12 +92,12 @@ require_once '../../includes/sidebar.php';
 .quick-nav-title {
     font-weight: 700;
     color: #1e293b;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     margin-bottom: 0.25rem;
     letter-spacing: -0.2px;
 }
 .quick-nav-desc {
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     color: #64748b;
     line-height: 1.4;
 }
@@ -144,7 +144,7 @@ require_once '../../includes/sidebar.php';
     <!-- Main Dashboard Layout -->
     <div class="row g-4 mb-4">
         <!-- Left Side: Quick Navigation Bento -->
-        <div class="col-lg-8">
+        <div class="col-lg-7">
             <!-- Left-Aligned Header -->
             <div class="d-flex align-items-center gap-3 mb-4" style="animation-delay:0.25s">
                 <div class="lz-icon-box bg-blue" style="width:48px;height:48px;font-size:1.2rem;border-radius:12px; box-shadow: 0 4px 15px rgba(15,19,109,0.1);">
@@ -212,7 +212,7 @@ require_once '../../includes/sidebar.php';
         </div>
 
         <!-- Right Side: KPI Stats (Stacked Vertically) -->
-        <div class="col-lg-4">
+        <div class="col-lg-5">
             <div class="row g-3">
                 <div class="col-12">
                     <div class="lz-stat-card h-100" style="animation-delay:0.05s">
