@@ -157,7 +157,7 @@ require_once '../../includes/sidebar.php';
                 <div class="lz-card-body p-4">
                     <div class="lz-nav-grid" style="grid-template-columns:repeat(2,1fr);gap:1.25rem;">
 
-                        <a href="<?= BASE_URL ?>views/lazada/products.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                        <a href="<?= BASE_URL ?>views/lazada/products.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem; background: linear-gradient(145deg, #ffffff, #f0f4ff); border-color: #e0e7ff;">
                             <div class="lz-nav-icon bg-blue" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;">
                                 <i class="fa-solid fa-bag-shopping"></i>
                             </div>
@@ -168,7 +168,7 @@ require_once '../../includes/sidebar.php';
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                        <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem; background: linear-gradient(145deg, #ffffff, #f0fdfa); border-color: #ccfbf1;">
                             <div class="lz-nav-icon bg-gradient-info" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;">
                                 <i class="fa-solid fa-link"></i>
                             </div>
@@ -179,7 +179,7 @@ require_once '../../includes/sidebar.php';
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                        <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem; background: linear-gradient(145deg, #ffffff, #eff6ff); border-color: #dbeafe;">
                             <div class="lz-nav-icon" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;background:var(--lz-info-bg);color:var(--lz-info);">
                                 <i class="fa-solid fa-sliders"></i>
                             </div>
@@ -190,7 +190,7 @@ require_once '../../includes/sidebar.php';
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/logs.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                        <a href="<?= BASE_URL ?>views/lazada/logs.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem; background: linear-gradient(145deg, #ffffff, #f8fafc); border-color: #e2e8f0;">
                             <div class="lz-nav-icon" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;background:var(--lz-neutral-bg);color:var(--lz-neutral-text);">
                                 <i class="fa-solid fa-clock-rotate-left"></i>
                             </div>
@@ -201,7 +201,7 @@ require_once '../../includes/sidebar.php';
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/resolution.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                        <a href="<?= BASE_URL ?>views/lazada/resolution.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem; background: linear-gradient(145deg, #ffffff, #fef2f2); border-color: #fee2e2;">
                             <div class="lz-nav-icon bg-gradient-danger" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
                             </div>
@@ -212,7 +212,7 @@ require_once '../../includes/sidebar.php';
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem; background: linear-gradient(145deg, #ffffff, #fffbeb); border-color: #fef3c7;">
                             <div class="lz-nav-icon" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;background:var(--lz-warning-bg);color:var(--lz-warning);">
                                 <i class="fa-solid fa-gear"></i>
                             </div>
