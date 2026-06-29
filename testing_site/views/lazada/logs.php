@@ -310,21 +310,34 @@ require_once '../../includes/sidebar.php';
 
 <div class="lz-page lz-animate">
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
-    <div class="lz-breadcrumb">
-        <a href="<?= BASE_URL ?>views/lazada/index.php">Lazada Sync</a>
-        <i class="fa-solid fa-chevron-right" style="font-size:0.6rem"></i>
-        <span>Sync Logs</span>
+    
+    <!-- Hero Header -->
+    <div class="mb-4" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); border-radius: 16px; padding: 2rem 2.5rem; box-shadow: 0 10px 30px rgba(30,58,138,0.15); position: relative; overflow: hidden;">
+        <!-- Breadcrumb inside -->
+        <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
+            <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" style="color: rgba(255,255,255,0.7); text-decoration: none; font-weight: 500;">Lazada Dashboard</a></li>
+                <li class="breadcrumb-item active" style="color: white; font-weight: 600;">Sync Logs</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position: relative; z-index: 2;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <i class="fa-solid fa-clock-rotate-left" style="color: #2563eb; font-size: 1.8rem;"></i>
+                </div>
+                <div>
+                    <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px; color: white;">Sync Logs</h1>
+                    <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Track every stock update, product sync, mapping change, and system event</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+            </div>
+        </div>
+        <!-- Decorative bg -->
+        <div style="position: absolute; top: -50px; right: -50px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: 1;"></div>
     </div>
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-        <div>
-            <h1 class="lz-title mb-0"><i class="fa-solid fa-clock-rotate-left text-lazada me-2"></i>Sync Logs</h1>
-            <p class="lz-subtitle mb-0">Track every stock update, product sync, mapping change, and system event</p>
-        </div>
-        <div class="d-flex gap-2">
-            <!-- Clear History button removed -->
-        </div>
-    </div>
 
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
