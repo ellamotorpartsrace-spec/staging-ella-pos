@@ -62,7 +62,7 @@ require_once '../../includes/sidebar.php';
                         <i class="fa-solid fa-basket-shopping text-white fa-lg"></i>
                     </div>
                     <div>
-                        <h2 class="mb-0 text-white fw-bold" style="letter-spacing:-0.5px;">Dashboard</h2>
+                        <h2 class="mb-0 text-white fw-bold" style="letter-spacing:-0.5px;">Lazada Sync Dashboard</h2>
                         <div class="text-white text-opacity-75 small">Lazada POS Sync Overview</div>
                     </div>
                 </div>
@@ -70,14 +70,14 @@ require_once '../../includes/sidebar.php';
             
             <div style="position:relative;z-index:2;" class="d-flex gap-3 align-items-center">
                 <?php if ($isConnected): ?>
-                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-success bg-opacity-10 rounded-pill border border-success border-opacity-25" style="box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill" style="box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                         <i class="fa-solid fa-circle-check text-success small"></i>
-                        <span class="text-success fw-bold" style="font-size: 0.85rem; letter-spacing: 0.3px;">Connected: <?= htmlspecialchars($accountName) ?></span>
+                        <span class="text-success fw-bolder" style="font-size: 0.85rem; letter-spacing: 0.3px;">Connected: <?= htmlspecialchars($accountName) ?></span>
                     </div>
                 <?php else: ?>
-                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-warning bg-opacity-10 rounded-pill border border-warning border-opacity-25" style="box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                        <i class="fa-solid fa-triangle-exclamation text-warning small"></i>
-                        <span class="text-warning fw-bold" style="font-size: 0.85rem; letter-spacing: 0.3px;">Not Connected</span>
+                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill" style="box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        <i class="fa-solid fa-triangle-exclamation text-danger small"></i>
+                        <span class="text-danger fw-bolder" style="font-size: 0.85rem; letter-spacing: 0.3px;">Not Connected</span>
                     </div>
                 <?php endif; ?>
 
