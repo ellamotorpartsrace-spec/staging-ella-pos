@@ -440,7 +440,7 @@ $totalUnmapped = count($unmappedRows);
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
     
     <!-- Hero Header -->
-    <div class="mb-4" style="background: #111827; border-radius: 16px; padding: 2rem 2.5rem; color: white; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+    <div class="lz-hero-header mb-4" style="padding: 2rem 2.5rem; color: white;">
         <!-- Breadcrumb inside -->
         <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
             <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
@@ -452,7 +452,7 @@ $totalUnmapped = count($unmappedRows);
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position: relative; z-index: 2;">
             <div class="d-flex align-items-center gap-3">
                 <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <i class="fa-solid fa-sliders" style="color: #111827; font-size: 1.8rem;"></i>
+                    <i class="fa-solid fa-sliders" style="color: var(--lazada-primary); font-size: 1.8rem;"></i>
                 </div>
                 <div>
                     <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px;">Stock Allocation</h1>
@@ -460,7 +460,7 @@ $totalUnmapped = count($unmappedRows);
                 </div>
             </div>
             <div class="d-flex gap-2 align-items-center">
-                <button id="btnManualSync" class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" onclick="triggerManualSync()" style="color: #111827; height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                <button id="btnManualSync" class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" onclick="triggerManualSync()" style="color: var(--lazada-primary); height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
                     <i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span>
                 </button>
             </div>
