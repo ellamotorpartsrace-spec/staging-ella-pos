@@ -51,22 +51,22 @@ require_once '../../includes/sidebar.php';
 /* New Quick Nav Styling */
 .quick-nav-card {
     background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.04);
-    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
     padding: 1.5rem;
     display: flex;
     align-items: flex-start;
     gap: 1.25rem;
     text-decoration: none !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.06);
     position: relative;
     overflow: hidden;
 }
 .quick-nav-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 25px rgba(15,19,109,0.08);
-    border-color: rgba(15,19,109,0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(15,19,109,0.12);
+    border-color: rgba(15,19,109,0.15);
 }
 .quick-nav-icon-wrap {
     width: 48px;
@@ -222,7 +222,7 @@ require_once '../../includes/sidebar.php';
                     <div class="row g-3">
                         <!-- Products -->
                         <div class="col-md-6 col-xl-3">
-                            <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="height: 100%;">
+                            <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #4338ca;">
                                 <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4338ca;">
                                     <i class="fa-solid fa-bag-shopping"></i>
                                 </div>
@@ -236,7 +236,7 @@ require_once '../../includes/sidebar.php';
                         
                         <!-- Mapping -->
                         <div class="col-md-6 col-xl-3">
-                            <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="height: 100%;">
+                            <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #0f766e;">
                                 <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #0f766e;">
                                     <i class="fa-solid fa-link"></i>
                                 </div>
@@ -250,7 +250,7 @@ require_once '../../includes/sidebar.php';
                         
                         <!-- Allocation -->
                         <div class="col-md-6 col-xl-3">
-                            <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="height: 100%;">
+                            <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #b45309;">
                                 <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309;">
                                     <i class="fa-solid fa-sliders"></i>
                                 </div>
@@ -264,7 +264,7 @@ require_once '../../includes/sidebar.php';
                         
                         <!-- Sync Logs -->
                         <div class="col-md-6 col-xl-3">
-                            <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="height: 100%;">
+                            <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #4b5563;">
                                 <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563;">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                 </div>
