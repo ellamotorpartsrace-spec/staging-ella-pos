@@ -143,8 +143,8 @@ require_once '../../includes/sidebar.php';
     <!-- Main Grid -->
     <div class="row g-4">
         <!-- Left: Navigation Tiles -->
-        <div class="col-lg-7">
-            <div class="lz-card" style="animation-delay:0.25s">
+        <div class="col-lg-7 d-flex">
+            <div class="lz-card w-100 d-flex flex-column" style="animation-delay:0.25s">
                 <div class="lz-card-header d-flex align-items-center gap-2">
                     <div class="lz-icon-box bg-blue" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
                         <i class="fa-solid fa-compass"></i>
@@ -227,21 +227,21 @@ require_once '../../includes/sidebar.php';
             </div>
         </div>
 
-        <!-- Right: Status & Alerts -->
-        <div class="col-lg-5">
-            <!-- Connection Status -->
-            <div class="lz-card mb-4" style="animation-delay:0.3s">
+        <!-- Right: System Health -->
+        <div class="col-lg-5 d-flex">
+            <!-- Consolidated System Health Card -->
+            <div class="lz-card w-100 d-flex flex-column" style="animation-delay:0.3s">
                 <div class="lz-card-header d-flex align-items-center gap-2">
                     <div class="lz-icon-box bg-blue" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
                         <i class="fa-solid fa-heart-pulse"></i>
                     </div>
                     <div>
-                        <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">System Connection</div>
-                        <div class="small text-muted">Lazada API health</div>
+                        <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">System Health</div>
+                        <div class="small text-muted">API connection & store alerts</div>
                     </div>
                 </div>
-                <div class="lz-card-body p-3">
-                    <div class="d-flex flex-column gap-3">
+                <div class="lz-card-body p-4 d-flex flex-column flex-grow-1">
+                    <div class="d-flex flex-column gap-3 mb-4">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="small fw-600 text-muted">Lazada API</span>
                             <?php if ($isConnected): ?>
@@ -272,22 +272,10 @@ require_once '../../includes/sidebar.php';
                             <span class="small fw-bold">Never</span>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Health Alerts -->
-            <div class="lz-card" style="animation-delay:0.35s">
-                <div class="lz-card-header d-flex align-items-center gap-2">
-                    <div class="lz-icon-box bg-danger" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
-                        <i class="fa-solid fa-bell"></i>
-                    </div>
-                    <div>
-                        <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">Health Alerts</div>
-                        <div class="small text-muted">Issues requiring attention</div>
-                    </div>
-                </div>
-                <div class="lz-card-body p-3">
-                    <div class="d-flex flex-column gap-3">
+                    <!-- Integrated Health Alerts -->
+                    <div class="d-flex flex-column gap-3 mt-auto">
+                        <h6 class="fw-bold mb-1" style="font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Action Needed</h6>
                         <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fff5f5; border-left:4px solid #ef4444;">
                             <span class="small fw-600" style="color:#991b1b;"><i class="fa-solid fa-triangle-exclamation me-2" style="font-size:1.1rem; color:#ef4444;"></i>Missing SKUs</span>
                             <span class="fw-bolder text-danger fs-5" id="lzMissingSKU">—</span>
