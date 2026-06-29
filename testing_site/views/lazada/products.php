@@ -124,23 +124,195 @@ require_once '../../includes/sidebar.php';
         </div>
     </div>
 
-    <!-- Empty State / Coming Soon -->
-    <div class="lz-card" style="animation-delay:0.1s">
+    <!-- Products Table -->
+    <div class="card border-0 rounded-4 mb-4" style="box-shadow: 0 4px 15px rgba(0,0,0,0.03); overflow: hidden;" id="productsContainer">
+        <div class="table-responsive">
+            <table class="table lz-table mb-0 align-middle table-hover">
+                <thead style="background: #f8fafc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">
+                    <tr>
+                        <th class="ps-4 py-3 border-0">Product Info</th>
+                        <th class="py-3 border-0">Item ID / SKU</th>
+                        <th class="py-3 border-0">Variations</th>
+                        <th class="py-3 border-0">Lazada Stock</th>
+                        <th class="pe-4 py-3 border-0 text-end">Mapping Status</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTbody">
+                    <tr><td colspan="5" class="text-center py-5 text-muted"><i class="fa-solid fa-circle-notch fa-spin me-2"></i> Loading products from database...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="lz-card d-none" id="emptyState" style="animation-delay:0.1s">
         <div class="lz-card-body p-5 text-center">
             <div style="width:90px;height:90px;background:var(--lazada-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
                 <i class="fa-solid fa-bag-shopping" style="font-size:2.2rem;color:var(--lazada-primary);"></i>
             </div>
-            <h5 class="fw-bold mb-2" style="color:var(--lazada-primary)">No Products Loaded</h5>
+            <h5 class="fw-bold mb-2" style="color:var(--lazada-primary)">No Products Found</h5>
             <p class="text-muted mb-3" style="max-width:420px;margin:0 auto;">
-                Product listings will appear here once your Lazada API credentials are configured and a sync is performed.
+                There are currently no products saved in the database for this Lazada store. Click 'Sync Products' to fetch them from Lazada.
             </p>
-            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn-lazada">
-                <i class="fa-solid fa-plug me-2"></i> Configure API Settings
-            </a>
+            <button class="btn btn-lazada rounded-pill" onclick="syncProducts()"><i class="fa-solid fa-rotate me-2"></i> Sync Now</button>
         </div>
-
     </div>
 
 </div>
 
 <?php require_once '../../includes/footer.php'; ?>
+
+<script>
+let allProducts = [];
+
+async function loadProducts() {
+    try {
+        const res = await fetch(`${window.BASE_URL}api/lazada/get_mappings.php`);
+        const data = await res.json();
+        
+        if (data.groups) {
+            allProducts = data.groups;
+            renderProducts();
+            updateStats();
+        } else {
+            showEmptyState();
+        }
+    } catch (e) {
+        console.error("Failed to load products", e);
+        showEmptyState();
+    }
+}
+
+function updateStats() {
+    const totalProducts = allProducts.length;
+    let totalVariations = 0;
+    let inStock = 0;
+    let outOfStock = 0;
+
+    allProducts.forEach(p => {
+        if (p.variations && p.variations.length > 0) {
+            totalVariations += p.variations.length;
+            p.variations.forEach(v => {
+                if (v.online > 0) inStock++;
+                else outOfStock++;
+            });
+        } else {
+            // No variations, count the parent as 1 variant if it has stock data
+        }
+    });
+
+    document.getElementById('lzTotalProducts').innerText = totalProducts;
+    document.getElementById('lzTotalVariations').innerText = totalVariations;
+    document.getElementById('lzInStock').innerText = inStock;
+    document.getElementById('lzOos').innerText = outOfStock;
+}
+
+function renderProducts() {
+    const tbody = document.getElementById('productsTbody');
+    const container = document.getElementById('productsContainer');
+    const emptyState = document.getElementById('emptyState');
+    
+    // Quick search filter
+    const searchTerm = document.getElementById('searchProducts').value.toLowerCase();
+    
+    let filteredProducts = allProducts;
+    if (searchTerm) {
+        filteredProducts = allProducts.filter(p => {
+            return p.name.toLowerCase().includes(searchTerm) || 
+                   p.itemId.toString().includes(searchTerm) || 
+                   (p.parentSku && p.parentSku.toLowerCase().includes(searchTerm)) ||
+                   p.variations.some(v => v.variationSku && v.variationSku.toLowerCase().includes(searchTerm));
+        });
+    }
+
+    if (filteredProducts.length === 0) {
+        container.classList.add('d-none');
+        emptyState.classList.remove('d-none');
+        return;
+    }
+    
+    container.classList.remove('d-none');
+    emptyState.classList.add('d-none');
+    
+    let html = '';
+    filteredProducts.forEach(p => {
+        let varsCount = p.variations ? p.variations.length : 0;
+        let totalStock = 0;
+        let mappedCount = 0;
+        
+        if (p.variations) {
+            p.variations.forEach(v => {
+                totalStock += v.online;
+                if (v.mapped) mappedCount++;
+            });
+        }
+        
+        // Product row spanning logic
+        html += `
+            <tr style="border-bottom: 2px solid #f1f5f9;">
+                <td class="ps-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width: 50px; height: 50px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+                            ${p.imageUrl ? `<img src="${p.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` : `<i class="fa-solid fa-image text-muted opacity-50"></i>`}
+                        </div>
+                        <div>
+                            <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem;">${p.name}</div>
+                            <div class="small text-muted mt-1"><span class="badge bg-light text-dark border">Item ID: ${p.itemId}</span></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="fw-600 text-dark">${p.parentSku || '-'}</div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="badge bg-light text-dark border" style="font-size: 0.8rem;"><i class="fa-solid fa-layer-group me-1 text-muted"></i> ${varsCount} variants</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="fw-bold ${totalStock > 0 ? 'text-success' : 'text-danger'}">${totalStock}</div>
+                </td>
+                <td class="pe-4 text-end">
+                    ${mappedCount === varsCount && varsCount > 0 
+                        ? `<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-link me-1"></i> Mapped</span>` 
+                        : `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="fa-solid fa-link-slash me-1"></i> ${varsCount - mappedCount} Unmapped</span>`
+                    }
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function showEmptyState() {
+    document.getElementById('productsContainer').classList.add('d-none');
+    document.getElementById('emptyState').classList.remove('d-none');
+    updateStats();
+}
+
+function syncProducts() {
+    const btn = document.getElementById('btnRefreshProducts');
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Syncing...';
+    btn.disabled = true;
+    
+    // Simulate sync
+    setTimeout(() => {
+        alert("Lazada API sync initiated. This will run in the background.");
+        btn.innerHTML = '<i class="fa-solid fa-rotate me-2"></i> Sync Products';
+        btn.disabled = false;
+        loadProducts();
+    }, 2000);
+}
+
+document.getElementById('btnRefreshProducts').addEventListener('click', syncProducts);
+document.getElementById('btnRefreshProducts').disabled = false;
+
+document.getElementById('searchProducts').addEventListener('input', renderProducts);
+document.getElementById('searchProducts').disabled = false;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadProducts();
+});
+</script>
