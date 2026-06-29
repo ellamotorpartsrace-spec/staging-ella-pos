@@ -154,71 +154,71 @@ require_once '../../includes/sidebar.php';
                         <div class="small text-muted">Lazada module sections</div>
                     </div>
                 </div>
-                <div class="lz-card-body p-3">
-                    <div class="lz-nav-grid" style="grid-template-columns:repeat(2,1fr);gap:1rem;">
+                <div class="lz-card-body p-4">
+                    <div class="lz-nav-grid" style="grid-template-columns:repeat(2,1fr);gap:1.25rem;">
 
-                        <a href="<?= BASE_URL ?>views/lazada/products.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon bg-blue" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;">
+                        <a href="<?= BASE_URL ?>views/lazada/products.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                            <div class="lz-nav-icon bg-blue" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;">
                                 <i class="fa-solid fa-bag-shopping"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Products</div>
-                                <div class="lz-nav-desc">Browse Lazada listings catalog</div>
+                                <div class="lz-nav-title" style="font-size:1.05rem;">Products</div>
+                                <div class="lz-nav-desc" style="font-size:0.85rem;">Browse Lazada listings catalog</div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon bg-gradient-info" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;">
+                        <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                            <div class="lz-nav-icon bg-gradient-info" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;">
                                 <i class="fa-solid fa-link"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Product Mapping</div>
-                                <div class="lz-nav-desc">Link SKUs to ERP inventory</div>
+                                <div class="lz-nav-title" style="font-size:1.05rem;">Product Mapping</div>
+                                <div class="lz-nav-desc" style="font-size:0.85rem;">Link SKUs to ERP inventory</div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;background:var(--lz-info-bg);color:var(--lz-info);">
+                        <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                            <div class="lz-nav-icon" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;background:var(--lz-info-bg);color:var(--lz-info);">
                                 <i class="fa-solid fa-sliders"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Stock Allocation</div>
-                                <div class="lz-nav-desc">Manage online stock safety limits and rules</div>
+                                <div class="lz-nav-title" style="font-size:1.05rem;">Stock Allocation</div>
+                                <div class="lz-nav-desc" style="font-size:0.85rem;">Manage online stock safety limits and rules</div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/logs.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;background:var(--lz-neutral-bg);color:var(--lz-neutral-text);">
+                        <a href="<?= BASE_URL ?>views/lazada/logs.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                            <div class="lz-nav-icon" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;background:var(--lz-neutral-bg);color:var(--lz-neutral-text);">
                                 <i class="fa-solid fa-clock-rotate-left"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Sync Logs</div>
-                                <div class="lz-nav-desc">Review stock sync events</div>
+                                <div class="lz-nav-title" style="font-size:1.05rem;">Sync Logs</div>
+                                <div class="lz-nav-desc" style="font-size:0.85rem;">Review stock sync events</div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/resolution.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon bg-gradient-danger" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;">
+                        <a href="<?= BASE_URL ?>views/lazada/resolution.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                            <div class="lz-nav-icon bg-gradient-danger" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Resolution Center</div>
-                                <div class="lz-nav-desc">Manage sync errors and disputes</div>
+                                <div class="lz-nav-title" style="font-size:1.05rem;">Resolution Center</div>
+                                <div class="lz-nav-desc" style="font-size:0.85rem;">Manage sync errors and disputes</div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;background:var(--lz-warning-bg);color:var(--lz-warning);">
+                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-nav-card" style="padding:1.5rem;gap:1.25rem;">
+                            <div class="lz-nav-icon" style="width:56px;height:56px;font-size:1.5rem;border-radius:14px;background:var(--lz-warning-bg);color:var(--lz-warning);">
                                 <i class="fa-solid fa-gear"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Settings & Setup</div>
-                                <div class="lz-nav-desc">Configure API credentials and preferences</div>
+                                <div class="lz-nav-title" style="font-size:1.05rem;">Settings & Setup</div>
+                                <div class="lz-nav-desc" style="font-size:0.85rem;">Configure API credentials and preferences</div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
