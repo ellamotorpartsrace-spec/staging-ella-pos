@@ -51,18 +51,19 @@ require_once '../../includes/sidebar.php';
 /* New Quick Nav Styling */
 .quick-nav-card {
     background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 12px;
-    padding: 1.25rem;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 16px;
+    height: 168px; /* Strict height lock */
+    padding: 1.5rem;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    text-align: left;
-    gap: 1rem;
+    justify-content: center;
+    text-align: center;
+    gap: 0.5rem;
     text-decoration: none !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
     position: relative;
     overflow: hidden;
 }
@@ -72,16 +73,16 @@ require_once '../../includes/sidebar.php';
     border-color: rgba(15,19,109,0.15);
 }
 .quick-nav-icon-wrap {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     flex-shrink: 0;
     transition: all 0.3s ease;
-    margin-bottom: 0;
+    margin-bottom: 0.25rem;
 }
 .quick-nav-card:hover .quick-nav-icon-wrap {
     transform: scale(1.1) rotate(-5deg);
@@ -97,9 +98,51 @@ require_once '../../includes/sidebar.php';
     letter-spacing: -0.2px;
 }
 .quick-nav-desc {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: #64748b;
-    line-height: 1.4;
+    line-height: 1.3;
+}
+/* New KPI Horizontal Row */
+.lz-kpi-row {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 16px;
+    height: 76px; /* Strict height lock */
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    transition: all 0.25s ease;
+}
+.lz-kpi-row:hover {
+    box-shadow: 0 8px 25px rgba(15,19,109,0.06);
+    border-color: rgba(15,19,109,0.1);
+}
+.lz-kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+.lz-kpi-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #334155;
+    letter-spacing: -0.1px;
+}
+.lz-kpi-subtitle {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+.lz-kpi-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 </style>
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/lazada-sync.css?v=<?= filemtime(__DIR__.'/../../assets/css/lazada-sync.css') ?>">
@@ -145,121 +188,135 @@ require_once '../../includes/sidebar.php';
     <div class="row g-4 mb-4">
         <!-- Left Side: Quick Navigation Bento -->
         <div class="col-lg-7">
-            <!-- Left-Aligned Header -->
+            <!-- Header -->
             <div class="d-flex align-items-center gap-3 mb-4" style="animation-delay:0.25s">
-                <div class="lz-icon-box bg-blue" style="width:48px;height:48px;font-size:1.2rem;border-radius:12px; box-shadow: 0 4px 15px rgba(15,19,109,0.1);">
+                <div class="lz-icon-box bg-blue" style="width:40px;height:40px;font-size:1.1rem;border-radius:10px; box-shadow: 0 4px 12px rgba(15,19,109,0.1);">
                     <i class="fa-solid fa-compass"></i>
                 </div>
                 <div>
                     <h5 class="fw-bolder mb-0" style="color:var(--lazada-primary); letter-spacing:-0.5px;">Quick Navigation</h5>
-                    <div class="text-muted small fw-600 mt-1">Select a Lazada module to manage your store</div>
+                    <div class="text-muted small fw-600 mt-1">Select a Lazada module</div>
                 </div>
             </div>
             
             <div class="row g-3">
                 <!-- Products -->
-                <div class="col-12">
-                    <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="border-left: 4px solid #4338ca; border-top: none;">
+                <div class="col-sm-6">
+                    <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="border-top: 3px solid #4338ca;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4338ca;">
                             <i class="fa-solid fa-bag-shopping"></i>
                         </div>
                         <div class="quick-nav-content">
                             <div class="quick-nav-title">Products Catalog</div>
-                            <div class="quick-nav-desc">Browse your live Lazada listings and view statuses</div>
+                            <div class="quick-nav-desc">Browse your live Lazada listings</div>
                         </div>
                     </a>
                 </div>
                 
                 <!-- Mapping -->
-                <div class="col-12">
-                    <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="border-left: 4px solid #0f766e; border-top: none;">
+                <div class="col-sm-6">
+                    <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="border-top: 3px solid #0f766e;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #0f766e;">
                             <i class="fa-solid fa-link"></i>
                         </div>
                         <div class="quick-nav-content">
                             <div class="quick-nav-title">Product Mapping</div>
-                            <div class="quick-nav-desc">Link local SKUs to Lazada products for auto-sync</div>
+                            <div class="quick-nav-desc">Link local SKUs to Lazada products</div>
                         </div>
                     </a>
                 </div>
                 
                 <!-- Allocation -->
-                <div class="col-12">
-                    <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="border-left: 4px solid #b45309; border-top: none;">
+                <div class="col-sm-6">
+                    <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="border-top: 3px solid #b45309;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309;">
                             <i class="fa-solid fa-sliders"></i>
                         </div>
                         <div class="quick-nav-content">
                             <div class="quick-nav-title">Stock Allocation</div>
-                            <div class="quick-nav-desc">Manage safety limits and stock allocation ratios</div>
+                            <div class="quick-nav-desc">Manage safety limits and stock ratios</div>
                         </div>
                     </a>
                 </div>
                 
                 <!-- Sync Logs -->
-                <div class="col-12">
-                    <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="border-left: 4px solid #4b5563; border-top: none;">
+                <div class="col-sm-6">
+                    <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="border-top: 3px solid #4b5563;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563;">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                         </div>
                         <div class="quick-nav-content">
                             <div class="quick-nav-title">Sync Logs</div>
-                            <div class="quick-nav-desc">Review automated background stock sync events</div>
+                            <div class="quick-nav-desc">Review automated stock sync events</div>
                         </div>
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Right Side: KPI Stats (Stacked Vertically) -->
+        <!-- Right Side: Store Metrics Stack -->
         <div class="col-lg-5">
+            <!-- Header -->
+            <div class="d-flex align-items-center gap-3 mb-4" style="animation-delay:0.25s">
+                <div class="lz-icon-box bg-success" style="width:40px;height:40px;font-size:1.1rem;border-radius:10px; box-shadow: 0 4px 12px rgba(16,185,129,0.2);">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bolder mb-0" style="color:#0f172a; letter-spacing:-0.5px;">Store Metrics</h5>
+                    <div class="text-muted small fw-600 mt-1">Lazada catalogue overview</div>
+                </div>
+            </div>
+
             <div class="row g-3">
                 <div class="col-12">
-                    <div class="lz-stat-card h-100" style="animation-delay:0.05s">
-                        <div class="d-flex justify-content-between align-items-start">
+                    <div class="lz-kpi-row" style="animation-delay:0.05s">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="lz-kpi-icon bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
                             <div>
-                                <div class="lz-stat-label mb-2">Total Products</div>
-                                <div class="lz-stat-value" id="lzTotalProducts">—</div>
-                                <div class="small text-muted mt-1">Lazada listings</div>
+                                <div class="lz-kpi-title">Total Products</div>
+                                <div class="lz-kpi-subtitle">Lazada listings</div>
                             </div>
-                            <div class="lz-icon-box bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
                         </div>
+                        <div class="lz-kpi-value text-dark" id="lzTotalProducts">—</div>
                     </div>
                 </div>
+                
                 <div class="col-12">
-                    <div class="lz-stat-card h-100" style="animation-delay:0.1s">
-                        <div class="d-flex justify-content-between align-items-start">
+                    <div class="lz-kpi-row" style="animation-delay:0.1s">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="lz-kpi-icon" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
                             <div>
-                                <div class="lz-stat-label mb-2">Total Variations</div>
-                                <div class="lz-stat-value" id="lzTotalVariations">—</div>
-                                <div class="small text-muted mt-1">Product variants</div>
+                                <div class="lz-kpi-title">Total Variations</div>
+                                <div class="lz-kpi-subtitle">Product variants</div>
                             </div>
-                            <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
                         </div>
+                        <div class="lz-kpi-value text-dark" id="lzTotalVariations">—</div>
                     </div>
                 </div>
+                
                 <div class="col-12">
-                    <div class="lz-stat-card h-100" style="animation-delay:0.15s">
-                        <div class="d-flex justify-content-between align-items-start">
+                    <div class="lz-kpi-row" style="animation-delay:0.15s">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="lz-kpi-icon bg-success"><i class="fa-solid fa-link"></i></div>
                             <div>
-                                <div class="lz-stat-label mb-2">Mapped Items</div>
-                                <div class="lz-stat-value text-success" id="lzMapped">—</div>
-                                <div class="small text-muted mt-1">Linked to ERP</div>
+                                <div class="lz-kpi-title">Mapped Items</div>
+                                <div class="lz-kpi-subtitle">Linked to ERP</div>
                             </div>
-                            <div class="lz-icon-box bg-success"><i class="fa-solid fa-link"></i></div>
                         </div>
+                        <div class="lz-kpi-value text-success" id="lzMapped">—</div>
                     </div>
                 </div>
+                
                 <div class="col-12">
-                    <div class="lz-stat-card h-100" style="animation-delay:0.2s">
-                        <div class="d-flex justify-content-between align-items-start">
+                    <div class="lz-kpi-row" style="animation-delay:0.2s">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="lz-kpi-icon bg-warning"><i class="fa-solid fa-link-slash"></i></div>
                             <div>
-                                <div class="lz-stat-label mb-2">Unmapped Items</div>
-                                <div class="lz-stat-value text-warning" id="lzUnmapped">—</div>
-                                <div class="small text-muted mt-1">Need mapping</div>
+                                <div class="lz-kpi-title">Unmapped Items</div>
+                                <div class="lz-kpi-subtitle">Need mapping</div>
                             </div>
-                            <div class="lz-icon-box bg-warning"><i class="fa-solid fa-link-slash"></i></div>
                         </div>
+                        <div class="lz-kpi-value text-warning" id="lzUnmapped">—</div>
                     </div>
                 </div>
             </div>
