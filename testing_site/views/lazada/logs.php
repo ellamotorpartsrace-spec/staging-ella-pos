@@ -339,20 +339,52 @@ require_once '../../includes/sidebar.php';
     </div>
 
 
-        <div class="row g-3 mb-4">
+            <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
-            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #10b981 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <div class="card-body p-3 d-flex align-items-center">
-                    <div style="background: #ecfdf5; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
-                        <i class="fa-solid fa-check-circle" style="color: #10b981; font-size: 1.25rem;"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Successful</div>
-                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;"><?= number_format($counts['success'] ?? 0) ?></div>
-                    </div>
+            <div class="lz-stat-card d-flex align-items-center gap-3">
+                <div class="lz-icon-box" style="background:var(--lz-success-bg);color:var(--lz-success)">
+                    <i class="fa-solid fa-check-circle"></i>
+                </div>
+                <div>
+                    <div class="lz-stat-label">Successful</div>
+                    <div class="lz-stat-value"><?= number_format($counts['success'] ?? 0) ?></div>
                 </div>
             </div>
         </div>
+        <div class="col-md-3 col-6">
+            <div class="lz-stat-card d-flex align-items-center gap-3">
+                <div class="lz-icon-box" style="background:var(--lz-danger-bg);color:var(--lz-danger)">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </div>
+                <div>
+                    <div class="lz-stat-label">Failed</div>
+                    <div class="lz-stat-value"><?= number_format($counts['failed'] ?? 0) ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="lz-stat-card d-flex align-items-center gap-3">
+                <div class="lz-icon-box" style="background:var(--lz-warning-bg);color:var(--lz-warning)">
+                    <i class="fa-solid fa-rotate"></i>
+                </div>
+                <div>
+                    <div class="lz-stat-label"><?= $periodLabel ?></div>
+                    <div class="lz-stat-value"><?= number_format($counts['total'] ?? 0) ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="lz-stat-card d-flex align-items-center gap-3">
+                <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info)">
+                    <i class="fa-solid fa-percent"></i>
+                </div>
+                <div>
+                    <div class="lz-stat-label">Success Rate</div>
+                    <div class="lz-stat-value"><?= $successRateFormatted ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
         <div class="col-md-3 col-6">
             <div class="card border-0 rounded-4" style="border-bottom: 4px solid #ef4444 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <div class="card-body p-3 d-flex align-items-center">
