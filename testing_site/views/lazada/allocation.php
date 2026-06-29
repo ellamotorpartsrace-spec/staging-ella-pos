@@ -438,47 +438,92 @@ $totalUnmapped = count($unmappedRows);
 
 <div class="lz-page lz-animate">
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
-<div class="lz-breadcrumb">
-    <a href="<?= BASE_URL ?>views/lazada/index.php">Lazada Sync</a>
-    <i class="fa-solid fa-chevron-right" style="font-size:.6rem"></i><span>Stock Allocation</span>
-</div>
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <h1 class="lz-title mb-0"><i class="fa-solid fa-sliders text-lazada me-2"></i>Stock Allocation</h1>
-        <p class="lz-subtitle mb-0">Allocate POS inventory to Lazada per variation. Only mapped products sync stock to Lazada.</p>
+    
+    <!-- Hero Header -->
+    <div class="mb-4" style="background: #111827; border-radius: 16px; padding: 2rem 2.5rem; color: white; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        <!-- Breadcrumb inside -->
+        <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
+            <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" style="color: rgba(255,255,255,0.7); text-decoration: none;">Lazada Dashboard</a></li>
+                <li class="breadcrumb-item active" style="color: white; font-weight: 500;">Stock Allocation</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position: relative; z-index: 2;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <i class="fa-solid fa-sliders" style="color: #111827; font-size: 1.8rem;"></i>
+                </div>
+                <div>
+                    <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px;">Stock Allocation</h1>
+                    <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Allocate POS inventory to Lazada per variation. Only mapped products sync stock to Lazada.</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <button id="btnManualSync" class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" onclick="triggerManualSync()" style="color: #111827; height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                    <i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span>
+                </button>
+            </div>
+        </div>
+        <!-- Decorative bg -->
+        <div style="position: absolute; top: -50px; right: -50px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: 1;"></div>
     </div>
-    <div class="d-flex gap-2">
-        <button id="btnManualSync" class="btn btn-lazada" onclick="triggerManualSync()"><i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span></button>
-    </div>
-</div>
 
-<!-- KPI Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3 col-6">
-        <div class="lz-stat-card accent-success">
-            <div class="lz-stat-icon" style="background:var(--lz-success-bg);color:var(--lz-success)"><i class="fa-solid fa-check-circle"></i></div>
-            <div><div class="lz-stat-label">Allocated</div><div class="lz-stat-value" id="sumAllocated">0</div></div>
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #10b981 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div style="background: #ecfdf5; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fa-solid fa-check-circle" style="color: #10b981; font-size: 1.25rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Allocated</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="sumAllocated">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #f59e0b !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div style="background: #fffbeb; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 1.25rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Low Stock</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="sumLowStock">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #cbd5e1 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div style="background: #f1f5f9; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fa-solid fa-minus-circle" style="color: #64748b; font-size: 1.25rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Unallocated</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="sumUnallocated">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #ef4444 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div style="background: #fef2f2; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fa-solid fa-arrow-trend-up" style="color: #ef4444; font-size: 1.25rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Overallocated</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #ef4444; line-height: 1.2;" id="sumOverallocated">0</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3 col-6">
-        <div class="lz-stat-card accent-warning">
-            <div class="lz-stat-icon" style="background:var(--lz-warning-bg);color:var(--lz-warning)"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <div><div class="lz-stat-label">Low Stock</div><div class="lz-stat-value" id="sumLowStock">0</div></div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="lz-stat-card" style="border-left: 3px solid var(--lz-neutral-text);">
-            <div class="lz-stat-icon" style="background:var(--lz-neutral-bg);color:var(--lz-neutral-text)"><i class="fa-solid fa-minus-circle"></i></div>
-            <div><div class="lz-stat-label">Unallocated</div><div class="lz-stat-value" id="sumUnallocated">0</div></div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="lz-stat-card accent-danger">
-            <div class="lz-stat-icon" style="background:var(--lz-danger-bg);color:var(--lz-danger)"><i class="fa-solid fa-arrow-trend-up"></i></div>
-            <div><div class="lz-stat-label">Overallocated</div><div class="lz-stat-value" id="sumOverallocated">0</div></div>
-        </div>
-    </div>
-</div>
 
 <!-- Tab Toggle -->
 <div class="d-flex align-items-center gap-2 mb-3">

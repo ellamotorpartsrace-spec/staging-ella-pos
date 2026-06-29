@@ -59,53 +59,95 @@ $conn = $db->getConnection();
         border-top-color: #fff;
     }
 
-</style>
-
-<div class="lz-page lz-animate">
+</style><div class="lz-page lz-animate">
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
-<div class="lz-breadcrumb">
-    <a href="<?= BASE_URL ?>views/lazada/index.php">Lazada Sync</a>
-    <i class="fa-solid fa-chevron-right" style="font-size:.6rem"></i><span>Product Mapping</span>
-</div>
+    
+    <!-- Hero Header -->
+    <div class="mb-4" style="background: #111827; border-radius: 16px; padding: 2rem 2.5rem; color: white; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        <!-- Breadcrumb inside -->
+        <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
+            <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" style="color: rgba(255,255,255,0.7); text-decoration: none;">Lazada Dashboard</a></li>
+                <li class="breadcrumb-item active" style="color: white; font-weight: 500;">Product Mapping</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position: relative; z-index: 2;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <i class="fa-solid fa-link" style="color: #111827; font-size: 1.8rem;"></i>
+                </div>
+                <div>
+                    <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px;">Product Mapping</h1>
+                    <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Match Lazada products to POS inventory by SKU. Products and their variations are grouped together.</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2 align-items-center" id="headerBtns">
+                <span class="small d-flex align-items-center gap-1 me-2" style="color: rgba(255,255,255,0.8)"><i class="fa-solid fa-circle-check text-success" style="font-size:.75rem"></i>Changes auto-saved</span>
+                <button class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" id="headerAutoMatchBtn" disabled onclick="runAutoMatch(false, this)" style="color: #111827; height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                    <i class="fa-solid fa-spinner fa-spin me-2"></i> Loading...
+                </button>
+            </div>
+        </div>
+        <!-- Decorative bg -->
+        <div style="position: absolute; top: -50px; right: -50px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: 1;"></div>
+    </div>
 
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <h1 class="lz-title mb-0"><i class="fa-solid fa-link text-lazada me-2"></i>Product Mapping</h1>
-        <p class="lz-subtitle mb-0">Match Lazada products to POS inventory by SKU. Products and their variations are grouped together.</p>
-    </div>
-    <div class="d-flex align-items-center gap-3" id="headerBtns">
-        <span class="small text-secondary d-flex align-items-center gap-1" style="opacity:.75"><i class="fa-solid fa-circle-check text-success" style="font-size:.75rem"></i>Changes auto-saved</span>
-        <button class="btn btn-outline-lazada" id="headerAutoMatchBtn" disabled onclick="runAutoMatch(false, this)"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading...</button>
-    </div>
-</div>
-
-<!-- Stats (hidden until match runs) -->
-<div class="row g-3 mb-4" id="statsRow">
-    <div class="col-md-3 col-6">
-        <div class="lz-stat-card accent-success">
-            <div class="lz-stat-icon" style="background:var(--lz-success-bg);color:var(--lz-success)"><i class="fa-solid fa-link"></i></div>
-            <div><div class="lz-stat-label">Total Matched</div><div class="lz-stat-value" id="cntMatched">0</div></div>
+    <!-- Stats (hidden until match runs) -->
+    <div class="row g-3 mb-4" id="statsRow">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #10b981 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div style="background: #ecfdf5; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fa-solid fa-link" style="color: #10b981; font-size: 1.25rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Total Matched</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="cntMatched">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #ef4444 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div style="background: #fef2f2; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fa-solid fa-link-slash" style="color: #ef4444; font-size: 1.25rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Total Unmatched</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="cntUnmatched">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #f59e0b !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div style="background: #fffbeb; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fa-solid fa-clone" style="color: #f59e0b; font-size: 1.25rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Duplicate SKUs</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="cntDupes">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #3b82f6 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div style="background: #eff6ff; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fa-solid fa-ban" style="color: #3b82f6; font-size: 1.25rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Ignored</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="cntIgnored">0</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3 col-6">
-        <div class="lz-stat-card accent-warning">
-            <div class="lz-stat-icon" style="background:var(--lz-warning-bg);color:var(--lz-warning)"><i class="fa-solid fa-link-slash"></i></div>
-            <div><div class="lz-stat-label">Total Unmatched</div><div class="lz-stat-value" id="cntUnmatched">0</div></div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="lz-stat-card accent-lazada">
-            <div class="lz-stat-icon" style="background:var(--lazada-light);color:var(--lazada-primary)"><i class="fa-solid fa-clone"></i></div>
-            <div><div class="lz-stat-label">Duplicate SKUs</div><div class="lz-stat-value" id="cntDupes">0</div></div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="lz-stat-card accent-danger">
-            <div class="lz-stat-icon" style="background:var(--lz-danger-bg);color:var(--lz-danger)"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <div><div class="lz-stat-label">Missing SKUs</div><div class="lz-stat-value" id="cntMissing">0</div></div>
-        </div>
-    </div>
-</div>
 
 <!-- Results State -->
 <div id="resultsState">
