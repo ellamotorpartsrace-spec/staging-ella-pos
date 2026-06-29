@@ -141,75 +141,77 @@ require_once '../../includes/sidebar.php';
         </div>
     </div>
 
-    <!-- Stat Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.05s">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="lz-stat-label mb-2">Total Products</div>
-                        <div class="lz-stat-value" id="lzTotalProducts">—</div>
-                        <div class="small text-muted mt-1">Lazada listings</div>
+    <!-- Bento Box Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Left Side: KPI Stats (2x2 Grid) -->
+        <div class="col-lg-5">
+            <div class="row g-3 h-100">
+                <div class="col-sm-6">
+                    <div class="lz-stat-card h-100" style="animation-delay:0.05s">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="lz-stat-label mb-2">Total Products</div>
+                                <div class="lz-stat-value" id="lzTotalProducts">—</div>
+                                <div class="small text-muted mt-1">Lazada listings</div>
+                            </div>
+                            <div class="lz-icon-box bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
+                        </div>
                     </div>
-                    <div class="lz-icon-box bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="lz-stat-card h-100" style="animation-delay:0.1s">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="lz-stat-label mb-2">Total Variations</div>
+                                <div class="lz-stat-value" id="lzTotalVariations">—</div>
+                                <div class="small text-muted mt-1">Product variants</div>
+                            </div>
+                            <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="lz-stat-card h-100" style="animation-delay:0.15s">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="lz-stat-label mb-2">Mapped Items</div>
+                                <div class="lz-stat-value text-success" id="lzMapped">—</div>
+                                <div class="small text-muted mt-1">Linked to ERP</div>
+                            </div>
+                            <div class="lz-icon-box bg-success"><i class="fa-solid fa-link"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="lz-stat-card h-100" style="animation-delay:0.2s">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="lz-stat-label mb-2">Unmapped Items</div>
+                                <div class="lz-stat-value text-warning" id="lzUnmapped">—</div>
+                                <div class="small text-muted mt-1">Need mapping</div>
+                            </div>
+                            <div class="lz-icon-box bg-warning"><i class="fa-solid fa-link-slash"></i></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.1s">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="lz-stat-label mb-2">Total Variations</div>
-                        <div class="lz-stat-value" id="lzTotalVariations">—</div>
-                        <div class="small text-muted mt-1">Product variants</div>
-                    </div>
-                    <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.15s">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="lz-stat-label mb-2">Mapped Items</div>
-                        <div class="lz-stat-value text-success" id="lzMapped">—</div>
-                        <div class="small text-muted mt-1">Linked to ERP</div>
-                    </div>
-                    <div class="lz-icon-box bg-success"><i class="fa-solid fa-link"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.2s">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="lz-stat-label mb-2">Unmapped Items</div>
-                        <div class="lz-stat-value text-warning" id="lzUnmapped">—</div>
-                        <div class="small text-muted mt-1">Need mapping</div>
-                    </div>
-                    <div class="lz-icon-box bg-warning"><i class="fa-solid fa-link-slash"></i></div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Main Grid -->
-    <div class="row g-4">
-        <!-- Full Width: Navigation Tiles -->
-        <div class="col-12 mb-2">
+        <!-- Right Side: Quick Navigation Bento -->
+        <div class="col-lg-7">
             <!-- Centered Header -->
-            <div class="d-flex flex-column align-items-center justify-content-center text-center mb-4 mt-2" style="animation-delay:0.25s">
-                <div class="lz-icon-box bg-blue mb-3" style="width:52px;height:52px;font-size:1.3rem;border-radius:50%; box-shadow: 0 8px 20px rgba(15,19,109,0.15);">
+            <div class="d-flex flex-column align-items-center justify-content-center text-center mb-4" style="animation-delay:0.25s">
+                <div class="lz-icon-box bg-blue mb-2" style="width:48px;height:48px;font-size:1.2rem;border-radius:50%; box-shadow: 0 6px 15px rgba(15,19,109,0.15);">
                     <i class="fa-solid fa-compass"></i>
                 </div>
-                <h4 class="fw-bolder mb-1" style="color:var(--lazada-primary); letter-spacing:-0.5px;">Quick Navigation</h4>
+                <h5 class="fw-bolder mb-1" style="color:var(--lazada-primary); letter-spacing:-0.5px;">Quick Navigation</h5>
                 <div class="text-muted small fw-600">Select a Lazada module to manage your store</div>
             </div>
             
-            <div class="row g-4">
+            <div class="row g-3 h-100">
                 <!-- Products -->
-                <div class="col-md-6 col-xl-3">
-                    <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #4338ca;">
+                <div class="col-sm-6">
+                    <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card h-100" style="border-top: 4px solid #4338ca;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4338ca;">
                             <i class="fa-solid fa-bag-shopping"></i>
                         </div>
@@ -221,8 +223,8 @@ require_once '../../includes/sidebar.php';
                 </div>
                 
                 <!-- Mapping -->
-                <div class="col-md-6 col-xl-3">
-                    <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #0f766e;">
+                <div class="col-sm-6">
+                    <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card h-100" style="border-top: 4px solid #0f766e;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #0f766e;">
                             <i class="fa-solid fa-link"></i>
                         </div>
@@ -234,8 +236,8 @@ require_once '../../includes/sidebar.php';
                 </div>
                 
                 <!-- Allocation -->
-                <div class="col-md-6 col-xl-3">
-                    <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #b45309;">
+                <div class="col-sm-6">
+                    <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card h-100" style="border-top: 4px solid #b45309;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309;">
                             <i class="fa-solid fa-sliders"></i>
                         </div>
@@ -247,8 +249,8 @@ require_once '../../includes/sidebar.php';
                 </div>
                 
                 <!-- Sync Logs -->
-                <div class="col-md-6 col-xl-3">
-                    <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #4b5563;">
+                <div class="col-sm-6">
+                    <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card h-100" style="border-top: 4px solid #4b5563;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563;">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                         </div>
@@ -260,6 +262,10 @@ require_once '../../includes/sidebar.php';
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Bottom Row: Status & Alerts -->
+    <div class="row g-4">
 
         <!-- Right: Status & Alerts -->
         <div class="col-lg-6">
