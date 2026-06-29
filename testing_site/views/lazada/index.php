@@ -15,18 +15,6 @@ $configData = $stmtToken->fetch(PDO::FETCH_ASSOC);
 $isConnected = $configData && !empty($configData['access_token']);
 $accountName = $isConnected && !empty($configData['account_name']) ? $configData['account_name'] : 'Lazada Store';
 
-// Fetch Lazada Quick Stats
-$stmtTotalLz = $conn->prepare("SELECT COUNT(*) as total FROM lazada_products");
-$stmtTotalLz->execute();
-$totalLazadaProducts = $stmtTotalLz->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
-
-$stmtMapped = $conn->prepare("SELECT COUNT(DISTINCT pos_item_id) as mapped FROM lazada_product_mappings");
-$stmtMapped->execute();
-$totalMappedProducts = $stmtMapped->fetch(PDO::FETCH_ASSOC)['mapped'] ?? 0;
-
-$pendingMap = max(0, $totalLazadaProducts - $totalMappedProducts);
-$mapProgress = $totalLazadaProducts > 0 ? round(($totalMappedProducts / $totalLazadaProducts) * 100) : 0;
-
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 ?>
@@ -218,8 +206,8 @@ require_once '../../includes/sidebar.php';
 
     <!-- Main Grid -->
     <div class="row g-4">
-        <!-- Left: Navigation Tiles -->
-        <div class="col-lg-7">
+        <!-- Full Width: Navigation Tiles -->
+        <div class="col-12">
             <div class="lz-card" style="animation-delay:0.25s">
                 <div class="lz-card-header d-flex align-items-center gap-2">
                     <div class="lz-icon-box bg-blue" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
@@ -233,8 +221,8 @@ require_once '../../includes/sidebar.php';
                 <div class="lz-card-body p-3">
                     <div class="row g-3">
                         <!-- Products -->
-                        <div class="col-sm-6">
-                            <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card">
+                        <div class="col-md-6 col-xl-3">
+                            <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="height: 100%;">
                                 <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4338ca;">
                                     <i class="fa-solid fa-bag-shopping"></i>
                                 </div>
@@ -247,8 +235,8 @@ require_once '../../includes/sidebar.php';
                         </div>
                         
                         <!-- Mapping -->
-                        <div class="col-sm-6">
-                            <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card">
+                        <div class="col-md-6 col-xl-3">
+                            <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="height: 100%;">
                                 <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #0f766e;">
                                     <i class="fa-solid fa-link"></i>
                                 </div>
@@ -261,8 +249,8 @@ require_once '../../includes/sidebar.php';
                         </div>
                         
                         <!-- Allocation -->
-                        <div class="col-sm-6">
-                            <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card">
+                        <div class="col-md-6 col-xl-3">
+                            <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="height: 100%;">
                                 <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309;">
                                     <i class="fa-solid fa-sliders"></i>
                                 </div>
@@ -275,8 +263,8 @@ require_once '../../includes/sidebar.php';
                         </div>
                         
                         <!-- Sync Logs -->
-                        <div class="col-sm-6">
-                            <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card">
+                        <div class="col-md-6 col-xl-3">
+                            <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="height: 100%;">
                                 <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563;">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                 </div>
@@ -290,60 +278,12 @@ require_once '../../includes/sidebar.php';
                     </div>
                 </div>
             </div>
-
-            <!-- Sync Overview Card -->
-            <div class="lz-card mt-4" style="animation-delay:0.3s">
-                <div class="lz-card-header d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="lz-icon-box bg-gradient-info" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
-                            <i class="fa-solid fa-chart-pie"></i>
-                        </div>
-                        <div>
-                            <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">Sync Overview</div>
-                            <div class="small text-muted">Your current catalog status</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="lz-card-body p-4">
-                    <!-- Stats Row -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-4">
-                            <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; height: 100%;">
-                                <div class="small text-muted mb-1 fw-600">Total Products</div>
-                                <div class="fs-4 fw-bolder" style="color: #0f172a;"><?= number_format($totalLazadaProducts) ?></div>
-                            </div>
-                        </div>
-                        <div class="col-sm-4">
-                            <div class="p-3 rounded-3" style="background: #f0fdf4; border: 1px solid #bbf7d0; height: 100%;">
-                                <div class="small fw-600 mb-1" style="color: #166534;">Mapped SKUs</div>
-                                <div class="fs-4 fw-bolder" style="color: #166534;"><?= number_format($totalMappedProducts) ?></div>
-                            </div>
-                        </div>
-                        <div class="col-sm-4">
-                            <div class="p-3 rounded-3" style="background: #fffbeb; border: 1px solid #fde68a; height: 100%;">
-                                <div class="small fw-600 mb-1" style="color: #92400e;">Pending Map</div>
-                                <div class="fs-4 fw-bolder" style="color: #92400e;"><?= number_format($pendingMap) ?></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Mapping Progress -->
-                    <div class="mb-2 d-flex justify-content-between align-items-end">
-                        <span class="small fw-600 text-muted">Catalog Mapping Progress</span>
-                        <span class="small fw-bold" style="color: var(--lazada-primary);"><?= $mapProgress ?>%</span>
-                    </div>
-                    <div class="progress" style="height: 8px; border-radius: 10px; background: #e2e8f0;">
-                        <div class="progress-bar bg-blue" role="progressbar" style="width: <?= $mapProgress ?>%" aria-valuenow="<?= $mapProgress ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <p class="small text-muted mt-2 mb-0"><i class="fa-solid fa-circle-info me-1"></i>Map your products to enable automated stock syncing.</p>
-                </div>
-            </div>
         </div>
 
         <!-- Right: Status & Alerts -->
-        <div class="col-lg-5">
+        <div class="col-lg-6">
             <!-- Connection Status -->
-            <div class="lz-card mb-4" style="animation-delay:0.3s">
+            <div class="lz-card mb-4" style="animation-delay:0.3s; height: 100%;">
                 <div class="lz-card-header d-flex align-items-center gap-2">
                     <div class="lz-icon-box bg-blue" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
                         <i class="fa-solid fa-heart-pulse"></i>
@@ -385,22 +325,24 @@ require_once '../../includes/sidebar.php';
                             <span class="small fw-bold">Never</span>
                         </div>
                     </div>
-                    <div class="mt-3">
+                    <div class="mt-4 pt-2">
                         <?php if ($isConnected): ?>
-                            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-light w-100 d-block text-center border shadow-sm fw-bold" style="font-size:.85rem;padding:.6rem 1rem; color: var(--lazada-primary);">
+                            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-light w-100 d-block text-center border shadow-sm fw-bold" style="font-size:.85rem;padding:.7rem 1rem; color: var(--lazada-primary);">
                                 <i class="fa-solid fa-sliders me-1"></i> Manage Connection
                             </a>
                         <?php else: ?>
-                            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn-lazada w-100 d-block text-center" style="font-size:.85rem;padding:.6rem 1rem;">
+                            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn-lazada w-100 d-block text-center" style="font-size:.85rem;padding:.7rem 1rem;">
                                 <i class="fa-solid fa-plug me-1"></i> Connect Lazada Account
                             </a>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
+        </div>
 
+        <div class="col-lg-6">
             <!-- Health Alerts -->
-            <div class="lz-card" style="animation-delay:0.35s">
+            <div class="lz-card" style="animation-delay:0.35s; height: 100%;">
                 <div class="lz-card-header d-flex align-items-center gap-2">
                     <div class="lz-icon-box bg-danger" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
                         <i class="fa-solid fa-bell"></i>
