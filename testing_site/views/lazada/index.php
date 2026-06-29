@@ -11,77 +11,84 @@ require_once '../../includes/sidebar.php';
 
 <div class="container-fluid py-2">
 
-    <!-- Hero Header -->
-    <div class="lz-hero-header mb-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div style="position:relative;z-index:2;">
-                <div class="d-flex align-items-center gap-3 mb-2">
-                    <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4d/Lazada_%282019%29.svg" style="width:32px;height:auto;filter: brightness(0) invert(1);" alt="Lazada Logo">
-                    </div>
-                    <div>
-                        <h2 class="mb-0 text-white fw-bold" style="letter-spacing:-0.5px;">Dashboard</h2>
-                        <div class="text-white text-opacity-75 small">Lazada POS Sync Overview</div>
-                    </div>
+    <!-- Premium Hero Header -->
+    <div class="lz-premium-hero mb-4">
+        <div class="lz-hero-shapes">
+            <div class="lz-shape lz-shape-1"></div>
+            <div class="lz-shape lz-shape-2"></div>
+            <div class="lz-shape lz-shape-3"></div>
+        </div>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-4 position-relative" style="z-index:10;">
+            <div class="d-flex align-items-center gap-4">
+                <div class="lz-hero-logo-box">
+                    <i class="fa-solid fa-basket-shopping text-white" style="font-size:1.8rem;"></i>
+                </div>
+                <div>
+                    <h2 class="mb-1 text-white fw-bolder" style="letter-spacing:-0.5px; font-size: 2.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">Dashboard</h2>
+                    <div class="text-white text-opacity-75 fw-medium" style="font-size:1.05rem;">Lazada POS Sync Overview</div>
                 </div>
             </div>
             
-            <div style="position:relative;z-index:2;" class="d-flex gap-2 align-items-center">
+            <div class="d-flex gap-3 align-items-center">
                 <?php include 'account_switcher.php'; ?>
-                <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-light rounded-pill px-4" style="font-weight:600;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
-                    <i class="fas fa-cog me-2 text-primary"></i> Settings
+                <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-btn-glass">
+                    <i class="fas fa-cog me-2"></i> Settings
                 </a>
             </div>
         </div>
     </div>
 
     <!-- Stat Cards -->
-    <div class="row g-3 mb-4">
+    <div class="row g-4 mb-4">
         <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.05s">
-                <div class="d-flex justify-content-between align-items-start">
+            <div class="lz-stat-card-premium" style="animation-delay:0.05s">
+                <div class="lz-stat-glow bg-blue-glow"></div>
+                <div class="d-flex justify-content-between align-items-start position-relative z-1">
                     <div>
-                        <div class="lz-stat-label mb-2">Total Products</div>
+                        <div class="lz-stat-label mb-1">Total Products</div>
                         <div class="lz-stat-value" id="lzTotalProducts">—</div>
-                        <div class="small text-muted mt-1">Lazada listings</div>
+                        <div class="lz-stat-desc mt-2"><i class="fa-solid fa-arrow-trend-up me-1 text-success"></i>Lazada listings</div>
                     </div>
-                    <div class="lz-icon-box bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
+                    <div class="lz-icon-premium bg-gradient-blue"><i class="fa-solid fa-bag-shopping"></i></div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.1s">
-                <div class="d-flex justify-content-between align-items-start">
+            <div class="lz-stat-card-premium" style="animation-delay:0.1s">
+                <div class="lz-stat-glow bg-info-glow"></div>
+                <div class="d-flex justify-content-between align-items-start position-relative z-1">
                     <div>
-                        <div class="lz-stat-label mb-2">Total Variations</div>
+                        <div class="lz-stat-label mb-1">Total Variations</div>
                         <div class="lz-stat-value" id="lzTotalVariations">—</div>
-                        <div class="small text-muted mt-1">Product variants</div>
+                        <div class="lz-stat-desc mt-2"><i class="fa-solid fa-layer-group me-1 text-info"></i>Product variants</div>
                     </div>
-                    <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="lz-icon-premium bg-gradient-info"><i class="fa-solid fa-layer-group"></i></div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.15s">
-                <div class="d-flex justify-content-between align-items-start">
+            <div class="lz-stat-card-premium" style="animation-delay:0.15s">
+                <div class="lz-stat-glow bg-success-glow"></div>
+                <div class="d-flex justify-content-between align-items-start position-relative z-1">
                     <div>
-                        <div class="lz-stat-label mb-2">Mapped Items</div>
+                        <div class="lz-stat-label mb-1">Mapped Items</div>
                         <div class="lz-stat-value text-success" id="lzMapped">—</div>
-                        <div class="small text-muted mt-1">Linked to ERP</div>
+                        <div class="lz-stat-desc mt-2"><i class="fa-solid fa-check-circle me-1 text-success"></i>Linked to ERP</div>
                     </div>
-                    <div class="lz-icon-box bg-success"><i class="fa-solid fa-link"></i></div>
+                    <div class="lz-icon-premium bg-gradient-success"><i class="fa-solid fa-link"></i></div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="lz-stat-card" style="animation-delay:0.2s">
-                <div class="d-flex justify-content-between align-items-start">
+            <div class="lz-stat-card-premium" style="animation-delay:0.2s">
+                <div class="lz-stat-glow bg-warning-glow"></div>
+                <div class="d-flex justify-content-between align-items-start position-relative z-1">
                     <div>
-                        <div class="lz-stat-label mb-2">Unmapped Items</div>
+                        <div class="lz-stat-label mb-1">Unmapped Items</div>
                         <div class="lz-stat-value text-warning" id="lzUnmapped">—</div>
-                        <div class="small text-muted mt-1">Need mapping</div>
+                        <div class="lz-stat-desc mt-2"><i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i>Action needed</div>
                     </div>
-                    <div class="lz-icon-box bg-warning"><i class="fa-solid fa-link-slash"></i></div>
+                    <div class="lz-icon-premium bg-gradient-warning"><i class="fa-solid fa-link-slash"></i></div>
                 </div>
             </div>
         </div>
@@ -91,72 +98,71 @@ require_once '../../includes/sidebar.php';
     <div class="row g-4">
         <!-- Left: Navigation Tiles -->
         <div class="col-lg-7">
-            <div class="lz-card" style="animation-delay:0.25s">
-                <div class="lz-card-header d-flex align-items-center gap-2">
-                    <div class="lz-icon-box bg-blue" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
+            <div class="lz-card-premium" style="animation-delay:0.25s">
+                <div class="lz-card-header-premium d-flex align-items-center gap-3">
+                    <div class="lz-icon-box-sm bg-gradient-blue">
                         <i class="fa-solid fa-compass"></i>
                     </div>
                     <div>
-                        <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">Quick Navigation</div>
-                        <div class="small text-muted">Lazada module sections</div>
+                        <div class="fw-bold" style="font-size:1.05rem;color:var(--lz-dark)">Quick Navigation</div>
+                        <div class="small text-muted fw-medium">Lazada module sections</div>
                     </div>
                 </div>
-                <div class="lz-card-body p-3">
-                    <div class="lz-nav-grid" style="grid-template-columns:repeat(2,1fr);gap:1rem;">
-
-                        <a href="<?= BASE_URL ?>views/lazada/products.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon bg-blue" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;">
+                <div class="lz-card-body p-4">
+                    <div class="lz-nav-grid">
+                        <a href="<?= BASE_URL ?>views/lazada/products.php" class="lz-nav-card-premium">
+                            <div class="lz-nav-icon-premium bg-gradient-blue">
                                 <i class="fa-solid fa-bag-shopping"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Products</div>
+                                <div class="lz-nav-title">Products</div>
                                 <div class="lz-nav-desc">Browse Lazada listings catalog</div>
                             </div>
-                            <i class="fa-solid fa-chevron-right text-muted small"></i>
+                            <div class="lz-nav-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon bg-gradient-info" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;">
+                        <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="lz-nav-card-premium">
+                            <div class="lz-nav-icon-premium bg-gradient-success">
                                 <i class="fa-solid fa-link"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Product Mapping</div>
+                                <div class="lz-nav-title">Product Mapping</div>
                                 <div class="lz-nav-desc">Link SKUs to ERP inventory</div>
                             </div>
-                            <i class="fa-solid fa-chevron-right text-muted small"></i>
+                            <div class="lz-nav-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;background:var(--lz-info-bg);color:var(--lz-info);">
+                        <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="lz-nav-card-premium">
+                            <div class="lz-nav-icon-premium bg-gradient-info">
                                 <i class="fa-solid fa-sliders"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Stock Allocation</div>
-                                <div class="lz-nav-desc">Manage online stock safety limits and rules</div>
+                                <div class="lz-nav-title">Stock Allocation</div>
+                                <div class="lz-nav-desc">Manage online stock safety limits</div>
                             </div>
-                            <i class="fa-solid fa-chevron-right text-muted small"></i>
+                            <div class="lz-nav-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/logs.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;background:var(--lz-neutral-bg);color:var(--lz-neutral-text);">
+                        <a href="<?= BASE_URL ?>views/lazada/logs.php" class="lz-nav-card-premium">
+                            <div class="lz-nav-icon-premium bg-gradient-neutral">
                                 <i class="fa-solid fa-clock-rotate-left"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Sync Logs</div>
+                                <div class="lz-nav-title">Sync Logs</div>
                                 <div class="lz-nav-desc">Review stock sync events</div>
                             </div>
-                            <i class="fa-solid fa-chevron-right text-muted small"></i>
+                            <div class="lz-nav-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;grid-column:span 2;">
-                            <div class="lz-nav-icon" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;background:var(--lz-warning-bg);color:var(--lz-warning);">
+                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-nav-card-premium full-width">
+                            <div class="lz-nav-icon-premium bg-gradient-warning">
                                 <i class="fa-solid fa-gear"></i>
                             </div>
                             <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Settings & Setup</div>
-                                <div class="lz-nav-desc">Configure API credentials and sync preferences for your Lazada store</div>
+                                <div class="lz-nav-title">Settings & Setup</div>
+                                <div class="lz-nav-desc">Configure API credentials and sync preferences</div>
                             </div>
-                            <i class="fa-solid fa-chevron-right text-muted small"></i>
+                            <div class="lz-nav-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                         </a>
                     </div>
                 </div>
@@ -166,72 +172,84 @@ require_once '../../includes/sidebar.php';
         <!-- Right: Status & Alerts -->
         <div class="col-lg-5">
             <!-- Connection Status -->
-            <div class="lz-card mb-4" style="animation-delay:0.3s">
-                <div class="lz-card-header d-flex align-items-center gap-2">
-                    <div class="lz-icon-box bg-blue" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
+            <div class="lz-card-premium mb-4" style="animation-delay:0.3s">
+                <div class="lz-card-header-premium d-flex align-items-center gap-3">
+                    <div class="lz-icon-box-sm bg-gradient-blue">
                         <i class="fa-solid fa-heart-pulse"></i>
                     </div>
                     <div>
-                        <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">System Connection</div>
-                        <div class="small text-muted">Lazada API health</div>
+                        <div class="fw-bold" style="font-size:1.05rem;color:var(--lz-dark)">System Connection</div>
+                        <div class="small text-muted fw-medium">Lazada API health</div>
                     </div>
                 </div>
-                <div class="lz-card-body p-3">
-                    <div class="d-flex flex-column gap-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="small fw-600 text-muted">Lazada API</span>
-                            <span class="lz-badge lz-badge-warning">Not Configured</span>
+                <div class="lz-card-body p-4">
+                    <div class="lz-status-list">
+                        <div class="lz-status-item">
+                            <span class="lz-status-label">Lazada API</span>
+                            <span class="lz-badge-premium warning">Not Configured</span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="small fw-600 text-muted">Access Token</span>
-                            <span class="lz-badge lz-badge-danger">Missing</span>
+                        <div class="lz-status-item">
+                            <span class="lz-status-label">Access Token</span>
+                            <span class="lz-badge-premium danger">Missing</span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="small fw-600 text-muted">Refresh Token</span>
-                            <span class="lz-badge lz-badge-danger">Missing</span>
+                        <div class="lz-status-item">
+                            <span class="lz-status-label">Refresh Token</span>
+                            <span class="lz-badge-premium danger">Missing</span>
                         </div>
-                        <hr style="margin:.25rem 0;opacity:.08">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="small fw-600 text-muted"><i class="fa-solid fa-clock me-1"></i>Last Sync</span>
-                            <span class="small fw-bold">Never</span>
+                        <div class="lz-status-divider"></div>
+                        <div class="lz-status-item">
+                            <span class="lz-status-label"><i class="fa-regular fa-clock me-2"></i>Last Sync</span>
+                            <span class="lz-status-value fw-bold">Never</span>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn-lazada w-100 d-block text-center" style="font-size:.85rem;padding:.6rem 1rem;">
-                            <i class="fa-solid fa-plug me-1"></i> Connect Lazada Account
+                    <div class="mt-4">
+                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-btn-primary w-100">
+                            <i class="fa-solid fa-plug me-2"></i> Connect Lazada Account
                         </a>
                     </div>
                 </div>
             </div>
 
             <!-- Health Alerts -->
-            <div class="lz-card" style="animation-delay:0.35s">
-                <div class="lz-card-header d-flex align-items-center gap-2">
-                    <div class="lz-icon-box bg-danger" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
+            <div class="lz-card-premium" style="animation-delay:0.35s">
+                <div class="lz-card-header-premium d-flex align-items-center gap-3">
+                    <div class="lz-icon-box-sm bg-gradient-danger">
                         <i class="fa-solid fa-bell"></i>
                     </div>
                     <div>
-                        <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">Health Alerts</div>
-                        <div class="small text-muted">Issues requiring attention</div>
+                        <div class="fw-bold" style="font-size:1.05rem;color:var(--lz-dark)">Health Alerts</div>
+                        <div class="small text-muted fw-medium">Issues requiring attention</div>
                     </div>
                 </div>
-                <div class="lz-card-body p-3">
-                    <div class="d-flex flex-column gap-2">
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded-3" style="background:var(--lz-danger-bg);border-left:3px solid var(--lz-danger);">
-                            <span class="small fw-600"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Missing SKUs</span>
-                            <span class="fw-800 text-danger" id="lzMissingSKU">—</span>
+                <div class="lz-card-body p-4">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="lz-alert-item danger">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="lz-alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                <span class="fw-semibold">Missing SKUs</span>
+                            </div>
+                            <span class="lz-alert-count" id="lzMissingSKU">—</span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded-3" style="background:var(--lz-danger-bg);border-left:3px solid var(--lz-danger);">
-                            <span class="small fw-600"><i class="fa-solid fa-circle-xmark text-danger me-2"></i>Out of Stock</span>
-                            <span class="fw-800 text-danger" id="lzOos">—</span>
+                        <div class="lz-alert-item danger">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="lz-alert-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                                <span class="fw-semibold">Out of Stock</span>
+                            </div>
+                            <span class="lz-alert-count" id="lzOos">—</span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded-3" style="background:var(--lz-warning-bg);border-left:3px solid var(--lz-warning);">
-                            <span class="small fw-600"><i class="fa-solid fa-box-open text-warning me-2"></i>Low Stock</span>
-                            <span class="fw-800 text-warning" id="lzLowStock">—</span>
+                        <div class="lz-alert-item warning">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="lz-alert-icon"><i class="fa-solid fa-box-open"></i></div>
+                                <span class="fw-semibold">Low Stock</span>
+                            </div>
+                            <span class="lz-alert-count" id="lzLowStock">—</span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded-3" style="background:var(--lz-success-bg);border-left:3px solid var(--lz-success);">
-                            <span class="small fw-600"><i class="fa-solid fa-rotate text-success me-2"></i>Updates (24h)</span>
-                            <span class="fw-800 text-success" id="lzRecent">—</span>
+                        <div class="lz-alert-item success">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="lz-alert-icon"><i class="fa-solid fa-rotate"></i></div>
+                                <span class="fw-semibold">Updates (24h)</span>
+                            </div>
+                            <span class="lz-alert-count" id="lzRecent">—</span>
                         </div>
                     </div>
                 </div>

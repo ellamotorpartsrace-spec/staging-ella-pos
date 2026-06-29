@@ -88,48 +88,6 @@ require_once '../../includes/sidebar.php';
             </a>
         </div>
 
-        <!-- Placeholder Table -->
-        <div class="px-3 pb-3 mt-2">
-            <div class="table-responsive" style="opacity:.3;pointer-events:none;">
-                <table class="table table-hover align-middle" style="font-size:.88rem;">
-                    <thead>
-                        <tr style="background:#f8fafc;">
-                            <th style="padding:1rem 1.25rem;color:var(--lazada-primary);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">Product</th>
-                            <th style="padding:1rem;color:var(--lazada-primary);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">SKU</th>
-                            <th style="padding:1rem;color:var(--lazada-primary);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">Stock</th>
-                            <th style="padding:1rem;color:var(--lazada-primary);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">Price</th>
-                            <th style="padding:1rem;color:var(--lazada-primary);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">Status</th>
-                            <th style="padding:1rem;color:var(--lazada-primary);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">Mapping</th>
-                            <th style="padding:1rem;color:var(--lazada-primary);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php for($i = 0; $i < 5; $i++): ?>
-                        <tr>
-                            <td style="padding:1rem 1.25rem;">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div style="width:36px;height:36px;background:#e2e8f0;border-radius:8px;"></div>
-                                    <div>
-                                        <div class="fw-600" style="color:#334155;">Product Name Here</div>
-                                        <div class="small text-muted">Variation</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td><span class="lz-badge lz-badge-primary">SKU-00<?= $i+1 ?></span></td>
-                            <td><span class="fw-bold">0</span></td>
-                            <td>₱0.00</td>
-                            <td><span class="lz-badge lz-badge-success">Active</span></td>
-                            <td><span class="lz-badge lz-badge-warning">Unmapped</span></td>
-                            <td><button class="btn btn-sm btn-outline-secondary" disabled>Map</button></td>
-                        </tr>
-                        <?php endfor; ?>
-                    </tbody>
-                </table>
-            </div>
-            <div class="text-center mt-1">
-                <small class="text-muted fst-italic">Sample table layout — data loads once API is connected</small>
-            </div>
-        </div>
     </div>
 
 </div>
