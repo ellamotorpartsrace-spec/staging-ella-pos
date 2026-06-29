@@ -70,15 +70,15 @@ require_once '../../includes/sidebar.php';
             
             <div style="position:relative;z-index:2;" class="d-flex gap-3 align-items-center">
                 <?php if ($isConnected): ?>
-                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill" style="box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <a href="<?= BASE_URL ?>views/lazada/settings.php" class="d-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill text-decoration-none" style="box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                         <i class="fa-solid fa-circle-check text-success small"></i>
                         <span class="text-success fw-bolder" style="font-size: 0.85rem; letter-spacing: 0.3px;">Connected: <?= htmlspecialchars($accountName) ?></span>
-                    </div>
+                    </a>
                 <?php else: ?>
-                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill" style="box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <a href="<?= BASE_URL ?>views/lazada/settings.php" class="d-flex align-items-center gap-2 px-3 py-1 bg-white rounded-pill text-decoration-none" style="box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                         <i class="fa-solid fa-triangle-exclamation text-danger small"></i>
                         <span class="text-danger fw-bolder" style="font-size: 0.85rem; letter-spacing: 0.3px;">Not Connected</span>
-                    </div>
+                    </a>
                 <?php endif; ?>
 
                 <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-light rounded-pill px-4" style="font-weight:600;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
@@ -271,17 +271,6 @@ require_once '../../includes/sidebar.php';
                             <span class="small fw-600 text-muted"><i class="fa-solid fa-clock me-1"></i>Last Sync</span>
                             <span class="small fw-bold">Never</span>
                         </div>
-                    </div>
-                    <div class="mt-3">
-                        <?php if ($isConnected): ?>
-                            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-light w-100 d-block text-center border shadow-sm fw-bold" style="font-size:.85rem;padding:.6rem 1rem; color: var(--lazada-primary);">
-                                <i class="fa-solid fa-sliders me-1"></i> Manage Connection
-                            </a>
-                        <?php else: ?>
-                            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn-lazada w-100 d-block text-center" style="font-size:.85rem;padding:.6rem 1rem;">
-                                <i class="fa-solid fa-plug me-1"></i> Connect Lazada Account
-                            </a>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
