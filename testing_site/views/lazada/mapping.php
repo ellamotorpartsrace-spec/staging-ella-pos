@@ -149,6 +149,18 @@ $conn = $db->getConnection();
         </div>
     </div>
 
+    <!-- Empty State -->
+    <div id="emptyState" class="d-none text-center py-5">
+        <div style="background: rgba(220, 53, 69, 0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <i class="fa-solid fa-plug-circle-xmark" style="font-size: 2.5rem; color: #dc3545;"></i>
+        </div>
+        <h3 class="fw-bolder mb-2">API Not Connected</h3>
+        <p class="text-secondary mx-auto mb-4" style="max-width: 400px;">We cannot fetch your product mappings until your Lazada API settings are configured.</p>
+        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-danger fw-bold px-4 py-2" style="border-radius: 8px;">
+            <i class="fa-solid fa-gear me-2"></i>Configure Settings
+        </a>
+    </div>
+
 <!-- Results State -->
 <div id="resultsState">
     <!-- Filter -->

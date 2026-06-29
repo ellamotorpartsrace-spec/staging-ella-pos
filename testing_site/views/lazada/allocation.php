@@ -9,17 +9,17 @@ $platform = $_SESSION['lazada_active_platform'] ?? 'lazada_main';
 
 $mappedRows = $conn->prepare("
     SELECT m.id, m.lazada_item_id, m.lazada_product_name, m.lazada_variation_name,
-        m.lazada_model_id, m.lazada_stock, m.mapping_status, m.lazada_image_url,
+        m.lazada_sku_id, m.lazada_stock, m.mapping_status, m.lazada_image_url,
         m.stock_allocation_ratio, m.pos_product_id, m.pos_unit_id, m.pos_bundle_set_id,
         (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0)) as pos_qty,
-        COALESCE(v.sku, m.matched_pos_sku, m.lazada_variation_sku, m.lazada_parent_sku) as sku,
+        COALESCE(v.sku, m.matched_pos_sku, m.lazada_seller_sku) as sku,
         u.unit_name, u.multiplier
     FROM lazada_product_mappings m
     LEFT JOIN product_variations v ON m.pos_product_id = v.variation_id
     LEFT JOIN product_units u ON m.pos_unit_id = u.id
     LEFT JOIN inventory i1 ON v.variation_id = i1.variation_id AND i1.store_id = 1
     LEFT JOIN inventory i2 ON v.variation_id = i2.variation_id AND i2.store_id = 2
-    WHERE m.platform_name = ? AND m.mapping_status IN ('auto','manual')
+    WHERE m.platform_name = ? AND m.mapping_status IN ('auto','manual','mapped')
     ORDER BY m.lazada_product_name ASC, m.lazada_variation_name ASC
 ");
 $mappedRows->execute([$platform]);
