@@ -4,9 +4,51 @@ $page_title = 'Lazada Sync — Dashboard';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 requireLogin();
+
+// Fetch Lazada Connection Status
+$db = new Database();
+$conn = $db->getConnection();
+$stmtToken = $conn->prepare("SELECT access_token, refresh_token, token_expires_at, account_name, is_active FROM lazada_config WHERE is_active = 1 LIMIT 1");
+$stmtToken->execute();
+$configData = $stmtToken->fetch(PDO::FETCH_ASSOC);
+
+$isConnected = $configData && !empty($configData['access_token']);
+$accountName = $isConnected && !empty($configData['account_name']) ? $configData['account_name'] : 'Lazada Store';
+
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
 ?>
+<style>
+/* Enhanced Quick Navigation */
+.lz-nav-card {
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+.lz-nav-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(15,19,109,0.15);
+    border-color: rgba(15, 19, 109, 0.3);
+    background: #ffffff;
+}
+.lz-nav-card:hover .fa-chevron-right {
+    transform: translateX(4px);
+    color: var(--lazada-primary) !important;
+}
+.fa-chevron-right {
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+/* Enhanced Health Alerts */
+.health-alert-item {
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+.health-alert-item:hover {
+    filter: brightness(0.97);
+    border-color: rgba(0,0,0,0.05);
+}
+</style>
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/lazada-sync.css?v=<?= filemtime(__DIR__.'/../../assets/css/lazada-sync.css') ?>">
 
 <div class="container-fluid py-2">
@@ -26,8 +68,19 @@ require_once '../../includes/sidebar.php';
                 </div>
             </div>
             
-            <div style="position:relative;z-index:2;" class="d-flex gap-2 align-items-center">
-                <?php include 'account_switcher.php'; ?>
+            <div style="position:relative;z-index:2;" class="d-flex gap-3 align-items-center">
+                <?php if ($isConnected): ?>
+                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-success bg-opacity-10 rounded-pill border border-success border-opacity-25" style="box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <i class="fa-solid fa-circle-check text-success small"></i>
+                        <span class="text-success fw-bold" style="font-size: 0.85rem; letter-spacing: 0.3px;">Connected: <?= htmlspecialchars($accountName) ?></span>
+                    </div>
+                <?php else: ?>
+                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-warning bg-opacity-10 rounded-pill border border-warning border-opacity-25" style="box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <i class="fa-solid fa-triangle-exclamation text-warning small"></i>
+                        <span class="text-warning fw-bold" style="font-size: 0.85rem; letter-spacing: 0.3px;">Not Connected</span>
+                    </div>
+                <?php endif; ?>
+
                 <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-light rounded-pill px-4" style="font-weight:600;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
                     <i class="fas fa-cog me-2 text-primary"></i> Settings
                 </a>
@@ -180,15 +233,27 @@ require_once '../../includes/sidebar.php';
                     <div class="d-flex flex-column gap-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="small fw-600 text-muted">Lazada API</span>
-                            <span class="lz-badge lz-badge-warning">Not Configured</span>
+                            <?php if ($isConnected): ?>
+                                <span class="lz-badge lz-badge-success">Connected</span>
+                            <?php else: ?>
+                                <span class="lz-badge lz-badge-warning">Not Configured</span>
+                            <?php endif; ?>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="small fw-600 text-muted">Access Token</span>
-                            <span class="lz-badge lz-badge-danger">Missing</span>
+                            <?php if ($isConnected && !empty($configData['access_token'])): ?>
+                                <span class="lz-badge lz-badge-success">Valid</span>
+                            <?php else: ?>
+                                <span class="lz-badge lz-badge-danger">Missing</span>
+                            <?php endif; ?>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="small fw-600 text-muted">Refresh Token</span>
-                            <span class="lz-badge lz-badge-danger">Missing</span>
+                            <?php if ($isConnected && !empty($configData['refresh_token'])): ?>
+                                <span class="lz-badge lz-badge-success">Valid</span>
+                            <?php else: ?>
+                                <span class="lz-badge lz-badge-danger">Missing</span>
+                            <?php endif; ?>
                         </div>
                         <hr style="margin:.25rem 0;opacity:.08">
                         <div class="d-flex justify-content-between align-items-center">
@@ -197,9 +262,15 @@ require_once '../../includes/sidebar.php';
                         </div>
                     </div>
                     <div class="mt-3">
-                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn-lazada w-100 d-block text-center" style="font-size:.85rem;padding:.6rem 1rem;">
-                            <i class="fa-solid fa-plug me-1"></i> Connect Lazada Account
-                        </a>
+                        <?php if ($isConnected): ?>
+                            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-light w-100 d-block text-center border shadow-sm fw-bold" style="font-size:.85rem;padding:.6rem 1rem; color: var(--lazada-primary);">
+                                <i class="fa-solid fa-sliders me-1"></i> Manage Connection
+                            </a>
+                        <?php else: ?>
+                            <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn-lazada w-100 d-block text-center" style="font-size:.85rem;padding:.6rem 1rem;">
+                                <i class="fa-solid fa-plug me-1"></i> Connect Lazada Account
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -216,22 +287,22 @@ require_once '../../includes/sidebar.php';
                     </div>
                 </div>
                 <div class="lz-card-body p-3">
-                    <div class="d-flex flex-column gap-2">
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded-3" style="background:var(--lz-danger-bg);border-left:3px solid var(--lz-danger);">
-                            <span class="small fw-600"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Missing SKUs</span>
-                            <span class="fw-800 text-danger" id="lzMissingSKU">—</span>
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fff5f5; border-left:4px solid #ef4444;">
+                            <span class="small fw-600" style="color:#991b1b;"><i class="fa-solid fa-triangle-exclamation me-2" style="font-size:1.1rem; color:#ef4444;"></i>Missing SKUs</span>
+                            <span class="fw-bolder text-danger fs-5" id="lzMissingSKU">—</span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded-3" style="background:var(--lz-danger-bg);border-left:3px solid var(--lz-danger);">
-                            <span class="small fw-600"><i class="fa-solid fa-circle-xmark text-danger me-2"></i>Out of Stock</span>
-                            <span class="fw-800 text-danger" id="lzOos">—</span>
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fff5f5; border-left:4px solid #ef4444;">
+                            <span class="small fw-600" style="color:#991b1b;"><i class="fa-solid fa-circle-xmark me-2" style="font-size:1.1rem; color:#ef4444;"></i>Out of Stock</span>
+                            <span class="fw-bolder text-danger fs-5" id="lzOos">—</span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded-3" style="background:var(--lz-warning-bg);border-left:3px solid var(--lz-warning);">
-                            <span class="small fw-600"><i class="fa-solid fa-box-open text-warning me-2"></i>Low Stock</span>
-                            <span class="fw-800 text-warning" id="lzLowStock">—</span>
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fffbeb; border-left:4px solid #f59e0b;">
+                            <span class="small fw-600" style="color:#92400e;"><i class="fa-solid fa-box-open me-2" style="font-size:1.1rem; color:#f59e0b;"></i>Low Stock</span>
+                            <span class="fw-bolder text-warning fs-5" id="lzLowStock">—</span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded-3" style="background:var(--lz-success-bg);border-left:3px solid var(--lz-success);">
-                            <span class="small fw-600"><i class="fa-solid fa-rotate text-success me-2"></i>Updates (24h)</span>
-                            <span class="fw-800 text-success" id="lzRecent">—</span>
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#ecfdf5; border-left:4px solid #10b981;">
+                            <span class="small fw-600" style="color:#065f46;"><i class="fa-solid fa-rotate me-2" style="font-size:1.1rem; color:#10b981;"></i>Updates (24h)</span>
+                            <span class="fw-bolder text-success fs-5" id="lzRecent">—</span>
                         </div>
                     </div>
                 </div>
