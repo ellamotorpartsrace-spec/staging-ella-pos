@@ -141,71 +141,19 @@ require_once '../../includes/sidebar.php';
         </div>
     </div>
 
-    <!-- Bento Box Grid -->
+    <!-- Main Dashboard Layout -->
     <div class="row g-4 mb-4">
-        <!-- Left Side: KPI Stats (2x2 Grid) -->
-        <div class="col-lg-5">
-            <div class="row g-3 h-100">
-                <div class="col-sm-6">
-                    <div class="lz-stat-card h-100" style="animation-delay:0.05s">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="lz-stat-label mb-2">Total Products</div>
-                                <div class="lz-stat-value" id="lzTotalProducts">—</div>
-                                <div class="small text-muted mt-1">Lazada listings</div>
-                            </div>
-                            <div class="lz-icon-box bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="lz-stat-card h-100" style="animation-delay:0.1s">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="lz-stat-label mb-2">Total Variations</div>
-                                <div class="lz-stat-value" id="lzTotalVariations">—</div>
-                                <div class="small text-muted mt-1">Product variants</div>
-                            </div>
-                            <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="lz-stat-card h-100" style="animation-delay:0.15s">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="lz-stat-label mb-2">Mapped Items</div>
-                                <div class="lz-stat-value text-success" id="lzMapped">—</div>
-                                <div class="small text-muted mt-1">Linked to ERP</div>
-                            </div>
-                            <div class="lz-icon-box bg-success"><i class="fa-solid fa-link"></i></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="lz-stat-card h-100" style="animation-delay:0.2s">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="lz-stat-label mb-2">Unmapped Items</div>
-                                <div class="lz-stat-value text-warning" id="lzUnmapped">—</div>
-                                <div class="small text-muted mt-1">Need mapping</div>
-                            </div>
-                            <div class="lz-icon-box bg-warning"><i class="fa-solid fa-link-slash"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Side: Quick Navigation Bento -->
-        <div class="col-lg-7">
-            <!-- Centered Header -->
-            <div class="d-flex flex-column align-items-center justify-content-center text-center mb-4" style="animation-delay:0.25s">
-                <div class="lz-icon-box bg-blue mb-2" style="width:48px;height:48px;font-size:1.2rem;border-radius:50%; box-shadow: 0 6px 15px rgba(15,19,109,0.15);">
+        <!-- Left Side: Quick Navigation Bento -->
+        <div class="col-lg-8">
+            <!-- Left-Aligned Header -->
+            <div class="d-flex align-items-center gap-3 mb-4" style="animation-delay:0.25s">
+                <div class="lz-icon-box bg-blue" style="width:48px;height:48px;font-size:1.2rem;border-radius:12px; box-shadow: 0 4px 15px rgba(15,19,109,0.1);">
                     <i class="fa-solid fa-compass"></i>
                 </div>
-                <h5 class="fw-bolder mb-1" style="color:var(--lazada-primary); letter-spacing:-0.5px;">Quick Navigation</h5>
-                <div class="text-muted small fw-600">Select a Lazada module to manage your store</div>
+                <div>
+                    <h5 class="fw-bolder mb-0" style="color:var(--lazada-primary); letter-spacing:-0.5px;">Quick Navigation</h5>
+                    <div class="text-muted small fw-600 mt-1">Select a Lazada module to manage your store</div>
+                </div>
             </div>
             
             <div class="row g-3 h-100">
@@ -259,6 +207,60 @@ require_once '../../includes/sidebar.php';
                             <div class="quick-nav-desc">Review automated background stock sync events</div>
                         </div>
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: KPI Stats (Stacked Vertically) -->
+        <div class="col-lg-4">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="lz-stat-card h-100" style="animation-delay:0.05s">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="lz-stat-label mb-2">Total Products</div>
+                                <div class="lz-stat-value" id="lzTotalProducts">—</div>
+                                <div class="small text-muted mt-1">Lazada listings</div>
+                            </div>
+                            <div class="lz-icon-box bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="lz-stat-card h-100" style="animation-delay:0.1s">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="lz-stat-label mb-2">Total Variations</div>
+                                <div class="lz-stat-value" id="lzTotalVariations">—</div>
+                                <div class="small text-muted mt-1">Product variants</div>
+                            </div>
+                            <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="lz-stat-card h-100" style="animation-delay:0.15s">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="lz-stat-label mb-2">Mapped Items</div>
+                                <div class="lz-stat-value text-success" id="lzMapped">—</div>
+                                <div class="small text-muted mt-1">Linked to ERP</div>
+                            </div>
+                            <div class="lz-icon-box bg-success"><i class="fa-solid fa-link"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="lz-stat-card h-100" style="animation-delay:0.2s">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="lz-stat-label mb-2">Unmapped Items</div>
+                                <div class="lz-stat-value text-warning" id="lzUnmapped">—</div>
+                                <div class="small text-muted mt-1">Need mapping</div>
+                            </div>
+                            <div class="lz-icon-box bg-warning"><i class="fa-solid fa-link-slash"></i></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
