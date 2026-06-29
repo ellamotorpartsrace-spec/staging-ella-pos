@@ -1,18 +1,22 @@
 <?php
-$page_title = 'Lazada Sync â€” Stock Allocation';
+$page_title = 'Lazada Sync — Stock Allocation';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 requirePermission('lazada_allocation');
 require_once '../../includes/header.php';
 require_once '../../includes/sidebar.php';
+
+$db = new Database();
+$conn = $db->getConnection();
+
 $platform = $_SESSION['lazada_active_platform'] ?? 'lazada_main';
 
-$mappedRows = $conn->prepare("
+$mappedStmt = $conn->prepare("
     SELECT m.id, m.lazada_item_id, m.lazada_product_name, m.lazada_variation_name,
         m.lazada_sku_id, m.lazada_stock, m.mapping_status, m.lazada_image_url,
         m.stock_allocation_ratio, m.pos_product_id, m.pos_unit_id, m.pos_bundle_set_id,
         (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0)) as pos_qty,
-        COALESCE(v.sku, m.matched_pos_sku, m.lazada_seller_sku) as sku,
+        COALESCE(v.sku, m.matched_pos_sku, m.lazada_seller_sku, m.lazada_seller_sku) as sku,
         u.unit_name, u.multiplier
     FROM lazada_product_mappings m
     LEFT JOIN product_variations v ON m.pos_product_id = v.variation_id
@@ -22,8 +26,8 @@ $mappedRows = $conn->prepare("
     WHERE m.platform_name = ? AND m.mapping_status IN ('auto','manual','mapped')
     ORDER BY m.lazada_product_name ASC, m.lazada_variation_name ASC
 ");
-$mappedRows->execute([$platform]);
-$mappedRows = $mappedRows->fetchAll(PDO::FETCH_ASSOC);
+$mappedStmt->execute([$platform]);
+$mappedRows = $mappedStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Compute available stock for standalone bundle sets from component recipe.
 $bundleSetIds = [];
@@ -140,15 +144,15 @@ if (!empty($bundleSetIds)) {
     }
 }
 
-$unmappedRowsStmt = $conn->prepare("
+$unmappedStmt = $conn->prepare("
     SELECT id, lazada_item_id, lazada_product_name, lazada_variation_name, lazada_stock, lazada_image_url,
-        COALESCE(lazada_seller_sku,'') as sku
+        COALESCE(lazada_seller_sku, lazada_seller_sku,'') as sku
     FROM lazada_product_mappings
-    WHERE platform_name = ? AND mapping_status NOT IN ('auto','manual')
+    WHERE platform_name = ? AND mapping_status NOT IN ('auto','manual','mapped')
     ORDER BY lazada_product_name ASC, lazada_variation_name ASC
 ");
-$unmappedRowsStmt->execute([$platform]);
-$unmappedRows = $unmappedRowsStmt->fetchAll(PDO::FETCH_ASSOC);
+$unmappedStmt->execute([$platform]);
+$unmappedRows = $unmappedStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Count POS ID / SKU frequencies
 $dupCounts = [];
@@ -251,7 +255,7 @@ foreach ($mappedRows as $r) {
     $mappedGroups[$iid]['vars'][] = [
         'id'=>(int)$r['id'],'varName'=>$r['lazada_variation_name']??'','sku'=>$r['sku']??'',
         'total'=>$baseQty,'unitTotal'=>$unitQty,'online'=>(int)$r['lazada_stock'],'status'=>$st,
-        'itemId'=>(int)$r['lazada_item_id'],'modelId'=>$r['lazada_model_id'],
+        'itemId'=>(int)$r['lazada_item_id'],'modelId'=>$r['lazada_sku_id'],
         'ratio'=>(int)($r['stock_allocation_ratio'] ?? 100),
         'isDuplicate'=>$isDup,
         'dupDetails'=>$dupDetails,
@@ -276,7 +280,7 @@ $totalUnmapped = count($unmappedRows);
 ?>
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/lazada-sync.css?v=<?= filemtime(__DIR__.'/../../assets/css/lazada-sync.css') ?>">
 <style>
-/* â”€â”€ Tab Buttons â”€â”€ */
+/* ── Tab Buttons ── */
 .lz-tab-btn{padding:.45rem 1.1rem;border-radius:var(--lz-radius-sm);border:1.5px solid var(--border-color);background:transparent;font-weight:600;font-size:.82rem;color:var(--text-secondary);cursor:pointer;transition:all .2s;}
 .lz-tab-btn.active{background:var(--lazada-gradient);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(238,77,45,.25);}
 .lz-tab-btn:not(.active):hover{border-color:var(--lazada-primary);color:var(--lazada-primary);}
@@ -290,7 +294,7 @@ $totalUnmapped = count($unmappedRows);
 
 
 
-/* â”€â”€ Enhanced Table Column Segments â”€â”€ */
+/* ── Enhanced Table Column Segments ── */
 .lz-table th.col-pos { background: var(--bg-surface); }
 .lz-table th.col-lazada { background: linear-gradient(180deg, rgba(238,77,45,.06) 0%, var(--bg-surface) 100%); }
 .lz-table th.col-reserved { background: linear-gradient(180deg, rgba(245,158,11,.06) 0%, var(--bg-surface) 100%); }
@@ -298,7 +302,7 @@ $totalUnmapped = count($unmappedRows);
 .lz-table th.col-sep-left { border-left: 2px solid rgba(238,77,45,.15); }
 .lz-table td.col-sep-left { border-left: 2px solid rgba(238,77,45,.08); }
 
-/* â”€â”€ Allocation Progress Bar â”€â”€ */
+/* ── Allocation Progress Bar ── */
 .alloc-progress-wrap { width:100%; max-width:80px; margin:3px auto 0; }
 .alloc-progress { height:4px; border-radius:2px; background:var(--lz-neutral-bg); overflow:hidden; }
 .alloc-progress-fill { height:100%; border-radius:2px; transition: width .4s ease; }
@@ -306,7 +310,7 @@ $totalUnmapped = count($unmappedRows);
 .alloc-progress-fill.ratio-mid { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
 .alloc-progress-fill.ratio-low { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
-/* â”€â”€ Live Sync Button â”€â”€ */
+/* ── Live Sync Button ── */
 .btn-live-sync {
     width:30px; height:30px; border-radius:50%; border:1.5px solid var(--border-color);
     background:transparent; color:var(--text-secondary); display:inline-flex;
@@ -320,7 +324,7 @@ $totalUnmapped = count($unmappedRows);
 .btn-live-sync:disabled { opacity:.4; cursor:not-allowed; transform:none; }
 .btn-live-sync .fa-spin { animation-duration:.6s; }
 
-/* â”€â”€ Enhanced Variation Tree â”€â”€ */
+/* ── Enhanced Variation Tree ── */
 .lz-table .var-indent {
     padding-left: 3.5rem !important; position:relative;
 }
@@ -334,13 +338,13 @@ $totalUnmapped = count($unmappedRows);
 }
 .var-connector-icon { color:var(--lazada-primary); font-size:.55rem; margin-right:.4rem; opacity:.6; }
 
-/* â”€â”€ Available to Sell Cell â”€â”€ */
+/* ── Available to Sell Cell ── */
 .avail-cell { font-weight:700; font-size:.9rem; }
 .avail-cell.avail-good { color:var(--lz-success); }
 .avail-cell.avail-low { color:var(--lz-warning); }
 .avail-cell.avail-zero { color:var(--lz-danger); }
 
-/* â”€â”€ Status Badge Enhancements â”€â”€ */
+/* ── Status Badge Enhancements ── */
 .status-chip {
     display:inline-flex; align-items:center; gap:.3rem;
     padding:.25rem .65rem; border-radius:999px;
@@ -352,11 +356,11 @@ $totalUnmapped = count($unmappedRows);
 .status-chip.s-out { background:var(--lz-danger-bg); color:var(--lz-danger); }
 .status-chip.s-none { background:var(--lz-neutral-bg); color:var(--lz-neutral-text); }
 
-/* â”€â”€ Row entry animation â”€â”€ */
+/* ── Row entry animation ── */
 @keyframes rowSlideIn { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:translateX(0); } }
 .lz-table tbody tr { animation: rowSlideIn .25s ease-out forwards; }
 
-/* â”€â”€ Reserved cell chip â”€â”€ */
+/* ── Reserved cell chip ── */
 .reserved-chip {
     display:inline-flex; align-items:center; gap:.25rem;
     padding:.15rem .5rem; border-radius:999px;
@@ -365,7 +369,7 @@ $totalUnmapped = count($unmappedRows);
 }
 .reserved-chip.zero { background:var(--lz-neutral-bg); color:var(--lz-neutral-text); }
 
-/* â”€â”€ Premium Stock Summary Cards in Modal â”€â”€ */
+/* ── Premium Stock Summary Cards in Modal ── */
 .stock-summary-card {
     background: var(--bg-surface) !important;
     border: 1px solid var(--border-color) !important;
@@ -438,92 +442,47 @@ $totalUnmapped = count($unmappedRows);
 
 <div class="lz-page lz-animate">
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
-    
-    <!-- Hero Header -->
-    <div class="mb-4" style="background: var(--lazada-primary); border-radius: 16px; padding: 2rem 2.5rem; box-shadow: 0 10px 30px rgba(15,19,109,0.15); position: relative; overflow: hidden;">
-        <!-- Breadcrumb inside -->
-        <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
-            <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
-                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" style="color: rgba(255,255,255,0.7); text-decoration: none; font-weight: 500;">Lazada Dashboard</a></li>
-                <li class="breadcrumb-item active" style="color: white; font-weight: 600;">Stock Allocation</li>
-            </ol>
-        </nav>
-        
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position: relative; z-index: 2;">
-            <div class="d-flex align-items-center gap-3">
-                <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <i class="fa-solid fa-sliders" style="color: var(--lazada-primary); font-size: 1.8rem;"></i>
-                </div>
-                <div>
-                    <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px; color: white;">Stock Allocation</h1>
-                    <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Allocate POS inventory to Lazada per variation. Only mapped products sync stock to Lazada.</p>
-                </div>
-            </div>
-            <div class="d-flex gap-2 align-items-center">
-                <button id="btnManualSync" class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" onclick="triggerManualSync()" style="color: var(--lazada-primary); height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-                    <i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span>
-                </button>
-            </div>
-        </div>
-        <!-- Decorative bg -->
-        <div style="position: absolute; top: -50px; right: -50px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: 1;"></div>
+<div class="lz-breadcrumb">
+    <a href="<?= BASE_URL ?>views/lazada/index.php">Lazada Sync</a>
+    <i class="fa-solid fa-chevron-right" style="font-size:.6rem"></i><span>Stock Allocation</span>
+</div>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h1 class="lz-title mb-0"><i class="fa-solid fa-sliders text-lazada me-2"></i>Stock Allocation</h1>
+        <p class="lz-subtitle mb-0">Allocate POS inventory to Lazada per variation. Only mapped products sync stock to Lazada.</p>
     </div>
+    <div class="d-flex gap-2">
+        <button id="btnManualSync" class="btn btn-lazada" onclick="triggerManualSync()"><i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span></button>
+    </div>
+</div>
 
-    <!-- KPI Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #10b981 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <div class="card-body p-3 d-flex align-items-center">
-                    <div style="background: #ecfdf5; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
-                        <i class="fa-solid fa-check-circle" style="color: #10b981; font-size: 1.25rem;"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Allocated</div>
-                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="sumAllocated">0</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #f59e0b !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <div class="card-body p-3 d-flex align-items-center">
-                    <div style="background: #fffbeb; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
-                        <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 1.25rem;"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Low Stock</div>
-                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="sumLowStock">0</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #cbd5e1 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <div class="card-body p-3 d-flex align-items-center">
-                    <div style="background: #f1f5f9; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
-                        <i class="fa-solid fa-minus-circle" style="color: #64748b; font-size: 1.25rem;"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Unallocated</div>
-                        <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.2;" id="sumUnallocated">0</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 rounded-4" style="border-bottom: 4px solid #ef4444 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <div class="card-body p-3 d-flex align-items-center">
-                    <div style="background: #fef2f2; border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
-                        <i class="fa-solid fa-arrow-trend-up" style="color: #ef4444; font-size: 1.25rem;"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Overallocated</div>
-                        <div style="font-size: 1.5rem; font-weight: 800; color: #ef4444; line-height: 1.2;" id="sumOverallocated">0</div>
-                    </div>
-                </div>
-            </div>
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="lz-stat-card accent-success">
+            <div class="lz-stat-icon" style="background:var(--lz-success-bg);color:var(--lz-success)"><i class="fa-solid fa-check-circle"></i></div>
+            <div><div class="lz-stat-label">Allocated</div><div class="lz-stat-value" id="sumAllocated">0</div></div>
         </div>
     </div>
+    <div class="col-md-3 col-6">
+        <div class="lz-stat-card accent-warning">
+            <div class="lz-stat-icon" style="background:var(--lz-warning-bg);color:var(--lz-warning)"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div><div class="lz-stat-label">Low Stock</div><div class="lz-stat-value" id="sumLowStock">0</div></div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="lz-stat-card" style="border-left: 3px solid var(--lz-neutral-text);">
+            <div class="lz-stat-icon" style="background:var(--lz-neutral-bg);color:var(--lz-neutral-text)"><i class="fa-solid fa-minus-circle"></i></div>
+            <div><div class="lz-stat-label">Unallocated</div><div class="lz-stat-value" id="sumUnallocated">0</div></div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="lz-stat-card accent-danger">
+            <div class="lz-stat-icon" style="background:var(--lz-danger-bg);color:var(--lz-danger)"><i class="fa-solid fa-arrow-trend-up"></i></div>
+            <div><div class="lz-stat-label">Overallocated</div><div class="lz-stat-value" id="sumOverallocated">0</div></div>
+        </div>
+    </div>
+</div>
 
 <!-- Tab Toggle -->
 <div class="d-flex align-items-center gap-2 mb-3">
@@ -638,7 +597,7 @@ $totalUnmapped = count($unmappedRows);
                 <div class="mb-3 pb-2.5 border-bottom" style="border-color: rgba(0,0,0,0.06) !important;">
                     <div class="fw-bold text-dark fs-6 lh-sm mb-1" id="mName"></div>
                     <div class="text-secondary small d-flex align-items-center gap-1.5" style="font-size: 0.72rem;">
-                        <span>SKU:</span><span id="mSku" class="lz-sku-code">â€”</span>
+                        <span>SKU:</span><span id="mSku" class="lz-sku-code">—</span>
                     </div>
                 </div>
                 
@@ -758,7 +717,6 @@ $totalUnmapped = count($unmappedRows);
 
 
 <script>
-window.BASE_URL = '<?= BASE_URL ?>';
 const MAPPED_GROUPS   = <?= json_encode(array_values($mappedGroups)) ?>;
 const UNMAPPED_GROUPS = <?= json_encode(array_values($unmappedGroups)) ?>;
 
@@ -1274,7 +1232,7 @@ function renderMapped(){
                         </div>
                     </td>
                     <td>
-                        ${v.sku?`<span class="lz-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">â€”</span>`}
+                        ${v.sku?`<span class="lz-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">—</span>`}
                         ${unitBadge}
                         ${v.isDuplicate?`<span class="badge bg-danger-light text-danger ms-1" style="font-size:0.68rem; border:1px solid rgba(220,53,69,0.25); cursor:pointer;" onclick="openEdit(${v.id})" title="Click to view shared allocation details"><i class="fa-solid fa-clone me-1"></i>Shared (${actualSharedPct}% Allocated)</span>`:''}
                         ${v.mappingStatus==='manual'?`<span class="lz-badge lz-badge-info ms-1" style="padding:0.2rem 0.5rem; font-size:0.68rem;" title="Manually mapped in mapping page"><i class="fa-solid fa-hand-pointer me-1"></i>Manual</span>`:''}
@@ -1314,12 +1272,12 @@ function renderMapped(){
                         <span class="small text-secondary" style="font-size:0.72rem;margin-top:2px">ID: ${escHtml(g.itemId)}</span>
                     </div>
                 </td>
-                <td><span class="text-secondary">â€”</span></td>
-                <td class="text-center"><span class="text-secondary">â€”</span></td>
-                <td class="text-center"><span class="text-secondary">â€”</span></td>
-                <td class="text-center"><span class="text-secondary">â€”</span></td>
-                <td><span class="text-secondary">â€”</span></td>
-                <td class="text-end"><span class="text-secondary">â€”</span></td>
+                <td><span class="text-secondary">—</span></td>
+                <td class="text-center"><span class="text-secondary">—</span></td>
+                <td class="text-center"><span class="text-secondary">—</span></td>
+                <td class="text-center"><span class="text-secondary">—</span></td>
+                <td><span class="text-secondary">—</span></td>
+                <td class="text-end"><span class="text-secondary">—</span></td>
             </tr>`;
 
             // Variation Rows
@@ -1355,9 +1313,9 @@ function renderMapped(){
                             </div>
                         </div>
                     </td>
-                    <td><span class="text-secondary">â€”</span></td>
+                    <td><span class="text-secondary">—</span></td>
                     <td>
-                        ${v.sku?`<span class="lz-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">â€”</span>`}
+                        ${v.sku?`<span class="lz-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">—</span>`}
                         ${unitBadge}
                         ${v.isDuplicate?`<span class="badge bg-danger-light text-danger ms-1" style="font-size:0.68rem; border:1px solid rgba(220,53,69,0.25); cursor:pointer;" onclick="openEdit(${v.id})" title="Click to view shared allocation details"><i class="fa-solid fa-clone me-1"></i>Shared (${actualSharedPct}% Allocated)</span>`:''}
                         ${v.mappingStatus==='manual'?`<span class="lz-badge lz-badge-info ms-1" style="padding:0.2rem 0.5rem; font-size:0.68rem;" title="Manually mapped in mapping page"><i class="fa-solid fa-hand-pointer me-1"></i>Manual</span>`:''}
@@ -1440,7 +1398,7 @@ function renderUnmapped(){
                         <span class="small text-secondary" style="font-size:0.72rem">ID: ${escHtml(g.itemId)}</span>
                     </div>
                 </td>
-                <td>${v.sku?`<span class="lz-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">â€”</span>`}</td>
+                <td>${v.sku?`<span class="lz-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">—</span>`}</td>
                 <td class="text-center">${stockPill(v.online)}</td>
                 <td class="text-end"><a href="${window.BASE_URL}views/lazada/mapping.php" class="btn btn-sm btn-outline-lazada px-3"><i class="fa-solid fa-link me-1"></i>Map Now</a></td>
             </tr>`;
@@ -1463,9 +1421,9 @@ function renderUnmapped(){
                         <span class="small text-secondary" style="font-size:0.72rem">ID: ${escHtml(g.itemId)}</span>
                     </div>
                 </td>
-                <td><span class="text-secondary">â€”</span></td>
-                <td class="text-center"><span class="text-secondary">â€”</span></td>
-                <td class="text-end"><span class="text-secondary">â€”</span></td>
+                <td><span class="text-secondary">—</span></td>
+                <td class="text-center"><span class="text-secondary">—</span></td>
+                <td class="text-end"><span class="text-secondary">—</span></td>
             </tr>`;
 
             // Variation Rows
@@ -1480,8 +1438,8 @@ function renderUnmapped(){
                             ${vNameHtml}
                         </div>
                     </td>
-                    <td><span class="text-secondary">â€”</span></td>
-                    <td>${v.sku?`<span class="lz-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">â€”</span>`}</td>
+                    <td><span class="text-secondary">—</span></td>
+                    <td>${v.sku?`<span class="lz-sku-code">${escHtml(v.sku)}</span>`:`<span class="text-secondary">—</span>`}</td>
                     <td class="text-center">${stockPill(v.online)}</td>
                     <td class="text-end"><a href="${window.BASE_URL}views/lazada/mapping.php" class="btn btn-sm btn-outline-lazada px-3"><i class="fa-solid fa-link me-1"></i>Map Now</a></td>
                 </tr>`;
@@ -1581,9 +1539,9 @@ function updateSummary(){
 
 function openEdit(id){
     currentEdit=MAPPED_FLAT.find(v=>v.id===id);
-    document.getElementById('mName').textContent =currentEdit.groupName+(currentEdit.varName?' â€” '+currentEdit.varName:'');
+    document.getElementById('mName').textContent =currentEdit.groupName+(currentEdit.varName?' — '+currentEdit.varName:'');
     
-    let skuHtml = currentEdit.sku || 'â€”';
+    let skuHtml = currentEdit.sku || '—';
     if (currentEdit.unitName) {
         skuHtml += ` <span class="badge bg-light text-secondary border font-normal ms-2" style="font-size: 0.72rem;"><i class="fa-solid fa-box me-1"></i>Unit: ${escHtml(currentEdit.unitName)} (${currentEdit.multiplier} pcs)</span>`;
     }
@@ -2091,4 +2049,3 @@ setTimeout(autoSyncOnLoad, 500);
 
 <script src="../../views/lazada/lazada_alerts.js"></script>
 <?php require_once '../../includes/footer.php'; ?>
-
