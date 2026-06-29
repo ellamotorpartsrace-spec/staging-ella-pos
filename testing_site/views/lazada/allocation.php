@@ -440,19 +440,23 @@ $totalUnmapped = count($unmappedRows);
 }
 </style>
 
-<div class="lz-page lz-animate">
+<div class="lz-page">
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
-<div class="lz-breadcrumb">
-    <a href="<?= BASE_URL ?>views/lazada/index.php">Lazada Sync</a>
-    <i class="fa-solid fa-chevron-right" style="font-size:.6rem"></i><span>Stock Allocation</span>
-</div>
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <h1 class="lz-title mb-0"><i class="fa-solid fa-sliders text-lazada me-2"></i>Stock Allocation</h1>
-        <p class="lz-subtitle mb-0">Allocate POS inventory to Lazada per variation. Only mapped products sync stock to Lazada.</p>
+<div class="lz-hero-header">
+    <div class="lz-breadcrumb" style="position: relative; z-index: 2;">
+        <a href="<?= BASE_URL ?>views/lazada/index.php" style="color: rgba(255,255,255,0.8);">Lazada Sync</a>
+        <i class="fa-solid fa-chevron-right" style="font-size:.6rem; color: rgba(255,255,255,0.8);"></i><span style="color: #fff;">Stock Allocation</span>
     </div>
-    <div class="d-flex gap-2">
-        <button id="btnManualSync" class="btn btn-lazada" onclick="triggerManualSync()"><i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span></button>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-3" style="position: relative; z-index: 2;">
+        <div>
+            <h1 class="lz-title mb-1" style="color: #fff;"><i class="fa-solid fa-sliders me-2"></i>Stock Allocation</h1>
+            <p class="lz-subtitle mb-0" style="color: rgba(255,255,255,0.8);">Allocate POS inventory to Lazada per variation. Only mapped products sync stock to Lazada.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="btnManualSync" class="btn bg-white" style="color: var(--lazada-primary); font-weight: 600; padding: 0.75rem 1.75rem; border-radius: var(--lz-radius-sm); border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" onclick="triggerManualSync()">
+                <i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span>
+            </button>
+        </div>
     </div>
 </div>
 
