@@ -52,11 +52,14 @@ require_once '../../includes/sidebar.php';
 .quick-nav-card {
     background: #ffffff;
     border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 16px;
+    padding: 2.5rem 1.5rem;
     display: flex;
-    align-items: flex-start;
-    gap: 1.25rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.5rem;
     text-decoration: none !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 6px 24px rgba(0,0,0,0.06);
@@ -69,15 +72,16 @@ require_once '../../includes/sidebar.php';
     border-color: rgba(15,19,109,0.15);
 }
 .quick-nav-icon-wrap {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     flex-shrink: 0;
     transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
 }
 .quick-nav-card:hover .quick-nav-icon-wrap {
     transform: scale(1.1) rotate(-5deg);
@@ -88,29 +92,14 @@ require_once '../../includes/sidebar.php';
 .quick-nav-title {
     font-weight: 700;
     color: #1e293b;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     margin-bottom: 0.25rem;
     letter-spacing: -0.2px;
 }
 .quick-nav-desc {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: #64748b;
     line-height: 1.4;
-}
-.quick-nav-arrow {
-    position: absolute;
-    right: 1.5rem;
-    top: 50%;
-    transform: translateY(-50%) translateX(-10px);
-    color: #cbd5e1;
-    font-size: 1rem;
-    opacity: 0;
-    transition: all 0.3s ease;
-}
-.quick-nav-card:hover .quick-nav-arrow {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-    color: var(--lazada-primary);
 }
 </style>
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/lazada-sync.css?v=<?= filemtime(__DIR__.'/../../assets/css/lazada-sync.css') ?>">
@@ -207,75 +196,67 @@ require_once '../../includes/sidebar.php';
     <!-- Main Grid -->
     <div class="row g-4">
         <!-- Full Width: Navigation Tiles -->
-        <div class="col-12">
-            <div class="lz-card" style="animation-delay:0.25s">
-                <div class="lz-card-header d-flex align-items-center gap-2">
-                    <div class="lz-icon-box bg-blue" style="width:36px;height:36px;font-size:1rem;border-radius:10px;">
-                        <i class="fa-solid fa-compass"></i>
-                    </div>
-                    <div>
-                        <div class="fw-700" style="font-size:.92rem;color:var(--lazada-primary)">Quick Navigation</div>
-                        <div class="small text-muted">Lazada module sections</div>
-                    </div>
+        <div class="col-12 mb-2">
+            <!-- Centered Header -->
+            <div class="d-flex flex-column align-items-center justify-content-center text-center mb-4 mt-2" style="animation-delay:0.25s">
+                <div class="lz-icon-box bg-blue mb-3" style="width:52px;height:52px;font-size:1.3rem;border-radius:50%; box-shadow: 0 8px 20px rgba(15,19,109,0.15);">
+                    <i class="fa-solid fa-compass"></i>
                 </div>
-                <div class="lz-card-body p-3">
-                    <div class="row g-3">
-                        <!-- Products -->
-                        <div class="col-md-6 col-xl-3">
-                            <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #4338ca;">
-                                <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4338ca;">
-                                    <i class="fa-solid fa-bag-shopping"></i>
-                                </div>
-                                <div class="quick-nav-content">
-                                    <div class="quick-nav-title">Products Catalog</div>
-                                    <div class="quick-nav-desc">Browse your live Lazada listings and view statuses</div>
-                                </div>
-                                <i class="fa-solid fa-arrow-right quick-nav-arrow"></i>
-                            </a>
+                <h4 class="fw-bolder mb-1" style="color:var(--lazada-primary); letter-spacing:-0.5px;">Quick Navigation</h4>
+                <div class="text-muted small fw-600">Select a Lazada module to manage your store</div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- Products -->
+                <div class="col-md-6 col-xl-3">
+                    <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #4338ca;">
+                        <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4338ca;">
+                            <i class="fa-solid fa-bag-shopping"></i>
                         </div>
-                        
-                        <!-- Mapping -->
-                        <div class="col-md-6 col-xl-3">
-                            <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #0f766e;">
-                                <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #0f766e;">
-                                    <i class="fa-solid fa-link"></i>
-                                </div>
-                                <div class="quick-nav-content">
-                                    <div class="quick-nav-title">Product Mapping</div>
-                                    <div class="quick-nav-desc">Link local SKUs to Lazada products for auto-sync</div>
-                                </div>
-                                <i class="fa-solid fa-arrow-right quick-nav-arrow"></i>
-                            </a>
+                        <div class="quick-nav-content">
+                            <div class="quick-nav-title">Products Catalog</div>
+                            <div class="quick-nav-desc">Browse your live Lazada listings and view statuses</div>
                         </div>
-                        
-                        <!-- Allocation -->
-                        <div class="col-md-6 col-xl-3">
-                            <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #b45309;">
-                                <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309;">
-                                    <i class="fa-solid fa-sliders"></i>
-                                </div>
-                                <div class="quick-nav-content">
-                                    <div class="quick-nav-title">Stock Allocation</div>
-                                    <div class="quick-nav-desc">Manage safety limits and stock allocation ratios</div>
-                                </div>
-                                <i class="fa-solid fa-arrow-right quick-nav-arrow"></i>
-                            </a>
+                    </a>
+                </div>
+                
+                <!-- Mapping -->
+                <div class="col-md-6 col-xl-3">
+                    <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #0f766e;">
+                        <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #0f766e;">
+                            <i class="fa-solid fa-link"></i>
                         </div>
-                        
-                        <!-- Sync Logs -->
-                        <div class="col-md-6 col-xl-3">
-                            <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #4b5563;">
-                                <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563;">
-                                    <i class="fa-solid fa-clock-rotate-left"></i>
-                                </div>
-                                <div class="quick-nav-content">
-                                    <div class="quick-nav-title">Sync Logs</div>
-                                    <div class="quick-nav-desc">Review automated background stock sync events</div>
-                                </div>
-                                <i class="fa-solid fa-arrow-right quick-nav-arrow"></i>
-                            </a>
+                        <div class="quick-nav-content">
+                            <div class="quick-nav-title">Product Mapping</div>
+                            <div class="quick-nav-desc">Link local SKUs to Lazada products for auto-sync</div>
                         </div>
-                    </div>
+                    </a>
+                </div>
+                
+                <!-- Allocation -->
+                <div class="col-md-6 col-xl-3">
+                    <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #b45309;">
+                        <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309;">
+                            <i class="fa-solid fa-sliders"></i>
+                        </div>
+                        <div class="quick-nav-content">
+                            <div class="quick-nav-title">Stock Allocation</div>
+                            <div class="quick-nav-desc">Manage safety limits and stock allocation ratios</div>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Sync Logs -->
+                <div class="col-md-6 col-xl-3">
+                    <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="height: 100%; border-top: 4px solid #4b5563;">
+                        <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563;">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div class="quick-nav-content">
+                            <div class="quick-nav-title">Sync Logs</div>
+                            <div class="quick-nav-desc">Review automated background stock sync events</div>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>
