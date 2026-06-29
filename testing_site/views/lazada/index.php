@@ -32,8 +32,6 @@ require_once '../../includes/sidebar.php';
                     <i class="fas fa-cog me-2 text-primary"></i> Settings
                 </a>
             </div>
-                </a>
-            </div>
         </div>
     </div>
 

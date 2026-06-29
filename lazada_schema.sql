@@ -1,0 +1,185 @@
+CREATE TABLE `lazada_alerts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform_name` varchar(50) DEFAULT 'lazada_main',
+  `mapping_id` int(11) DEFAULT NULL,
+  `message` text NOT NULL,
+  `alert_type` varchar(50) DEFAULT 'warning',
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `lazada_config` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform_name` varchar(50) NOT NULL,
+  `app_key` varchar(255) NOT NULL,
+  `app_secret` varchar(255) NOT NULL,
+  `access_token` text DEFAULT NULL,
+  `refresh_token` text DEFAULT NULL,
+  `token_expires_at` datetime DEFAULT NULL,
+  `refresh_expires_at` datetime DEFAULT NULL,
+  `country_code` varchar(10) DEFAULT 'PH',
+  `seller_id` varchar(100) DEFAULT NULL,
+  `account_id` varchar(100) DEFAULT NULL,
+  `account_name` varchar(255) DEFAULT NULL,
+  `environment` varchar(50) DEFAULT 'sandbox',
+  `enable_stock_sync` tinyint(1) DEFAULT 0,
+  `respect_allocation` tinyint(1) DEFAULT 1,
+  `low_stock_alerts` tinyint(1) DEFAULT 1,
+  `sync_interval_mins` int(11) DEFAULT 15,
+  `low_stock_threshold` int(11) DEFAULT 5,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `platform_name` (`platform_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `lazada_error_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform_name` varchar(50) DEFAULT 'lazada_main',
+  `error_type` varchar(100) NOT NULL,
+  `lazada_item_id` bigint(20) DEFAULT NULL,
+  `lazada_sku_id` bigint(20) DEFAULT NULL,
+  `sku` varchar(255) DEFAULT NULL,
+  `error_message` text NOT NULL,
+  `status` enum('open','resolved','ignored') DEFAULT 'open',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `resolved_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `lazada_financial_transactions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_sn` varchar(50) NOT NULL,
+  `payout_amount` decimal(10,2) NOT NULL,
+  `escrow_tax` decimal(10,2) DEFAULT 0.00,
+  `buyer_total_amount` decimal(10,2) DEFAULT 0.00,
+  `shipping_fee_paid_by_buyer` decimal(10,2) DEFAULT 0.00,
+  `shipping_fee_paid_by_seller` decimal(10,2) DEFAULT 0.00,
+  `commission_fee` decimal(10,2) DEFAULT 0.00,
+  `transaction_fee` decimal(10,2) DEFAULT 0.00,
+  `service_fee` decimal(10,2) DEFAULT 0.00,
+  `marketing_fee` decimal(10,2) DEFAULT 0.00,
+  `seller_voucher` decimal(10,2) DEFAULT 0.00,
+  `lazada_voucher` decimal(10,2) DEFAULT 0.00,
+  `escrow_release_time` datetime DEFAULT NULL,
+  `settlement_id` varchar(50) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `order_sn` (`order_sn`),
+  KEY `idx_fin_order_sn` (`order_sn`),
+  KEY `idx_escrow_time` (`escrow_release_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `lazada_order_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_sn` varchar(50) NOT NULL,
+  `item_id` bigint(20) NOT NULL,
+  `model_id` bigint(20) DEFAULT 0,
+  `item_name` varchar(500) NOT NULL,
+  `item_sku` varchar(100) DEFAULT NULL,
+  `model_name` varchar(255) DEFAULT NULL,
+  `model_sku` varchar(100) DEFAULT NULL,
+  `original_price` decimal(10,2) DEFAULT 0.00,
+  `discounted_price` decimal(10,2) DEFAULT 0.00,
+  `quantity_purchased` int(11) NOT NULL DEFAULT 1,
+  `pos_unit_id` int(11) DEFAULT NULL,
+  `capital_cost` decimal(10,2) DEFAULT 0.00,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_order_sn_item` (`order_sn`),
+  KEY `idx_item_sku` (`item_sku`),
+  CONSTRAINT `fk_lazada_order_items_sn` FOREIGN KEY (`order_sn`) REFERENCES `lazada_orders` (`order_sn`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `lazada_orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_sn` varchar(50) NOT NULL,
+  `order_status` varchar(50) NOT NULL,
+  `create_time` datetime NOT NULL,
+  `update_time` datetime DEFAULT NULL,
+  `buyer_username` varchar(100) DEFAULT NULL,
+  `total_amount` decimal(10,2) DEFAULT 0.00,
+  `estimated_shipping_fee` decimal(10,2) DEFAULT 0.00,
+  `payment_method` varchar(100) DEFAULT NULL,
+  `shipping_carrier` varchar(100) DEFAULT NULL,
+  `tracking_number` varchar(100) DEFAULT NULL,
+  `cancel_reason` varchar(255) DEFAULT NULL,
+  `financial_status` enum('PENDING','RELEASED','REFUNDED') DEFAULT 'PENDING',
+  `escrow_amount` decimal(10,2) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `inventory_deducted` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `order_sn` (`order_sn`),
+  KEY `idx_order_sn` (`order_sn`),
+  KEY `idx_order_status` (`order_status`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `lazada_product_mappings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform_name` varchar(50) NOT NULL,
+  `lazada_item_id` bigint(20) NOT NULL,
+  `lazada_sku_id` bigint(20) NOT NULL,
+  `lazada_product_name` varchar(255) NOT NULL,
+  `lazada_variation_name` varchar(255) DEFAULT NULL,
+  `lazada_seller_sku` varchar(255) DEFAULT NULL,
+  `lazada_stock` int(11) DEFAULT 0,
+  `lazada_price` decimal(10,2) DEFAULT 0.00,
+  `lazada_image_url` text DEFAULT NULL,
+  `pos_product_id` int(11) DEFAULT NULL,
+  `pos_unit_id` int(11) DEFAULT NULL,
+  `pos_bundle_set_id` int(11) DEFAULT NULL,
+  `matched_pos_sku` varchar(255) DEFAULT NULL,
+  `stock_allocation_ratio` decimal(5,2) DEFAULT 100.00,
+  `safety_floor` int(11) DEFAULT 0,
+  `mapping_status` enum('unmapped','auto','manual','mapped') DEFAULT 'unmapped',
+  `sync_hash` varchar(64) DEFAULT NULL,
+  `last_synced_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_mapping` (`platform_name`,`lazada_item_id`,`lazada_sku_id`),
+  KEY `idx_lazada_item` (`lazada_item_id`),
+  KEY `idx_lazada_sku` (`lazada_seller_sku`),
+  KEY `idx_pos_product` (`pos_product_id`),
+  KEY `idx_platform` (`platform_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `lazada_settlements` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `settlement_id` varchar(50) NOT NULL,
+  `payout_amount` decimal(10,2) NOT NULL,
+  `payout_time` datetime NOT NULL,
+  `status` varchar(50) DEFAULT NULL,
+  `bank_account` varchar(100) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `settlement_id` (`settlement_id`),
+  KEY `idx_settlement_id` (`settlement_id`),
+  KEY `idx_payout_time` (`payout_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `lazada_sync_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform_name` varchar(50) DEFAULT 'lazada_main',
+  `sync_type` varchar(50) DEFAULT NULL,
+  `event_type` varchar(50) DEFAULT NULL,
+  `lazada_item_id` bigint(20) DEFAULT NULL,
+  `lazada_sku_id` bigint(20) DEFAULT NULL,
+  `product_name` varchar(255) DEFAULT NULL,
+  `sku` varchar(255) DEFAULT NULL,
+  `old_value` varchar(255) DEFAULT NULL,
+  `new_value` varchar(255) DEFAULT NULL,
+  `source` varchar(100) DEFAULT NULL,
+  `status` enum('success','error','warning','failed') DEFAULT 'success',
+  `message` text DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `items_affected` int(11) DEFAULT 0,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+

@@ -12,9 +12,15 @@ if (session_status() === PHP_SESSION_NONE) {
 $db = new Database();
 $conn = $db->getConnection();
 
-// Fetch all active Lazada platforms
-$stmt = $conn->query("SELECT platform_name, account_name FROM lazada_config WHERE is_active = 1 ORDER BY id ASC");
-$platforms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$platforms = [];
+try {
+    $stmt = $conn->query("SELECT platform_name, account_name FROM lazada_config WHERE is_active = 1 ORDER BY id ASC");
+    if ($stmt) {
+        $platforms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (Exception $e) {
+    // Table might not exist yet
+}
 
 if (empty($platforms)) {
     $platforms = [['platform_name' => 'lazada_main', 'account_name' => 'Main Account']];
