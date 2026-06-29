@@ -309,16 +309,20 @@ body {
 }
 
 /* ── Standardized Table UI ── */
+.lz-page {
+    padding: 1.5rem;
+    width: 100%;
+}
+.lz-animate {
+    animation: lzFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 .lz-card {
     background: #ffffff;
     border-radius: var(--lz-radius-md);
     border: none;
     box-shadow: var(--lz-shadow-md);
-    padding: 0; 
+    padding: 0;
     overflow: hidden;
-    animation: lzFadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
-    animation-delay: 0.3s;
 }
 [data-theme="dark"] .lz-card { background: var(--bg-surface); }
 
@@ -483,4 +487,216 @@ body {
 }
 .lz-setting-row:last-child {
     border-bottom: none;
+}
+
+/* ── Card Body / Footer ── */
+.lz-card-body {
+    padding: 1.25rem 1.5rem;
+}
+.lz-card-footer {
+    padding: 0.85rem 1.25rem;
+    background: var(--lz-neutral-bg);
+    border-top: 1px solid var(--lz-border-soft);
+}
+[data-theme="dark"] .lz-card-footer { background: var(--bg-surface-hover); }
+
+/* ── Table Wrapper ── */
+.lz-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.lz-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+.lz-table thead tr {
+    border-bottom: 2px solid var(--lz-border-soft);
+}
+.lz-table th {
+    padding: 0.75rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--lz-neutral-text);
+    background: var(--lz-neutral-bg);
+    white-space: nowrap;
+}
+[data-theme="dark"] .lz-table th { background: var(--bg-surface-hover); }
+.lz-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--lz-border-soft);
+    vertical-align: middle;
+}
+[data-theme="dark"] .lz-table td { border-color: var(--border-color); }
+.lz-table tbody tr:hover {
+    background: rgba(15,19,109,0.025);
+}
+[data-theme="dark"] .lz-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.lz-table .lz-group-start > td:first-child {
+    border-left: 3px solid var(--lazada-primary);
+}
+.lz-table .lz-tree-indent {
+    padding-left: 2.5rem !important;
+    color: var(--text-secondary);
+}
+.lz-var-name-text {
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+/* ── Search Bar ── */
+.lz-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.lz-search i {
+    position: absolute;
+    left: 0.75rem;
+    color: var(--lz-neutral-text);
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+.lz-search input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    border: 1.5px solid var(--lz-border-soft);
+    border-radius: var(--lz-radius-sm);
+    background: var(--lz-neutral-bg);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+.lz-search input:focus {
+    border-color: var(--lazada-primary);
+    box-shadow: 0 0 0 3px rgba(15,19,109,0.08);
+    background: #fff;
+}
+[data-theme="dark"] .lz-search input { background: var(--bg-surface); color: var(--text-primary); }
+
+/* ── Filter Pills ── */
+.lz-filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+.lz-pill {
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--lz-border-soft);
+    background: transparent;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.lz-pill:hover {
+    border-color: var(--lazada-primary);
+    color: var(--lazada-primary);
+}
+.lz-pill.active {
+    background: var(--lazada-gradient);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(15,19,109,0.18);
+}
+
+/* ── Badge Extensions ── */
+.lz-badge-neutral {
+    background: var(--lz-neutral-bg);
+    color: var(--lz-neutral-text);
+    border: 1px solid var(--lz-border-soft);
+}
+.lz-badge-info {
+    background: var(--lz-info-bg);
+    color: var(--lz-info);
+}
+
+/* ── Stock Pills ── */
+.lz-stock-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.lz-stock-pill.s-high { background: var(--lz-success-bg); color: var(--lz-success); }
+.lz-stock-pill.s-low  { background: var(--lz-warning-bg); color: var(--lz-warning); }
+.lz-stock-pill.s-zero { background: var(--lz-danger-bg);  color: var(--lz-danger); }
+
+/* ── Modal ── */
+.lz-modal .modal-content {
+    border: none;
+    border-radius: var(--lz-radius-md);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.lz-modal .modal-header {
+    border-bottom: 1px solid var(--lz-border-soft);
+    padding: 1.25rem 1.5rem;
+}
+[data-theme="dark"] .lz-modal .modal-content { background: var(--bg-surface); }
+
+/* ── Empty State ── */
+.lz-empty {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--lz-neutral-text);
+}
+.lz-empty i {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.4;
+}
+.lz-empty h5 {
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+.lz-empty p {
+    font-size: 0.9rem;
+    color: var(--lz-neutral-text);
+}
+
+/* ── Product Image & Placeholder ── */
+.lz-product-img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--lz-border-soft);
+    flex-shrink: 0;
+}
+.lz-img-placeholder {
+    width: 44px;
+    height: 44px;
+    background: var(--lz-neutral-bg);
+    border-radius: 8px;
+    border: 1px solid var(--lz-border-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--lz-neutral-text);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* ── SKU Code ── */
+.lz-sku-code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.75rem;
+    background: var(--lz-neutral-bg);
+    border: 1px solid var(--lz-border-soft);
+    border-radius: 4px;
+    padding: 0.15rem 0.45rem;
+    color: var(--text-secondary);
+    display: inline-block;
 }
