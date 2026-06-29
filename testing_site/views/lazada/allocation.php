@@ -440,33 +440,33 @@ $totalUnmapped = count($unmappedRows);
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
     
     <!-- Hero Header -->
-    <div class="lz-hero-header mb-4" style="padding: 2rem 2.5rem; color: white;">
+    <div class="mb-4" style="background: white; border-radius: 16px; padding: 2rem 2.5rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.03); position: relative; overflow: hidden;">
         <!-- Breadcrumb inside -->
         <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
             <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
-                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" style="color: rgba(255,255,255,0.7); text-decoration: none;">Lazada Dashboard</a></li>
-                <li class="breadcrumb-item active" style="color: white; font-weight: 500;">Stock Allocation</li>
+                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" style="color: #64748b; text-decoration: none; font-weight: 500;">Lazada Dashboard</a></li>
+                <li class="breadcrumb-item active" style="color: var(--lazada-primary); font-weight: 600;">Stock Allocation</li>
             </ol>
         </nav>
         
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position: relative; z-index: 2;">
             <div class="d-flex align-items-center gap-3">
-                <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <div style="background: linear-gradient(135deg, #fff5f2 0%, #ffe9e3 100%); border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(238,77,45,0.1);">
                     <i class="fa-solid fa-sliders" style="color: var(--lazada-primary); font-size: 1.8rem;"></i>
                 </div>
                 <div>
-                    <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px;">Stock Allocation</h1>
-                    <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Allocate POS inventory to Lazada per variation. Only mapped products sync stock to Lazada.</p>
+                    <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px; color: #1e293b;">Stock Allocation</h1>
+                    <p class="mb-0" style="color: #64748b; font-size: 0.95rem;">Allocate POS inventory to Lazada per variation. Only mapped products sync stock to Lazada.</p>
                 </div>
             </div>
             <div class="d-flex gap-2 align-items-center">
-                <button id="btnManualSync" class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" onclick="triggerManualSync()" style="color: var(--lazada-primary); height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                <button id="btnManualSync" class="btn btn-lazada fw-bold px-4 rounded-pill d-flex align-items-center" onclick="triggerManualSync()" style="height: 42px; box-shadow: 0 4px 12px rgba(238,77,45,0.25);">
                     <i class="fa-solid fa-rotate me-2"></i><span id="syncText">Sync Stock</span>
                 </button>
             </div>
         </div>
         <!-- Decorative bg -->
-        <div style="position: absolute; top: -50px; right: -50px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: 1;"></div>
+        <div style="position: absolute; top: -50px; right: -50px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(238,77,45,0.04) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: 1;"></div>
     </div>
 
     <!-- KPI Cards -->
