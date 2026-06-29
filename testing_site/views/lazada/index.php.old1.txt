@@ -1,6 +1,6 @@
-<?php
-// views/lazada/index.php — Lazada Sync Dashboard (UI Only)
-$page_title = 'Lazada Sync — Dashboard';
+﻿<?php
+// views/lazada/index.php ΓÇö Lazada Sync Dashboard (UI Only)
+$page_title = 'Lazada Sync ΓÇö Dashboard';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 requireLogin();
@@ -95,7 +95,7 @@ require_once '../../includes/sidebar.php';
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="lz-stat-label mb-2">Total Products</div>
-                        <div class="lz-stat-value" id="lzTotalProducts">—</div>
+                        <div class="lz-stat-value" id="lzTotalProducts">ΓÇö</div>
                         <div class="small text-muted mt-1">Lazada listings</div>
                     </div>
                     <div class="lz-icon-box bg-blue"><i class="fa-solid fa-bag-shopping"></i></div>
@@ -107,7 +107,7 @@ require_once '../../includes/sidebar.php';
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="lz-stat-label mb-2">Total Variations</div>
-                        <div class="lz-stat-value" id="lzTotalVariations">—</div>
+                        <div class="lz-stat-value" id="lzTotalVariations">ΓÇö</div>
                         <div class="small text-muted mt-1">Product variants</div>
                     </div>
                     <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info);"><i class="fa-solid fa-layer-group"></i></div>
@@ -119,7 +119,7 @@ require_once '../../includes/sidebar.php';
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="lz-stat-label mb-2">Mapped Items</div>
-                        <div class="lz-stat-value text-success" id="lzMapped">—</div>
+                        <div class="lz-stat-value text-success" id="lzMapped">ΓÇö</div>
                         <div class="small text-muted mt-1">Linked to ERP</div>
                     </div>
                     <div class="lz-icon-box bg-success"><i class="fa-solid fa-link"></i></div>
@@ -131,7 +131,7 @@ require_once '../../includes/sidebar.php';
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="lz-stat-label mb-2">Unmapped Items</div>
-                        <div class="lz-stat-value text-warning" id="lzUnmapped">—</div>
+                        <div class="lz-stat-value text-warning" id="lzUnmapped">ΓÇö</div>
                         <div class="small text-muted mt-1">Need mapping</div>
                     </div>
                     <div class="lz-icon-box bg-warning"><i class="fa-solid fa-link-slash"></i></div>
@@ -201,24 +201,13 @@ require_once '../../includes/sidebar.php';
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
 
-                        <a href="<?= BASE_URL ?>views/lazada/resolution.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
-                            <div class="lz-nav-icon bg-gradient-danger" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;">
-                                <i class="fa-solid fa-triangle-exclamation"></i>
-                            </div>
-                            <div class="lz-nav-content">
-                                <div class="lz-nav-title" style="font-size:.95rem;">Resolution Center</div>
-                                <div class="lz-nav-desc">Manage sync errors and disputes</div>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-muted small"></i>
-                        </a>
-
-                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;">
+                        <a href="<?= BASE_URL ?>views/lazada/settings.php" class="lz-nav-card" style="padding:1.25rem;gap:1rem;grid-column:span 2;">
                             <div class="lz-nav-icon" style="width:52px;height:52px;font-size:1.4rem;border-radius:13px;background:var(--lz-warning-bg);color:var(--lz-warning);">
                                 <i class="fa-solid fa-gear"></i>
                             </div>
                             <div class="lz-nav-content">
                                 <div class="lz-nav-title" style="font-size:.95rem;">Settings & Setup</div>
-                                <div class="lz-nav-desc">Configure API credentials and preferences</div>
+                                <div class="lz-nav-desc">Configure API credentials and sync preferences for your Lazada store</div>
                             </div>
                             <i class="fa-solid fa-chevron-right text-muted small"></i>
                         </a>
@@ -301,19 +290,19 @@ require_once '../../includes/sidebar.php';
                     <div class="d-flex flex-column gap-3">
                         <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fff5f5; border-left:4px solid #ef4444;">
                             <span class="small fw-600" style="color:#991b1b;"><i class="fa-solid fa-triangle-exclamation me-2" style="font-size:1.1rem; color:#ef4444;"></i>Missing SKUs</span>
-                            <span class="fw-bolder text-danger fs-5" id="lzMissingSKU">—</span>
+                            <span class="fw-bolder text-danger fs-5" id="lzMissingSKU">ΓÇö</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fff5f5; border-left:4px solid #ef4444;">
                             <span class="small fw-600" style="color:#991b1b;"><i class="fa-solid fa-circle-xmark me-2" style="font-size:1.1rem; color:#ef4444;"></i>Out of Stock</span>
-                            <span class="fw-bolder text-danger fs-5" id="lzOos">—</span>
+                            <span class="fw-bolder text-danger fs-5" id="lzOos">ΓÇö</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#fffbeb; border-left:4px solid #f59e0b;">
                             <span class="small fw-600" style="color:#92400e;"><i class="fa-solid fa-box-open me-2" style="font-size:1.1rem; color:#f59e0b;"></i>Low Stock</span>
-                            <span class="fw-bolder text-warning fs-5" id="lzLowStock">—</span>
+                            <span class="fw-bolder text-warning fs-5" id="lzLowStock">ΓÇö</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center p-3 rounded-3 health-alert-item shadow-sm" style="background:#ecfdf5; border-left:4px solid #10b981;">
                             <span class="small fw-600" style="color:#065f46;"><i class="fa-solid fa-rotate me-2" style="font-size:1.1rem; color:#10b981;"></i>Updates (24h)</span>
-                            <span class="fw-bolder text-success fs-5" id="lzRecent">—</span>
+                            <span class="fw-bolder text-success fs-5" id="lzRecent">ΓÇö</span>
                         </div>
                     </div>
                 </div>
@@ -325,7 +314,7 @@ require_once '../../includes/sidebar.php';
     <div class="lz-alert-box mt-4 d-flex align-items-center gap-3">
         <i class="fa-solid fa-circle-info fa-lg" style="color:#d97706;flex-shrink:0;"></i>
         <div>
-            <strong>Lazada Integration — Setup Required</strong>
+            <strong>Lazada Integration ΓÇö Setup Required</strong>
             <div class="small mt-1">
                 This module is in UI preview mode. To activate live syncing, configure your Lazada API credentials in
                 <a href="<?= BASE_URL ?>views/lazada/settings.php" class="fw-bold" style="color:#92400e;">Settings</a>.
