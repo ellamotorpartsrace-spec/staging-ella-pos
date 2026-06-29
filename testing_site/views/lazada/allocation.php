@@ -11,7 +11,6 @@ $mappedRows = $conn->prepare("
     SELECT m.id, m.lazada_item_id, m.lazada_product_name, m.lazada_variation_name,
         m.lazada_sku_id, m.lazada_stock, m.mapping_status, m.lazada_image_url,
         m.stock_allocation_ratio, m.pos_product_id, m.pos_unit_id, m.pos_bundle_set_id,
-        m.lazada_model_id,
         (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0)) as pos_qty,
         COALESCE(v.sku, m.matched_pos_sku, m.lazada_seller_sku) as sku,
         u.unit_name, u.multiplier

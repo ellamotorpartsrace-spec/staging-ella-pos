@@ -138,8 +138,7 @@ try {
         </form>
 
         <div class="text-center mt-4">
-            <p class="small text-muted mb-0">&copy; <?php echo date('Y'); ?> Ella Motor Parts | Developed by Lester
-                Bucag</p>
+            <p class="small text-muted mb-0">&copy; <?php echo date('Y'); ?> Ella Motor Parts | Developed by Lester Bucag</p>
         </div>
     </div>
 
