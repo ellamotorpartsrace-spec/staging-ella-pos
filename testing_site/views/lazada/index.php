@@ -158,8 +158,8 @@ require_once '../../includes/sidebar.php';
             
             <div class="row g-3">
                 <!-- Products -->
-                <div class="col-sm-6">
-                    <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="border-top: 4px solid #4338ca;">
+                <div class="col-12">
+                    <a href="<?= BASE_URL ?>views/lazada/products.php" class="quick-nav-card" style="border-left: 4px solid #4338ca; border-top: none;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4338ca;">
                             <i class="fa-solid fa-bag-shopping"></i>
                         </div>
@@ -171,8 +171,8 @@ require_once '../../includes/sidebar.php';
                 </div>
                 
                 <!-- Mapping -->
-                <div class="col-sm-6">
-                    <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="border-top: 4px solid #0f766e;">
+                <div class="col-12">
+                    <a href="<?= BASE_URL ?>views/lazada/mapping.php" class="quick-nav-card" style="border-left: 4px solid #0f766e; border-top: none;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #0f766e;">
                             <i class="fa-solid fa-link"></i>
                         </div>
@@ -184,8 +184,8 @@ require_once '../../includes/sidebar.php';
                 </div>
                 
                 <!-- Allocation -->
-                <div class="col-sm-6">
-                    <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="border-top: 4px solid #b45309;">
+                <div class="col-12">
+                    <a href="<?= BASE_URL ?>views/lazada/allocation.php" class="quick-nav-card" style="border-left: 4px solid #b45309; border-top: none;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309;">
                             <i class="fa-solid fa-sliders"></i>
                         </div>
@@ -197,8 +197,8 @@ require_once '../../includes/sidebar.php';
                 </div>
                 
                 <!-- Sync Logs -->
-                <div class="col-sm-6">
-                    <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="border-top: 4px solid #4b5563;">
+                <div class="col-12">
+                    <a href="<?= BASE_URL ?>views/lazada/logs.php" class="quick-nav-card" style="border-left: 4px solid #4b5563; border-top: none;">
                         <div class="quick-nav-icon-wrap" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563;">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                         </div>
