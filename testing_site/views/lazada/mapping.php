@@ -16,21 +16,21 @@ $conn = $db->getConnection();
 .map-panel { max-height: 350px; overflow-y: auto; padding-right: .5rem; }
 .map-item { padding:.75rem 1rem; border:1px solid var(--border-color); border-radius:var(--lz-radius-sm); margin-bottom:.4rem; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:.75rem; }
 .map-item:hover,.map-item.selected { border-color:var(--lazada-primary); background:var(--lazada-light); }
-.map-item.selected { box-shadow:0 0 0 2px rgba(238,77,45,.2); }
-.unit-map-note { border:1px dashed rgba(238,77,45,.35); background:rgba(238,77,45,.06); border-radius:8px; padding:.65rem .75rem; }
+.map-item.selected { box-shadow:0 0 0 2px rgba(15,19,109,.2); }
+.unit-map-note { border:1px dashed rgba(15,19,109,.35); background:rgba(15,19,109,.06); border-radius:8px; padding:.65rem .75rem; }
 .unit-result-badge { display:inline-flex; align-items:center; gap:.3rem; border:1px solid rgba(13,202,240,.35); background:rgba(13,202,240,.12); color:#087990; border-radius:999px; padding:.15rem .45rem; font-size:.68rem; font-weight:700; }
 .filter-count { display:inline-flex;align-items:center;justify-content:center;min-width:1.3rem;height:1.3rem;padding:0 4px;margin-left:4px;font-size:0.65rem;font-weight:700;border-radius:20px;background:rgba(0,0,0,0.12);color:inherit;vertical-align:middle;line-height:1; }
 .lz-pill.active .filter-count { background:rgba(255,255,255,0.3); }
     /* Popover Custom Styling */
     .lazada-popover {
         --bs-popover-max-width: 300px;
-        --bs-popover-border-color: rgba(238, 77, 45, 0.25);
-        --bs-popover-header-bg: #ee4d2d;
+        --bs-popover-border-color: rgba(15, 19, 109, 0.25);
+        --bs-popover-header-bg: #0f136d;
         --bs-popover-header-color: #fff;
         --bs-popover-body-padding-x: 0.75rem;
         --bs-popover-body-padding-y: 0.6rem;
         border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(238, 77, 45, 0.12);
+        box-shadow: 0 4px 16px rgba(15, 19, 109, 0.12);
         border: 1px solid var(--bs-popover-border-color);
         font-size: 0.82rem;
     }
@@ -53,7 +53,7 @@ $conn = $db->getConnection();
         padding: 0.5rem 0.75rem;
     }
     .lazada-popover .popover-arrow::before {
-        border-top-color: rgba(238, 77, 45, 0.25);
+        border-top-color: rgba(15, 19, 109, 0.25);
     }
     .lazada-popover .popover-arrow::after {
         border-top-color: #fff;
@@ -239,7 +239,7 @@ $conn = $db->getConnection();
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:var(--btn-close-filter)"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3 p-3 rounded" style="background:var(--lazada-light); border:1px solid rgba(238,77,45,0.2)">
+                <div class="mb-3 p-3 rounded" style="background:var(--lazada-light); border:1px solid rgba(15,19,109,0.2)">
                     <div class="small fw-bold text-lazada mb-1">Lazada Item to Map:</div>
                     <div class="fw-bold fs-6" id="mmLazadaName"></div>
                     <div class="text-secondary small mt-1">SKU: <span id="mmLazadaSku" class="lz-sku-code"></span></div>
@@ -658,7 +658,7 @@ function renderTable(){
                     const safeName = escHtml(posItem.product_name || '');
                     let subtextParts = [];
                     if (posItem.brand) subtextParts.push(`<span style='color:#64748b'>${escHtml(posItem.brand)}</span>`);
-                    if (posItem.variation_name) subtextParts.push(`<span style='color:#ee4d2d'>${escHtml(posItem.variation_name)}</span>`);
+                    if (posItem.variation_name) subtextParts.push(`<span style='color:#0f136d'>${escHtml(posItem.variation_name)}</span>`);
                     const varHtml = subtextParts.length > 0 ? `<div style='font-size:0.75rem;margin-top:2px;font-weight:600'>${subtextParts.join(" <span style='color:#cbd5e1'>|</span> ")}</div>` : '';
                     const unitHtml = posItem.item_type === 'unit' ? `<div style='font-size:0.72rem;color:#6366f1;margin-top:3px;font-weight:600;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px'>1 Lazada unit deducts ${posItem.multiplier || 1} ${escHtml(posItem.base_unit_type || 'pcs')}</div>` : '';
                     let popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}${unitHtml}</div>`;
@@ -746,7 +746,7 @@ function renderTable(){
                     const safeName = escHtml(pos.product_name || '');
                     let subtextParts = [];
                     if (pos.brand) subtextParts.push(`<span style='color:#64748b'>${escHtml(pos.brand)}</span>`);
-                    if (pos.variation_name) subtextParts.push(`<span style='color:#ee4d2d'>${escHtml(pos.variation_name)}</span>`);
+                    if (pos.variation_name) subtextParts.push(`<span style='color:#0f136d'>${escHtml(pos.variation_name)}</span>`);
                     const varHtml = subtextParts.length > 0 ? `<div style='font-size:0.75rem;margin-top:2px;font-weight:600'>${subtextParts.join(" <span style='color:#cbd5e1'>|</span> ")}</div>` : '';
                     const unitHtml = pos.item_type === 'unit' ? `<div style='font-size:0.72rem;color:#6366f1;margin-top:3px;font-weight:600;border-top:1px solid rgba(0,0,0,0.08);padding-top:3px'>1 Lazada unit deducts ${pos.multiplier || 1} ${escHtml(pos.base_unit_type || 'pcs')}</div>` : '';
                     let popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'><div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}${unitHtml}</div>`;
