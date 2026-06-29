@@ -32,7 +32,7 @@ require_once '../../includes/sidebar.php';
                 </div>
             </div>
             <div class="d-flex gap-2 align-items-center">
-                <?php include 'account_switcher.php'; ?>
+
                 <button class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" id="btnRefreshProducts" disabled style="color: var(--lazada-primary); height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
                     <i class="fa-solid fa-rotate me-2"></i> Sync Products
                 </button>

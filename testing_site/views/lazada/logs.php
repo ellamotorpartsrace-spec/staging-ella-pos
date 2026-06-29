@@ -25,7 +25,7 @@ require_once '../../includes/sidebar.php';
                 <p class="lz-subtitle mb-0">Review all stock updates and sync events triggered by the Lazada integration</p>
             </div>
             <div>
-                <?php include 'account_switcher.php'; ?>
+
             </div>
         </div>
     </div>

@@ -25,7 +25,7 @@ require_once '../../includes/sidebar.php';
                 <p class="lz-subtitle mb-0">Configure your Lazada Open Platform credentials and sync preferences</p>
             </div>
             <div>
-                <?php include 'account_switcher.php'; ?>
+
             </div>
         </div>
     </div>
