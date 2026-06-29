@@ -128,14 +128,27 @@ if (count($products) > 0) {
         WHERE (m.pos_product_id IN ($variation_ids_str) OR m.matched_pos_sku IN ($skus_str))
           AND m.mapping_status IN ('auto','manual')
           AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+        UNION ALL
+        SELECT 
+            m2.pos_product_id,
+            m2.matched_pos_sku,
+            (m2.lazada_stock * COALESCE(u2.multiplier, 1)) as stock_value,
+            'lazada' as platform
+        FROM lazada_product_mappings m2
+        LEFT JOIN product_units u2 ON m2.pos_unit_id = u2.id
+        WHERE (m2.pos_product_id IN ($variation_ids_str) OR m2.matched_pos_sku IN ($skus_str))
+          AND m2.mapping_status IN ('auto','manual','mapped')
+          AND (m2.pos_bundle_set_id IS NULL OR m2.pos_bundle_set_id = 0)
     ";
 
     $mappingStmt = $conn->query($mappingSql);
     $mappings = $mappingStmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($products as &$p) {
-        $p['online_stock'] = 0;
+        $p['shopee_stock'] = 0;
+        $p['lazada_stock'] = 0;
         $p['is_shopee_mapped'] = false;
+        $p['is_lazada_mapped'] = false;
         $v_id = $p['variation_id'];
         $v_sku = strtolower(trim($p['sku'] ?? ''));
         $valid_sku = !empty($v_sku) && !in_array($v_sku, ['', '-', 'n/a', 'na', 'none', 'null']);
@@ -145,8 +158,13 @@ if (count($products) > 0) {
             $matches_sku = ($valid_sku && strtolower(trim($m['matched_pos_sku'] ?? '')) == $v_sku);
             
             if ($matches_id || $matches_sku) {
-                $p['online_stock'] = max($p['online_stock'], (int) $m['stock_value']);
-                $p['is_shopee_mapped'] = true;
+                if ($m['platform'] === 'shopee') {
+                    $p['shopee_stock'] += (int) $m['stock_value'];
+                    $p['is_shopee_mapped'] = true;
+                } else {
+                    $p['lazada_stock'] += (int) $m['stock_value'];
+                    $p['is_lazada_mapped'] = true;
+                }
             }
         }
     }
@@ -839,10 +857,16 @@ if (count($products) > 0) {
                         <div class="sc-stock-unit"><?= htmlspecialchars($row['unit_type'] ?? 'pc') ?></div>
                         <div class="sc-stock-label">Physical</div>
 
-                        <?php if (!empty($row['is_shopee_mapped'])): ?>
+                        <?php if (!empty($row['is_shopee_mapped']) || ($row['shopee_stock'] ?? 0) > 0): ?>
                             <div class="sc-online-badge" title="Reserved for Shopee">
-                                <i class="fa-solid fa-globe"></i>
-                                <span><?= number_format($online) ?> online</span>
+                                <i class="fa-solid fa-globe" style="color: #ee4d2d;"></i>
+                                <span><?= ($row['shopee_stock'] ?? 0) ?> online</span>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (!empty($row['is_lazada_mapped']) || ($row['lazada_stock'] ?? 0) > 0): ?>
+                            <div class="sc-online-badge" title="Reserved for Lazada">
+                                <i class="fa-solid fa-globe" style="color: #002db4;"></i>
+                                <span><?= ($row['lazada_stock'] ?? 0) ?> online</span>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -1085,8 +1109,14 @@ if (count($products) > 0) {
             const barcodeHtml = row.barcode
                 ? `<span class="sc-sku-badge ms-1"><i class="fa-solid fa-barcode me-1"></i>${highlight(row.barcode)}</span>` : '';
 
-            const onlineHtml = row.is_shopee_mapped
-                ? `<div class="sc-online-badge" title="Reserved for Shopee"><i class="fa-solid fa-globe"></i><span>${online.toLocaleString()} online</span></div>` : '';
+            const shopeeStock = parseInt(row.shopee_stock) || 0;
+            const lazadaStock = parseInt(row.lazada_stock) || 0;
+            
+            const shopeeHtml = (row.is_shopee_mapped || shopeeStock > 0)
+                ? `<div class="sc-online-badge" title="Reserved for Shopee"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i><span>${shopeeStock.toLocaleString()} online</span></div>` : '';
+                
+            const lazadaHtml = (row.is_lazada_mapped || lazadaStock > 0)
+                ? `<div class="sc-online-badge" title="Reserved for Lazada"><i class="fa-solid fa-globe" style="color: #002db4;"></i><span>${lazadaStock.toLocaleString()} online</span></div>` : '';
 
             const unit = this.escapeHtml(row.unit_type || 'pc');
 
@@ -1106,7 +1136,8 @@ if (count($products) > 0) {
                         <div class="sc-stock-number ${stockNumClass}">${phys.toLocaleString()}</div>
                         <div class="sc-stock-unit">${unit}</div>
                         <div class="sc-stock-label">Physical</div>
-                        ${onlineHtml}
+                        ${shopeeHtml}
+                        ${lazadaHtml}
                     </div>
 
                     <div class="sc-card-footer">

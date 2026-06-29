@@ -38,11 +38,20 @@ $sqlProd = "
             WHERE (m.pos_product_id = v.variation_id OR (v.sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null') AND m.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
               AND m.mapping_status IN ('auto','manual')
               AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
-        ) AS SIGNED) as shopee_allocated
+        ) AS SIGNED) as shopee_allocated,
+        CAST((
+            SELECT COALESCE(SUM(m2.lazada_stock * COALESCE(u2.multiplier, 1)), 0)
+            FROM lazada_product_mappings m2
+            LEFT JOIN product_units u2 ON m2.pos_unit_id = u2.id
+            WHERE (m2.pos_product_id = v.variation_id OR (v.sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null') AND m2.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
+              AND m2.mapping_status IN ('auto','manual','mapped')
+              AND (m2.pos_bundle_set_id IS NULL OR m2.pos_bundle_set_id = 0)
+        ) AS SIGNED) as lazada_allocated
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN inventory i_phys ON v.variation_id = i_phys.variation_id AND i_phys.store_id = 1
     LEFT JOIN inventory i_online ON v.variation_id = i_online.variation_id AND i_online.store_id = 2
+    LEFT JOIN inventory i_lazada ON v.variation_id = i_lazada.variation_id AND i_lazada.store_id = 3
     WHERE v.variation_id = :id
 ";
 $stmt = $conn->prepare($sqlProd);
@@ -57,7 +66,8 @@ if (!$product) {
 
 $totalStock = (int)$product['total_stock'];
 $shopeeAllocated = (int)$product['shopee_allocated'];
-$physicalAvailable = max(0, $totalStock - $shopeeAllocated);
+$lazadaAllocated = (int)$product['lazada_allocated'];
+$physicalAvailable = max(0, $totalStock - $shopeeAllocated - $lazadaAllocated);
 
 // 3. Fetch History (Stock Movements)
 // Include BOTH store_id 1 (physical) movements
@@ -83,17 +93,24 @@ $type_config = [
     'adjustment'             => ['label' => 'Adjustment',            'icon' => 'fa-solid fa-wrench',               'badge' => 'bg-info text-dark',       'desc' => 'Manual stock correction'],
     'return'                 => ['label' => 'Return',                'icon' => 'fa-solid fa-rotate-left',          'badge' => 'bg-danger',               'desc' => 'Customer return'],
     'allocation_to_online'   => ['label' => 'Allocated to Shopee',   'icon' => 'fa-solid fa-globe',                'badge' => 'shopee-badge',            'desc' => 'Stock allocated to Shopee store'],
-    'allocation_to_physical' => ['label' => 'Returned to POS',       'icon' => 'fa-solid fa-store',                'badge' => 'bg-dark',                 'desc' => 'Stock returned from Shopee to POS'],
+    'allocation_to_lazada'   => ['label' => 'Allocated to Lazada',   'icon' => 'fa-solid fa-globe',                'badge' => 'lazada-badge',            'desc' => 'Stock allocated to Lazada store'],
+    'allocation_to_physical' => ['label' => 'Returned to POS',       'icon' => 'fa-solid fa-store',                'badge' => 'bg-dark',                 'desc' => 'Stock returned from online to POS'],
     'shopee_balance_sync'    => ['label' => 'Shopee Sync Fix',       'icon' => 'fa-solid fa-rotate',               'badge' => 'shopee-badge',            'desc' => 'System background stock sync'],
-    'lazada_balance_sync'    => ['label' => 'Lazada Sync Fix',       'icon' => 'fa-solid fa-rotate',               'badge' => 'bg-primary',              'desc' => 'System background stock sync'],
+    'lazada_balance_sync'    => ['label' => 'Lazada Sync Fix',       'icon' => 'fa-solid fa-rotate',               'badge' => 'lazada-badge',            'desc' => 'System background stock sync'],
     'online_sale'            => ['label' => 'Shopee Order',          'icon' => 'fa-solid fa-shopping-bag',         'badge' => 'shopee-badge',            'desc' => 'Deducted for Shopee order'],
+    'lazada_sale'            => ['label' => 'Lazada Order',          'icon' => 'fa-solid fa-shopping-bag',         'badge' => 'lazada-badge',            'desc' => 'Deducted for Lazada order'],
     'online_adjustment'      => ['label' => 'Shopee Cancel/Return',  'icon' => 'fa-solid fa-rotate-left',          'badge' => 'bg-info text-dark',       'desc' => 'Restocked due to cancellation'],
+    'lazada_adjustment'      => ['label' => 'Lazada Cancel/Return',  'icon' => 'fa-solid fa-rotate-left',          'badge' => 'bg-info text-dark',       'desc' => 'Restocked due to cancellation'],
 ];
 ?>
 
 <style>
     .shopee-badge {
         background: linear-gradient(135deg, #ee4d2d 0%, #ff6f47 100%) !important;
+        color: #fff !important;
+    }
+    .lazada-badge {
+        background: linear-gradient(135deg, #0f136d 0%, #002db4 100%) !important;
         color: #fff !important;
     }
     .history-card {
@@ -158,17 +175,21 @@ $type_config = [
             <div class="card shadow-sm border-0 mb-3">
                 <div class="card-body p-0">
                     <div class="row g-0">
-                        <div class="col-4 summary-stat border-end">
+                        <div class="col-3 summary-stat border-end">
                             <div class="stat-value text-primary"><?= $totalStock ?></div>
                             <div class="stat-label">Total</div>
                         </div>
-                        <div class="col-4 summary-stat border-end">
+                        <div class="col-3 summary-stat border-end">
                             <div class="stat-value text-success"><?= $physicalAvailable ?></div>
                             <div class="stat-label">POS</div>
                         </div>
-                        <div class="col-4 summary-stat">
+                        <div class="col-3 summary-stat border-end">
                             <div class="stat-value" style="color: #ee4d2d;"><?= $shopeeAllocated ?></div>
                             <div class="stat-label"><i class="fa-solid fa-globe" style="font-size: 0.6rem;"></i> Shopee</div>
+                        </div>
+                        <div class="col-3 summary-stat">
+                            <div class="stat-value" style="color: #002db4;"><?= $lazadaAllocated ?></div>
+                            <div class="stat-label"><i class="fa-solid fa-globe" style="font-size: 0.6rem;"></i> Lazada</div>
                         </div>
                     </div>
                 </div>
@@ -183,6 +204,22 @@ $type_config = [
                             <div class="small fw-bold" style="color: #ee4d2d;">Shopee Allocated</div>
                             <div class="small text-muted">
                                 <?= $shopeeAllocated ?> of <?= $totalStock ?> <?= htmlspecialchars($product['unit_type'] ?? 'units') ?> reserved for Shopee
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($lazadaAllocated > 0): ?>
+            <div class="card shadow-sm border-0 mb-3" style="border-left: 3px solid #002db4 !important;">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-globe" style="color: #002db4;"></i>
+                        <div>
+                            <div class="small fw-bold" style="color: #002db4;">Lazada Allocated</div>
+                            <div class="small text-muted">
+                                <?= $lazadaAllocated ?> of <?= $totalStock ?> <?= htmlspecialchars($product['unit_type'] ?? 'units') ?> reserved for Lazada
                             </div>
                         </div>
                     </div>

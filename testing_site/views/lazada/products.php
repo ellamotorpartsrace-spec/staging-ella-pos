@@ -12,7 +12,7 @@ require_once '../../includes/sidebar.php';
 <div class="container-fluid py-2">
 
     <!-- Hero Header -->
-    <div class="mb-4" style="background: var(--lazada-primary); border-radius: 16px; padding: 2rem 2.5rem; box-shadow: 0 10px 30px rgba(15,19,109,0.15); position: relative; overflow: hidden;">
+    <div class="mb-4" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); border-radius: 16px; padding: 2rem 2.5rem; box-shadow: 0 10px 30px rgba(30,58,138,0.15); position: relative; overflow: hidden;">
         <!-- Breadcrumb inside -->
         <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
             <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
@@ -24,7 +24,7 @@ require_once '../../includes/sidebar.php';
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position: relative; z-index: 2;">
             <div class="d-flex align-items-center gap-3">
                 <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <i class="fa-solid fa-bag-shopping" style="color: var(--lazada-primary); font-size: 1.8rem;"></i>
+                    <i class="fa-solid fa-bag-shopping" style="color: #2563eb; font-size: 1.8rem;"></i>
                 </div>
                 <div>
                     <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px; color: white;">Lazada Catalog</h1>
@@ -33,7 +33,7 @@ require_once '../../includes/sidebar.php';
             </div>
             <div class="d-flex gap-2 align-items-center">
 
-                <button class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" id="btnRefreshProducts" disabled style="color: var(--lazada-primary); height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                <button class="btn btn-light fw-bold px-4 rounded-pill d-flex align-items-center" id="btnRefreshProducts" disabled style="color: #2563eb; height: 42px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
                     <i class="fa-solid fa-rotate me-2"></i> Sync Products
                 </button>
             </div>

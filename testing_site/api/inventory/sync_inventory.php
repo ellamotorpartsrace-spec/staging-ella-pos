@@ -219,6 +219,84 @@ function fetchShopeeAllocation(PDO $conn, bool $hasBundleColumn, array &$warning
     return ['allocation' => $allocation, 'activeMapped' => $activeMapped, 'bundleRows' => $bundleRows];
 }
 
+function fetchLazadaAllocation(PDO $conn, bool $hasBundleColumn, array &$warnings): array
+{
+    $allocation = [];
+    $activeMapped = [];
+
+    if (!tableExists($conn, 'lazada_product_mappings')) {
+        $warnings[] = 'Lazada mapping table is not installed; Lazada allocation was skipped.';
+        return ['allocation' => $allocation, 'activeMapped' => $activeMapped, 'bundleRows' => 0];
+    }
+
+    $bundleFilter = $hasBundleColumn ? 'AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)' : '';
+    $stmt = $conn->query("
+        SELECT
+            m.pos_product_id AS variation_id,
+            COALESCE(SUM(GREATEST(m.lazada_stock, 0) * COALESCE(NULLIF(u.multiplier, 0), 1)), 0) AS allocated_stock,
+            COUNT(*) AS mapping_count
+        FROM lazada_product_mappings m
+        LEFT JOIN product_units u ON u.id = m.pos_unit_id
+        WHERE m.mapping_status IN ('auto', 'manual', 'mapped')
+          AND m.pos_product_id IS NOT NULL
+          $bundleFilter
+        GROUP BY m.pos_product_id
+    ");
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $variationId = (int)$row['variation_id'];
+        $allocation[$variationId] = ($allocation[$variationId] ?? 0) + (int)$row['allocated_stock'];
+        $activeMapped[$variationId] = ($activeMapped[$variationId] ?? 0) + (int)$row['mapping_count'];
+    }
+
+    $bundleRows = 0;
+    if ($hasBundleColumn) {
+        $hasBundleTables = tableExists($conn, 'product_unit_sets') && tableExists($conn, 'product_unit_set_items');
+        if ($hasBundleTables) {
+            $bundleStmt = $conn->query("
+                SELECT
+                    si.component_variation_id AS variation_id,
+                    COALESCE(SUM(
+                        GREATEST(m.lazada_stock, 0)
+                        * si.component_qty
+                        * COALESCE(NULLIF(cu.multiplier, 0), 1)
+                    ), 0) AS allocated_stock,
+                    COUNT(DISTINCT m.id) AS mapping_count
+                FROM lazada_product_mappings m
+                INNER JOIN product_unit_set_items si ON si.product_set_id = m.pos_bundle_set_id
+                LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+                WHERE m.mapping_status IN ('auto', 'manual', 'mapped')
+                  AND m.pos_bundle_set_id IS NOT NULL
+                  AND m.pos_bundle_set_id > 0
+                GROUP BY si.component_variation_id
+            ");
+
+            foreach ($bundleStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $variationId = (int)$row['variation_id'];
+                $allocation[$variationId] = ($allocation[$variationId] ?? 0) + (int)$row['allocated_stock'];
+                $activeMapped[$variationId] = ($activeMapped[$variationId] ?? 0) + (int)$row['mapping_count'];
+                $bundleRows++;
+            }
+        } else {
+            $bundleCount = (int)$conn->query("
+                SELECT COUNT(*)
+                FROM lazada_product_mappings
+                WHERE mapping_status IN ('auto', 'manual', 'mapped')
+                  AND pos_bundle_set_id IS NOT NULL
+                  AND pos_bundle_set_id > 0
+            ")->fetchColumn();
+
+            if ($bundleCount > 0) {
+                $warnings[] = "Bundle mappings exist ({$bundleCount}), but bundle tables are not installed. Lazada bundle allocation was skipped.";
+            }
+        }
+    } else {
+        $warnings[] = 'Lazada bundle allocation column is not installed. Bundle allocation was skipped.';
+    }
+
+    return ['allocation' => $allocation, 'activeMapped' => $activeMapped, 'bundleRows' => $bundleRows];
+}
+
 function buildSyncReport(PDO $conn): array
 {
     $warnings = [];
@@ -232,15 +310,21 @@ function buildSyncReport(PDO $conn): array
     $labels = fetchProductLabels($conn);
     $inventory = fetchCurrentInventory($conn);
     $baseStock = fetchBaseStock($conn, $hasStatusColumn);
+    
     $shopee = fetchShopeeAllocation($conn, $hasBundleColumn, $warnings);
     $allocation = $shopee['allocation'];
     $activeMapped = $shopee['activeMapped'];
+
+    $lazada = fetchLazadaAllocation($conn, $hasBundleColumn, $warnings);
+    $lazadaAllocation = $lazada['allocation'];
+    $lazadaActiveMapped = $lazada['activeMapped'];
 
     $variationIds = array_unique(array_merge(
         array_keys($labels),
         array_keys($inventory),
         array_keys($baseStock),
-        array_keys($allocation)
+        array_keys($allocation),
+        array_keys($lazadaAllocation)
     ));
     sort($variationIds, SORT_NUMERIC);
 
@@ -262,13 +346,19 @@ function buildSyncReport(PDO $conn): array
         $variationId = (int)$variationId;
         $rawBaseStock = (int)($baseStock[$variationId] ?? 0);
         $baseWasNegative = $rawBaseStock < 0;
-        $targetPhysicalStock = max(0, $rawBaseStock);
+        
         $rawShopeeAllocation = max(0, (int)($allocation[$variationId] ?? 0));
-        $targetOnlineStock = $rawShopeeAllocation;
-        $targetTotalStock = $targetPhysicalStock + $targetOnlineStock;
+        $targetOnlineStock = $rawShopeeAllocation; // Shopee is store_id 2
+        
+        $rawLazadaAllocation = max(0, (int)($lazadaAllocation[$variationId] ?? 0));
+        $targetLazadaStock = $rawLazadaAllocation; // Lazada is store_id 3
+
+        $targetPhysicalStock = max(0, $rawBaseStock - $targetOnlineStock - $targetLazadaStock);
+        $targetTotalStock = $targetPhysicalStock + $targetOnlineStock + $targetLazadaStock;
 
         $currentPhysicalStock = $inventory[$variationId][1] ?? null;
         $currentOnlineStock = $inventory[$variationId][2] ?? null;
+        $currentLazadaStock = $inventory[$variationId][3] ?? null;
 
         $physicalAction = $currentPhysicalStock === null
             ? ($targetPhysicalStock !== 0 ? 'insert' : 'none')
@@ -278,13 +368,25 @@ function buildSyncReport(PDO $conn): array
             ? ($targetOnlineStock !== 0 ? 'insert' : 'none')
             : ((int)$currentOnlineStock !== $targetOnlineStock ? 'update' : 'unchanged');
 
+        $lazadaAction = $currentLazadaStock === null
+            ? ($targetLazadaStock !== 0 ? 'insert' : 'none')
+            : ((int)$currentLazadaStock !== $targetLazadaStock ? 'update' : 'unchanged');
+
         $isChanged = in_array($physicalAction, ['insert', 'update'], true)
-            || in_array($onlineAction, ['insert', 'update'], true);
+            || in_array($onlineAction, ['insert', 'update'], true)
+            || in_array($lazadaAction, ['insert', 'update'], true);
+
         $isOrphanOnline = !isset($activeMapped[$variationId])
             && $currentOnlineStock !== null
             && (int)$currentOnlineStock !== 0
             && $targetOnlineStock === 0;
-        $isCapped = $rawShopeeAllocation > $targetTotalStock;
+            
+        $isOrphanLazada = !isset($lazadaActiveMapped[$variationId])
+            && $currentLazadaStock !== null
+            && (int)$currentLazadaStock !== 0
+            && $targetLazadaStock === 0;
+
+        $isCapped = ($rawShopeeAllocation + $rawLazadaAllocation) > max(0, $rawBaseStock);
 
         $stats['reviewed']++;
         if ($physicalAction === 'insert') {
@@ -296,6 +398,12 @@ function buildSyncReport(PDO $conn): array
         if ($onlineAction === 'insert') {
             $stats['insert_rows']++;
         } elseif ($onlineAction === 'update') {
+            $stats['update_rows']++;
+        }
+
+        if ($lazadaAction === 'insert') {
+            $stats['insert_rows']++;
+        } elseif ($lazadaAction === 'update') {
             $stats['update_rows']++;
         }
 
@@ -316,11 +424,11 @@ function buildSyncReport(PDO $conn): array
         }
 
         $notes = [];
-        if ($isOrphanOnline) {
+        if ($isOrphanOnline || $isOrphanLazada) {
             $notes[] = 'orphan online stock will be cleared';
         }
         if ($isCapped) {
-            $notes[] = 'Shopee allocation capped to base stock';
+            $notes[] = 'allocations capped to base stock';
         }
         if ($baseWasNegative) {
             $notes[] = 'negative ledger stock floored to zero';
@@ -337,14 +445,18 @@ function buildSyncReport(PDO $conn): array
             'raw_base_stock' => $rawBaseStock,
             'target_total_stock' => $targetTotalStock,
             'raw_shopee_allocation' => $rawShopeeAllocation,
+            'raw_lazada_allocation' => $rawLazadaAllocation,
             'target_physical_stock' => $targetPhysicalStock,
             'target_online_stock' => $targetOnlineStock,
+            'target_lazada_stock' => $targetLazadaStock,
             'current_physical_stock' => $currentPhysicalStock,
             'current_online_stock' => $currentOnlineStock,
+            'current_lazada_stock' => $currentLazadaStock,
             'physical_action' => $physicalAction,
             'online_action' => $onlineAction,
+            'lazada_action' => $lazadaAction,
             'changed' => $isChanged,
-            'orphan_online' => $isOrphanOnline,
+            'orphan_online' => $isOrphanOnline || $isOrphanLazada,
             'capped' => $isCapped,
             'notes' => implode('; ', $notes),
         ];
@@ -413,6 +525,7 @@ function applyInventoryTargets(PDO $conn, array $rows): array
         $targets = [
             1 => (int)$row['target_physical_stock'],
             2 => (int)$row['target_online_stock'],
+            3 => (int)$row['target_lazada_stock'],
         ];
 
         foreach ($targets as $storeId => $quantity) {
