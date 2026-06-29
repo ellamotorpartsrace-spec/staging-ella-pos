@@ -51,18 +51,18 @@ require_once '../../includes/sidebar.php';
 /* New Quick Nav Styling */
 .quick-nav-card {
     background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 16px;
-    padding: 1.75rem 1.25rem;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px;
+    padding: 1.25rem;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 0.25rem;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 1rem;
     text-decoration: none !important;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
     position: relative;
     overflow: hidden;
 }
@@ -72,16 +72,16 @@ require_once '../../includes/sidebar.php';
     border-color: rgba(15,19,109,0.15);
 }
 .quick-nav-icon-wrap {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     flex-shrink: 0;
     transition: all 0.3s ease;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
 }
 .quick-nav-card:hover .quick-nav-icon-wrap {
     transform: scale(1.1) rotate(-5deg);
