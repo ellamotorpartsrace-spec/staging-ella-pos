@@ -127,9 +127,9 @@ if (count($products) > 0) {
     $mappingSql = "
         SELECT 
             m.pos_product_id,
-            m.matched_pos_sku,
+            m.matched_pos_sku COLLATE utf8mb4_unicode_ci as matched_pos_sku,
             (m.shopee_stock * COALESCE(u.multiplier, 1)) as stock_value,
-            'shopee' as platform
+            'shopee' COLLATE utf8mb4_unicode_ci as platform
         FROM shopee_product_mappings m
         LEFT JOIN product_units u ON m.pos_unit_id = u.id
         WHERE (m.pos_product_id IN ($variation_ids_str) OR m.matched_pos_sku IN ($skus_str))
@@ -138,9 +138,9 @@ if (count($products) > 0) {
         UNION ALL
         SELECT 
             m2.pos_product_id,
-            m2.matched_pos_sku,
+            m2.matched_pos_sku COLLATE utf8mb4_unicode_ci as matched_pos_sku,
             (m2.lazada_stock * COALESCE(u2.multiplier, 1)) as stock_value,
-            'lazada' as platform
+            'lazada' COLLATE utf8mb4_unicode_ci as platform
         FROM lazada_product_mappings m2
         LEFT JOIN product_units u2 ON m2.pos_unit_id = u2.id
         WHERE (m2.pos_product_id IN ($variation_ids_str) OR m2.matched_pos_sku IN ($skus_str))
