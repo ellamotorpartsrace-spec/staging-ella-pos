@@ -17,7 +17,7 @@ require_once '../../includes/sidebar.php';
             <div style="position:relative;z-index:2;">
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);">
-                        <img src="https://lzd-img-global.slatic.net/g/tps/tfs/TB1vJWBXuSSBuNjy0FlXXbBpVXa-200-200.png" style="width:32px;height:auto;" alt="Lazada Logo">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4d/Lazada_%282019%29.svg" style="width:32px;height:auto;filter: brightness(0) invert(1);" alt="Lazada Logo">
                     </div>
                     <div>
                         <h2 class="mb-0 text-white fw-bold" style="letter-spacing:-0.5px;">Dashboard</h2>

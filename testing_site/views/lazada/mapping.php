@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $page_title = 'Lazada Sync â€” Product Mapping';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
@@ -8,8 +8,6 @@ require_once '../../includes/sidebar.php';
 
 $db = new Database();
 $conn = $db->getConnection();
-$hasProductsStmt = $conn->query("SELECT 1 FROM lazada_product_mappings LIMIT 1");
-$hasProducts = (bool)$hasProductsStmt->fetchColumn();
 ?>
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/lazada-sync.css?v=<?= filemtime(__DIR__.'/../../assets/css/lazada-sync.css') ?>">
 <style>
@@ -82,7 +80,7 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
 </div>
 
 <!-- Stats (hidden until match runs) -->
-<div class="row g-3 mb-4" id="statsRow" <?php if (!$hasProducts) echo 'style="display:none"'; ?>>
+<div class="row g-3 mb-4" id="statsRow">
     <div class="col-md-3 col-6">
         <div class="lz-stat-card accent-success">
             <div class="lz-stat-icon" style="background:var(--lz-success-bg);color:var(--lz-success)"><i class="fa-solid fa-link"></i></div>
@@ -109,20 +107,8 @@ $hasProducts = (bool)$hasProductsStmt->fetchColumn();
     </div>
 </div>
 
-<!-- Idle State -->
-<?php if (!$hasProducts): ?>
-<div id="idleState">
-    <div class="match-hero">
-        <div class="match-hero-icon"><i class="fa-solid fa-bag-shopping"></i></div>
-        <h4 class="fw-bold mb-2">No Lazada Products Found</h4>
-        <p class="text-secondary mb-4">Sync products from Lazada first before mapping.</p>
-        <a href="<?= BASE_URL ?>views/lazada/products.php" class="btn btn-lazada"><i class="fa-solid fa-bag-shopping me-2"></i>Go to Products</a>
-    </div>
-</div>
-<?php endif; ?>
-
 <!-- Results State -->
-<div id="resultsState" <?php if (!$hasProducts) echo 'style="display:none"'; ?>>
+<div id="resultsState">
     <!-- Filter -->
     <div class="lz-card mb-4">
         <div class="lz-card-body d-flex flex-wrap align-items-center gap-3" style="padding:.85rem 1.25rem">
