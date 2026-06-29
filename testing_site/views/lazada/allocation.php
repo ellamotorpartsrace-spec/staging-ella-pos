@@ -282,13 +282,13 @@ $totalUnmapped = count($unmappedRows);
 <style>
 /* ── Tab Buttons ── */
 .lz-tab-btn{padding:.45rem 1.1rem;border-radius:var(--lz-radius-sm);border:1.5px solid var(--border-color);background:transparent;font-weight:600;font-size:.82rem;color:var(--text-secondary);cursor:pointer;transition:all .2s;}
-.lz-tab-btn.active{background:var(--lazada-gradient);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(238,77,45,.25);}
+.lz-tab-btn.active{background:var(--lazada-gradient);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(15,19,109,.25);}
 .lz-tab-btn:not(.active):hover{border-color:var(--lazada-primary);color:var(--lazada-primary);}
 .bg-lazada{background:var(--lazada-gradient) !important;}
 .text-lazada{color:var(--lazada-primary) !important;}
 .btn-lazada{background:var(--lazada-gradient) !important;border:none !important;color:#fff !important;transition:all .3s ease;}
-.btn-lazada:hover{background:var(--lazada-gradient) !important;opacity:0.9;box-shadow:0 4px 12px rgba(238,77,45,0.35);color:#fff !important;}
-.btn-outline-lazada-secondary{border-color:rgba(238,77,45,0.2) !important;color:var(--text-secondary) !important;background:transparent;}
+.btn-lazada:hover{background:var(--lazada-gradient) !important;opacity:0.9;box-shadow:0 4px 12px rgba(15,19,109,0.35);color:#fff !important;}
+.btn-outline-lazada-secondary{border-color:rgba(15,19,109,0.2) !important;color:var(--text-secondary) !important;background:transparent;}
 .btn-outline-lazada-secondary:hover{border-color:var(--lazada-primary) !important;color:var(--lazada-primary) !important;}
 .btn-light:hover{background-color:var(--border-color) !important;}
 
@@ -296,11 +296,11 @@ $totalUnmapped = count($unmappedRows);
 
 /* ── Enhanced Table Column Segments ── */
 .lz-table th.col-pos { background: var(--bg-surface); }
-.lz-table th.col-lazada { background: linear-gradient(180deg, rgba(238,77,45,.06) 0%, var(--bg-surface) 100%); }
+.lz-table th.col-lazada { background: linear-gradient(180deg, rgba(15,19,109,.06) 0%, var(--bg-surface) 100%); }
 .lz-table th.col-reserved { background: linear-gradient(180deg, rgba(245,158,11,.06) 0%, var(--bg-surface) 100%); }
 .lz-table th.col-available { background: linear-gradient(180deg, rgba(16,185,129,.06) 0%, var(--bg-surface) 100%); }
-.lz-table th.col-sep-left { border-left: 2px solid rgba(238,77,45,.15); }
-.lz-table td.col-sep-left { border-left: 2px solid rgba(238,77,45,.08); }
+.lz-table th.col-sep-left { border-left: 2px solid rgba(15,19,109,.15); }
+.lz-table td.col-sep-left { border-left: 2px solid rgba(15,19,109,.08); }
 
 /* ── Allocation Progress Bar ── */
 .alloc-progress-wrap { width:100%; max-width:80px; margin:3px auto 0; }
@@ -330,11 +330,11 @@ $totalUnmapped = count($unmappedRows);
 }
 .lz-table .var-indent::before {
     content:''; position:absolute; left:1.8rem; top:0; bottom:0; width:1.5px;
-    background: linear-gradient(180deg, rgba(238,77,45,.25) 0%, rgba(238,77,45,.05) 100%);
+    background: linear-gradient(180deg, rgba(15,19,109,.25) 0%, rgba(15,19,109,.05) 100%);
 }
 .lz-table .var-indent::after {
     content:''; position:absolute; left:1.8rem; top:50%; width:.8rem; height:1.5px;
-    background: rgba(238,77,45,.25);
+    background: rgba(15,19,109,.25);
 }
 .var-connector-icon { color:var(--lazada-primary); font-size:.55rem; margin-right:.4rem; opacity:.6; }
 
@@ -382,12 +382,12 @@ $totalUnmapped = count($unmappedRows);
     box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
 }
 .stock-summary-card.allocated-card {
-    border-color: rgba(238,77,45,0.18) !important;
-    background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(238,77,45,0.02) 100%) !important;
+    border-color: rgba(15,19,109,0.18) !important;
+    background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(15,19,109,0.02) 100%) !important;
 }
 .stock-summary-card.allocated-card:hover {
-    border-color: rgba(238,77,45,0.3) !important;
-    box-shadow: 0 4px 12px rgba(238,77,45,0.06) !important;
+    border-color: rgba(15,19,109,0.3) !important;
+    box-shadow: 0 4px 12px rgba(15,19,109,0.06) !important;
 }
 .stock-summary-card.remaining-card {
     border-color: rgba(16,185,129,0.18) !important;
@@ -414,18 +414,18 @@ $totalUnmapped = count($unmappedRows);
     font-weight: 500 !important;
 }
 .lz-qty-control.border-lazada {
-    border-color: rgba(238,77,45,0.25) !important;
+    border-color: rgba(15,19,109,0.25) !important;
     transition: all 0.2s ease;
 }
 .lz-qty-control.border-lazada:focus-within {
     border-color: var(--lazada-primary) !important;
-    box-shadow: 0 0 0 3px rgba(238,77,45,0.1) !important;
+    box-shadow: 0 0 0 3px rgba(15,19,109,0.1) !important;
 }
 .lz-qty-btn {
     transition: background-color 0.2s, opacity 0.2s !important;
 }
 .lz-qty-btn:hover {
-    background-color: rgba(238,77,45,0.08) !important;
+    background-color: rgba(15,19,109,0.08) !important;
 }
 .lz-qty-btn:active {
     opacity: 0.75;
@@ -648,11 +648,11 @@ $totalUnmapped = count($unmappedRows);
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-uppercase text-secondary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;"><i class="fa-solid fa-bolt text-warning me-1"></i>Quick Splits:</span>
                                 <div class="d-flex gap-2" style="gap: 6px;">
-                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(0)">0%</button>
-                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(10)">10%</button>
-                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(25)">25%</button>
-                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(50)">50%</button>
-                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(238,77,45,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(75)">75%</button>
+                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(15,19,109,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(0)">0%</button>
+                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(15,19,109,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(10)">10%</button>
+                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(15,19,109,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(25)">25%</button>
+                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(15,19,109,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(50)">50%</button>
+                                    <button class="btn btn-xs rounded-pill px-3 py-1 fw-bold shadow-none" style="background: var(--lazada-light); color: var(--lazada-primary); border: 1px solid rgba(15,19,109,0.15); transition: all 0.2s; font-size: 0.75rem; line-height: 1;" onclick="presetStock(75)">75%</button>
                                 </div>
                             </div>
                             <div class="text-secondary d-flex align-items-center bg-light px-3 py-1 rounded-pill border" style="font-size: 0.75rem; font-weight: 500;">
@@ -1009,7 +1009,7 @@ function renderModalSharedDetails(v) {
     
     // Add current listing detail (Active)
     itemsHtml += `
-    <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded-2" style="background: linear-gradient(90deg, rgba(238,77,45,0.04) 0%, transparent 100%); border: 1px solid rgba(238,77,45,0.15); border-left: 3px solid var(--lazada-primary);">
+    <div class="d-flex align-items-center justify-content-between p-2 mb-2 rounded-2" style="background: linear-gradient(90deg, rgba(15,19,109,0.04) 0%, transparent 100%); border: 1px solid rgba(15,19,109,0.15); border-left: 3px solid var(--lazada-primary);">
         <div class="fw-bold text-dark d-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
             <i class="fa-solid fa-angle-right text-lazada"></i>
             <span>This Listing (Active)</span>
