@@ -17,23 +17,21 @@ require_once '../../includes/sidebar.php';
             <div style="position:relative;z-index:2;">
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);">
-                        <img src="https://lzd-img-global.slatic.net/g/tps/tfs/TB1vJWBXuSSBuNjy0FlXXbBpVXa-200-200.png"
-                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
-                             style="width:34px;height:34px;object-fit:contain;" alt="Lazada">
-                        <i class="fa-solid fa-store" style="display:none;color:#fff;font-size:1.4rem;"></i>
+                        <img src="https://lzd-img-global.slatic.net/g/tps/tfs/TB1vJWBXuSSBuNjy0FlXXbBpVXa-200-200.png" style="width:32px;height:auto;" alt="Lazada Logo">
                     </div>
                     <div>
-                        <h1 class="lz-title mb-0">Lazada Sync Dashboard</h1>
-                        <p class="lz-subtitle mb-0">Operational control center for your Lazada integration</p>
+                        <h2 class="mb-0 text-white fw-bold" style="letter-spacing:-0.5px;">Dashboard</h2>
+                        <div class="text-white text-opacity-75 small">Lazada POS Sync Overview</div>
                     </div>
                 </div>
             </div>
-            <div style="position:relative;z-index:2;" class="d-flex gap-2 flex-wrap">
-                <span class="lz-badge lz-badge-warning" id="lzConnBadge" style="font-size:.75rem;padding:.5rem 1rem;">
-                    <i class="fa-solid fa-circle-dot me-1"></i> Coming Soon
-                </span>
-                <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn-outline-lazada" style="font-size:.85rem;padding:.5rem 1.25rem;">
-                    <i class="fa-solid fa-gear me-1"></i> Settings
+            
+            <div style="position:relative;z-index:2;" class="d-flex gap-2 align-items-center">
+                <?php include 'account_switcher.php'; ?>
+                <a href="<?= BASE_URL ?>views/lazada/settings.php" class="btn btn-light rounded-pill px-4" style="font-weight:600;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                    <i class="fas fa-cog me-2 text-primary"></i> Settings
+                </a>
+            </div>
                 </a>
             </div>
         </div>

@@ -9,9 +9,6 @@ class LazadaAPI {
     private $is_sandbox;
     private $access_token;
     
-    const PROD_ENDPOINT = 'https://api.lazada.com/rest';
-    const SANDBOX_ENDPOINT = 'https://api.lazada.com/rest'; // Usually same but depends on region for testing
-
     public function __construct($app_key, $app_secret, $region = 'PH', $is_sandbox = false) {
         $this->app_key = $app_key;
         $this->app_secret = $app_secret;
@@ -36,6 +33,31 @@ class LazadaAPI {
         return $endpoints[$this->region] ?? $endpoints['PH'];
     }
 
+    public function getAuthUrl($redirect_uri) {
+        $authUrl = "https://auth.lazada.com/oauth/authorize?";
+        $params = [
+            'response_type' => 'code',
+            'force_auth' => 'true',
+            'redirect_uri' => $redirect_uri,
+            'client_id' => $this->app_key
+        ];
+        return $authUrl . http_build_query($params);
+    }
+
+    public function getAccessToken($code) {
+        $params = [
+            'code' => $code
+        ];
+        return $this->call('/auth/token/create', $params, 'POST', true);
+    }
+
+    public function refreshAccessToken($refresh_token) {
+        $params = [
+            'refresh_token' => $refresh_token
+        ];
+        return $this->call('/auth/token/refresh', $params, 'POST', true);
+    }
+
     /**
      * Generate HMAC-SHA256 signature for Lazada
      */
@@ -50,22 +72,27 @@ class LazadaAPI {
 
     /**
      * Make an API Call to Lazada Open Platform
+     * $isAuthCall indicates if it's a token creation/refresh call.
      */
-    public function call($apiPath, $params = [], $method = 'GET') {
+    public function call($apiPath, $params = [], $method = 'GET', $isAuthCall = false) {
         $sysParams = [
             'app_key' => $this->app_key,
             'timestamp' => round(microtime(true) * 1000),
             'sign_method' => 'sha256'
         ];
 
-        if ($this->access_token) {
+        // Do not pass access_token for auth token calls
+        if ($this->access_token && !$isAuthCall) {
             $sysParams['access_token'] = $this->access_token;
         }
 
         $allParams = array_merge($sysParams, $params);
         $allParams['sign'] = $this->generateSignature($apiPath, $allParams);
 
-        $url = $this->getEndpoint() . $apiPath;
+        // Lazada uses a common gateway auth endpoint regardless of region for some auth calls.
+        // /auth/token/create and /auth/token/refresh must hit https://auth.lazada.com/rest 
+        $baseUrl = $isAuthCall ? 'https://auth.lazada.com/rest' : $this->getEndpoint();
+        $url = $baseUrl . $apiPath;
         
         if (strtoupper($method) === 'GET') {
             $url .= '?' . http_build_query($allParams);
@@ -90,3 +117,4 @@ class LazadaAPI {
         return json_decode($response, true);
     }
 }
+

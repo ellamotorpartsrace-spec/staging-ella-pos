@@ -19,9 +19,14 @@ require_once '../../includes/sidebar.php';
                 <li class="breadcrumb-item active text-white">Sync Logs</li>
             </ol>
         </nav>
-        <div style="position:relative;z-index:2;">
-            <h1 class="lz-title mb-1"><i class="fa-solid fa-clock-rotate-left me-2" style="font-size:1.5rem;opacity:.9;"></i>Lazada Sync Logs</h1>
-            <p class="lz-subtitle mb-0">Review all stock updates and sync events triggered by the Lazada integration</p>
+        <div style="position:relative;z-index:2; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+            <div>
+                <h1 class="lz-title mb-1"><i class="fa-solid fa-clock-rotate-left me-2" style="font-size:1.5rem;opacity:.9;"></i>Lazada Sync Logs</h1>
+                <p class="lz-subtitle mb-0">Review all stock updates and sync events triggered by the Lazada integration</p>
+            </div>
+            <div>
+                <?php include 'account_switcher.php'; ?>
+            </div>
         </div>
     </div>
 

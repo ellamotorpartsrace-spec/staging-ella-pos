@@ -19,11 +19,39 @@ require_once '../../includes/sidebar.php';
                 <li class="breadcrumb-item active text-white">Settings</li>
             </ol>
         </nav>
-        <div style="position:relative;z-index:2;">
-            <h1 class="lz-title mb-1"><i class="fa-solid fa-gear me-2" style="font-size:1.5rem;opacity:.9;"></i>Settings & Setup</h1>
-            <p class="lz-subtitle mb-0">Configure your Lazada Open Platform credentials and sync preferences</p>
+        <div style="position:relative;z-index:2; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+            <div>
+                <h1 class="lz-title mb-1"><i class="fa-solid fa-gear me-2" style="font-size:1.5rem;opacity:.9;"></i>Settings & Setup</h1>
+                <p class="lz-subtitle mb-0">Configure your Lazada Open Platform credentials and sync preferences</p>
+            </div>
+            <div>
+                <?php include 'account_switcher.php'; ?>
+            </div>
         </div>
     </div>
+
+    <?php
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $platform = $_SESSION['lazada_active_platform'] ?? 'lazada_main';
+    
+    $db = new Database();
+    $conn = $db->getConnection();
+    $stmt = $conn->prepare("SELECT * FROM lazada_config WHERE platform_name = ?");
+    $stmt->execute([$platform]);
+    $config = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$config) {
+        $config = [
+            'app_key' => '', 'app_secret' => '', 'environment' => 'sandbox',
+            'country_code' => 'PH', 'access_token' => '', 'refresh_token' => '',
+            'token_expires_at' => '', 'account_name' => '', 'account_id' => '',
+            'enable_stock_sync' => 0, 'respect_allocation' => 1,
+            'low_stock_alerts' => 1, 'sync_interval_mins' => 15, 'low_stock_threshold' => 5
+        ];
+    }
+    ?>
 
     <!-- Status Banner (shown after save attempt) -->
     <div id="lzStatusBanner" class="mb-4" style="display:none;">
@@ -96,7 +124,7 @@ require_once '../../includes/sidebar.php';
                                 <i class="fa-solid fa-circle-question text-muted ms-1" style="cursor:help;" title="Found in your Lazada Open Platform app dashboard under 'App Key'"></i>
                             </label>
                             <input type="text" class="form-control" id="lzAppKey"
-                                   placeholder="e.g. 123456" autocomplete="off">
+                                   placeholder="e.g. 123456" autocomplete="off" value="<?= htmlspecialchars($config['app_key']) ?>">
                             <div class="form-text">Numeric key from LOP app dashboard</div>
                         </div>
 
@@ -108,7 +136,7 @@ require_once '../../includes/sidebar.php';
                             </label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="lzAppSecret"
-                                       placeholder="Your app secret key" autocomplete="off">
+                                       placeholder="Your app secret key" autocomplete="off" value="<?= htmlspecialchars($config['app_secret']) ?>">
                                 <button class="btn btn-outline-secondary" type="button" onclick="toggleSecret()">
                                     <i class="fa-solid fa-eye" id="lzSecretEye"></i>
                                 </button>
@@ -122,12 +150,12 @@ require_once '../../includes/sidebar.php';
                                 Country / Region <span class="text-danger">*</span>
                             </label>
                             <select class="form-select" id="lzCountry" onchange="updateEndpoint()">
-                                <option value="PH" selected>🇵🇭 Philippines (PH)</option>
-                                <option value="SG">🇸🇬 Singapore (SG)</option>
-                                <option value="MY">🇲🇾 Malaysia (MY)</option>
-                                <option value="TH">🇹🇭 Thailand (TH)</option>
-                                <option value="ID">🇮🇩 Indonesia (ID)</option>
-                                <option value="VN">🇻🇳 Vietnam (VN)</option>
+                                <option value="PH" <?= $config['country_code'] === 'PH' ? 'selected' : '' ?>>🇵🇭 Philippines (PH)</option>
+                                <option value="SG" <?= $config['country_code'] === 'SG' ? 'selected' : '' ?>>🇸🇬 Singapore (SG)</option>
+                                <option value="MY" <?= $config['country_code'] === 'MY' ? 'selected' : '' ?>>🇲🇾 Malaysia (MY)</option>
+                                <option value="TH" <?= $config['country_code'] === 'TH' ? 'selected' : '' ?>>🇹🇭 Thailand (TH)</option>
+                                <option value="ID" <?= $config['country_code'] === 'ID' ? 'selected' : '' ?>>🇮🇩 Indonesia (ID)</option>
+                                <option value="VN" <?= $config['country_code'] === 'VN' ? 'selected' : '' ?>>🇻🇳 Vietnam (VN)</option>
                             </select>
                         </div>
 
@@ -192,7 +220,7 @@ require_once '../../includes/sidebar.php';
                             <div class="input-group">
                                 <input type="password" class="form-control" id="lzAccessToken"
                                        placeholder="Obtained via OAuth — paste here if bypassing flow"
-                                       autocomplete="off">
+                                       autocomplete="off" value="<?= htmlspecialchars($config['access_token']) ?>">
                                 <button class="btn btn-outline-secondary" type="button" onclick="toggleToken('lzAccessToken', 'lzAccessTokenEye')">
                                     <i class="fa-solid fa-eye" id="lzAccessTokenEye"></i>
                                 </button>
@@ -204,7 +232,7 @@ require_once '../../includes/sidebar.php';
                             <div class="input-group">
                                 <input type="password" class="form-control" id="lzRefreshToken"
                                        placeholder="Long-lived token used to renew access token"
-                                       autocomplete="off">
+                                       autocomplete="off" value="<?= htmlspecialchars($config['refresh_token']) ?>">
                                 <button class="btn btn-outline-secondary" type="button" onclick="toggleToken('lzRefreshToken', 'lzRefreshTokenEye')">
                                     <i class="fa-solid fa-eye" id="lzRefreshTokenEye"></i>
                                 </button>
@@ -215,20 +243,20 @@ require_once '../../includes/sidebar.php';
                             <label class="form-label">Access Token Expiry</label>
                             <input type="text" class="form-control" id="lzTokenExpiry"
                                    placeholder="e.g. 2026-07-05 12:00" readonly
-                                   style="background:#f8fafc;color:#64748b;">
+                                   style="background:#f8fafc;color:#64748b;" value="<?= htmlspecialchars($config['token_expires_at']) ?>">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Account / Seller ID</label>
                             <input type="text" class="form-control" id="lzSellerId"
                                    placeholder="Returned by Lazada after OAuth" readonly
-                                   style="background:#f8fafc;color:#64748b;">
+                                   style="background:#f8fafc;color:#64748b;" value="<?= htmlspecialchars($config['account_name'] ? $config['account_name'] . ' (' . $config['account_id'] . ')' : $config['account_id']) ?>">
                             <div class="form-text">Auto-populated after successful authorization</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Country Code (token-linked)</label>
                             <input type="text" class="form-control" id="lzTokenCountry"
                                    placeholder="e.g. PH" readonly
-                                   style="background:#f8fafc;color:#64748b;">
+                                   style="background:#f8fafc;color:#64748b;" value="<?= htmlspecialchars($config['country_code']) ?>">
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-4">
@@ -260,7 +288,7 @@ require_once '../../includes/sidebar.php';
                             <div class="small text-muted">Push ERP stock changes to Lazada automatically</div>
                         </div>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="lzEnableSync">
+                            <input class="form-check-input" type="checkbox" id="lzEnableSync" <?= $config['enable_stock_sync'] ? 'checked' : '' ?>>
                         </div>
                     </div>
                     <div class="lz-setting-row d-flex justify-content-between align-items-center">
@@ -269,7 +297,7 @@ require_once '../../includes/sidebar.php';
                             <div class="small text-muted">Use stock allocation ratios when pushing stock to Lazada</div>
                         </div>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="lzUseAllocation" checked>
+                            <input class="form-check-input" type="checkbox" id="lzUseAllocation" <?= $config['respect_allocation'] ? 'checked' : '' ?>>
                         </div>
                     </div>
                     <div class="lz-setting-row d-flex justify-content-between align-items-center">
@@ -278,23 +306,23 @@ require_once '../../includes/sidebar.php';
                             <div class="small text-muted">Notify when Lazada-allocated stock drops below safety floor</div>
                         </div>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="lzLowStockAlert" checked>
+                            <input class="form-check-input" type="checkbox" id="lzLowStockAlert" <?= $config['low_stock_alerts'] ? 'checked' : '' ?>>
                         </div>
                     </div>
                     <div class="lz-setting-row">
                         <label class="form-label">Sync Interval</label>
                         <select class="form-select" id="lzSyncInterval" style="max-width:250px;">
-                            <option value="5">Every 5 minutes</option>
-                            <option value="15" selected>Every 15 minutes</option>
-                            <option value="30">Every 30 minutes</option>
-                            <option value="60">Every hour</option>
+                            <option value="5" <?= $config['sync_interval_mins'] == 5 ? 'selected' : '' ?>>Every 5 minutes</option>
+                            <option value="15" <?= $config['sync_interval_mins'] == 15 ? 'selected' : '' ?>>Every 15 minutes</option>
+                            <option value="30" <?= $config['sync_interval_mins'] == 30 ? 'selected' : '' ?>>Every 30 minutes</option>
+                            <option value="60" <?= $config['sync_interval_mins'] == 60 ? 'selected' : '' ?>>Every hour</option>
                         </select>
                         <div class="form-text">How often ERP stock is pushed to Lazada</div>
                     </div>
                     <div class="lz-setting-row">
                         <label class="form-label">Low Stock Threshold</label>
                         <input type="number" class="form-control" id="lzLowStockThreshold"
-                               style="max-width:120px;" value="5" min="0">
+                               style="max-width:120px;" value="<?= htmlspecialchars($config['low_stock_threshold']) ?>" min="0">
                         <div class="form-text">Units remaining to trigger a low stock warning</div>
                     </div>
                     <div class="mt-3">
@@ -324,15 +352,15 @@ require_once '../../includes/sidebar.php';
                     <div class="d-flex flex-column gap-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="small fw-600 text-muted">App Key</span>
-                            <span class="lz-badge lz-badge-danger" id="statusAppKey">Not Set</span>
+                            <span class="lz-badge lz-badge-<?= !empty($config['app_key']) ? 'success' : 'danger' ?>" id="statusAppKey"><?= !empty($config['app_key']) ? 'Set' : 'Not Set' ?></span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="small fw-600 text-muted">App Secret</span>
-                            <span class="lz-badge lz-badge-danger" id="statusAppSecret">Not Set</span>
+                            <span class="lz-badge lz-badge-<?= !empty($config['app_secret']) ? 'success' : 'danger' ?>" id="statusAppSecret"><?= !empty($config['app_secret']) ? 'Set' : 'Not Set' ?></span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="small fw-600 text-muted">Access Token</span>
-                            <span class="lz-badge lz-badge-danger" id="statusAccessToken">Missing</span>
+                            <span class="lz-badge lz-badge-<?= !empty($config['access_token']) ? 'success' : 'danger' ?>" id="statusAccessToken"><?= !empty($config['access_token']) ? 'Exists' : 'Missing' ?></span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="small fw-600 text-muted">Token Expiry</span>
@@ -501,25 +529,45 @@ function copyRedirectUri() {
 function saveCredentials() {
     const appKey    = document.getElementById('lzAppKey').value.trim();
     const appSecret = document.getElementById('lzAppSecret').value.trim();
+    const country   = document.getElementById('lzCountry').value;
     if (!appKey || !appSecret) {
         showBanner('danger', 'Missing Fields', 'App Key and App Secret are required.');
         return;
     }
-    // TODO: POST to api/lazada/save_credentials.php
-    updateStatusBadge('statusAppKey',    appKey    ? 'Set'    : 'Not Set',    appKey    ? 'success' : 'danger');
-    updateStatusBadge('statusAppSecret', appSecret ? 'Set'    : 'Not Set',    appSecret ? 'success' : 'danger');
-    showBanner('success', 'Credentials Saved', 'App Key and App Secret stored. Now click "Authorize with Lazada" to get your tokens.');
+    
+    fetch('<?= BASE_URL ?>api/lazada/save_credentials.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            app_key: appKey,
+            app_secret: appSecret,
+            country: country,
+            environment: currentEnv
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            updateStatusBadge('statusAppKey',    appKey    ? 'Set'    : 'Not Set',    appKey    ? 'success' : 'danger');
+            updateStatusBadge('statusAppSecret', appSecret ? 'Set'    : 'Not Set',    appSecret ? 'success' : 'danger');
+            showBanner('success', 'Credentials Saved', data.message);
+        } else {
+            showBanner('danger', 'Save Failed', data.error);
+        }
+    }).catch(err => {
+        showBanner('danger', 'Save Failed', 'Network or server error.');
+    });
 }
 
 function startOAuth() {
-    const appKey      = document.getElementById('lzAppKey').value.trim();
-    const redirectUri = document.getElementById('lzRedirectUri').value.trim();
+    const appKey = document.getElementById('lzAppKey').value.trim();
     if (!appKey) {
         showBanner('danger', 'App Key Required', 'Please enter and save your App Key first.');
         return;
     }
-    const authUrl = `${LZ_AUTH_URL}?app_key=${encodeURIComponent(appKey)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&force_auth=true`;
-    window.open(authUrl, '_blank', 'width=700,height=600');
+    // Instead of building authUrl in JS, we hit the auth.php endpoint which builds it correctly 
+    // and redirects seamlessly based on session platform
+    window.location.href = '<?= BASE_URL ?>api/lazada/auth.php';
 }
 
 function refreshToken() {

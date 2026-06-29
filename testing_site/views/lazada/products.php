@@ -24,7 +24,8 @@ require_once '../../includes/sidebar.php';
                 <h1 class="lz-title mb-1"><i class="fa-solid fa-bag-shopping me-2" style="font-size:1.5rem;opacity:.9;"></i>Lazada Products</h1>
                 <p class="lz-subtitle mb-0">Browse and manage your Lazada product listings</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 align-items-center">
+                <?php include 'account_switcher.php'; ?>
                 <button class="btn-outline-lazada" id="btnRefreshProducts" disabled>
                     <i class="fa-solid fa-rotate me-1"></i> Sync from Lazada
                 </button>

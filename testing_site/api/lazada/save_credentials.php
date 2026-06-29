@@ -16,6 +16,11 @@ try {
 
     $data = json_decode(file_get_contents('php://input'), true);
 
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $platform = $_SESSION['lazada_active_platform'] ?? 'lazada_main';
+
     $appKey     = trim($data['app_key'] ?? '');
     $appSecret  = trim($data['app_secret'] ?? '');
     $country    = trim($data['country'] ?? 'PH');
@@ -27,18 +32,19 @@ try {
     }
 
     // Check if record exists
-    $stmt = $conn->query("SELECT id FROM lazada_config LIMIT 1");
+    $stmt = $conn->prepare("SELECT id FROM lazada_config WHERE platform_name = ? LIMIT 1");
+    $stmt->execute([$platform]);
     $exists = $stmt->fetchColumn();
 
     if ($exists) {
-        $update = $conn->prepare("UPDATE lazada_config SET app_key = ?, app_secret = ?, country_code = ?, environment = ?, updated_at = NOW() WHERE id = ?");
-        $update->execute([$appKey, $appSecret, $country, $env, $exists]);
+        $update = $conn->prepare("UPDATE lazada_config SET app_key = ?, app_secret = ?, country_code = ?, environment = ?, updated_at = NOW() WHERE platform_name = ?");
+        $update->execute([$appKey, $appSecret, $country, $env, $platform]);
     } else {
-        $insert = $conn->prepare("INSERT INTO lazada_config (app_key, app_secret, country_code, environment) VALUES (?, ?, ?, ?)");
-        $insert->execute([$appKey, $appSecret, $country, $env]);
+        $insert = $conn->prepare("INSERT INTO lazada_config (platform_name, app_key, app_secret, country_code, environment) VALUES (?, ?, ?, ?, ?)");
+        $insert->execute([$platform, $appKey, $appSecret, $country, $env]);
     }
 
-    echo json_encode(['success' => true, 'message' => 'Credentials saved successfully.']);
+    echo json_encode(['success' => true, 'message' => 'Credentials saved successfully for ' . htmlspecialchars($platform)]);
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
