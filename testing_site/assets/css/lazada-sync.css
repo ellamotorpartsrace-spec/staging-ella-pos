@@ -700,3 +700,45 @@ body {
     color: var(--text-secondary);
     display: inline-block;
 }
+
+/* ── Glassmorphism Utilities ── */
+.lz-glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: var(--lz-radius-md);
+    box-shadow: 0 10px 40px rgba(15, 19, 109, 0.08);
+}
+[data-theme="dark"] .lz-glass-panel {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.lz-glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--lz-radius-md);
+    box-shadow: 0 8px 32px rgba(15, 19, 109, 0.05);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="dark"] .lz-glass-card {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+.lz-glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 48px rgba(15, 19, 109, 0.12);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+.lz-gradient-text {
+    background: var(--lazada-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
