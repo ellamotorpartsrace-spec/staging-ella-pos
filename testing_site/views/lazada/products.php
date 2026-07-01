@@ -140,7 +140,24 @@ require_once '../../includes/sidebar.php';
                 <tbody id="productsTbody">
                     <tr><td colspan="5" class="text-center py-5 text-muted"><i class="fa-solid fa-circle-notch fa-spin me-2"></i> Loading products from database...</td></tr>
                 </tbody>
-            </table>
+        </div>
+        <div class="card-footer bg-white border-top py-3 d-flex align-items-center justify-content-between" id="paginationControls" style="display: none !important;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted">Rows per page:</span>
+                <select class="form-select form-select-sm" id="rowsPerPage" style="width: 70px;" onchange="changePerPage()">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="small text-muted" id="pageInfo">Showing 1-10 of 0</span>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary" id="btnPrevPage" onclick="prevPage()"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnNextPage" onclick="nextPage()"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -164,6 +181,26 @@ require_once '../../includes/sidebar.php';
 
 <script>
 let allProducts = [];
+let currentPage = 1;
+let itemsPerPage = 50;
+
+function changePerPage() {
+    itemsPerPage = parseInt(document.getElementById('rowsPerPage').value);
+    currentPage = 1;
+    renderProducts();
+}
+
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderProducts();
+    }
+}
+
+function nextPage() {
+    currentPage++;
+    renderProducts();
+}
 
 async function loadProducts() {
     try {
@@ -239,17 +276,33 @@ function renderProducts() {
         });
     }
 
-    if (filteredProducts.length === 0) {
+    const totalFiltered = filteredProducts.length;
+
+    if (totalFiltered === 0) {
         container.classList.add('d-none');
         emptyState.classList.remove('d-none');
+        document.getElementById('paginationControls').style.setProperty('display', 'none', 'important');
         return;
     }
     
     container.classList.remove('d-none');
     emptyState.classList.add('d-none');
+    document.getElementById('paginationControls').style.setProperty('display', 'flex', 'important');
+    
+    // Pagination logic
+    const maxPage = Math.ceil(totalFiltered / itemsPerPage) || 1;
+    if (currentPage > maxPage) currentPage = maxPage;
+    
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    const paginatedProducts = filteredProducts.slice(startIdx, endIdx);
+    
+    document.getElementById('pageInfo').innerText = `Showing ${startIdx + 1}-${Math.min(endIdx, totalFiltered)} of ${totalFiltered}`;
+    document.getElementById('btnPrevPage').disabled = (currentPage === 1);
+    document.getElementById('btnNextPage').disabled = (currentPage === maxPage);
     
     let html = '';
-    filteredProducts.forEach(p => {
+    paginatedProducts.forEach(p => {
         let hasRealVariations = p.variations && p.variations.length > 0 && p.variations.some(v => v.varName);
 
         let imgHtml = p.imageUrl 
@@ -386,7 +439,10 @@ async function syncProducts() {
 document.getElementById('btnRefreshProducts').addEventListener('click', syncProducts);
 document.getElementById('btnRefreshProducts').disabled = false;
 
-document.getElementById('searchProducts').addEventListener('input', renderProducts);
+document.getElementById('searchProducts').addEventListener('input', () => {
+    currentPage = 1; // Reset to page 1 on search
+    renderProducts();
+});
 document.getElementById('searchProducts').disabled = false;
 
 // Initialize
