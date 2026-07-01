@@ -286,9 +286,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     manualMapModal = new bootstrap.Modal(document.getElementById('manualMapModal'));
     
-    // Clear session storage if arriving from navigation (not reload)
+    // Parse URL parameters for deep linking from Resolution Center
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFilter = urlParams.get('filter');
+    const urlSearch = urlParams.get('search');
+    
+    // Clear session storage if arriving from navigation (not reload) AND we aren't deep linking
     const navEntries = window.performance.getEntriesByType('navigation');
-    if (navEntries.length > 0 && navEntries[0].type !== 'reload') {
+    if (navEntries.length > 0 && navEntries[0].type !== 'reload' && !urlFilter && !urlSearch) {
         sessionStorage.removeItem('lazada_mapSearch');
         sessionStorage.removeItem('lazada_map_filter');
         sessionStorage.removeItem('lazada_map_currentPage');
@@ -297,11 +302,25 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPage = 1;
     }
     
+    // Apply URL overrides if they exist
+    if (urlFilter) {
+        activeFilter = urlFilter;
+        sessionStorage.setItem('lazada_map_filter', activeFilter);
+    }
+    
     // Restore search input
     const savedSearch = sessionStorage.getItem('lazada_mapSearch');
     const searchInput = document.getElementById('mapSearch');
-    if (savedSearch && searchInput) {
+    if (urlSearch && searchInput) {
+        searchInput.value = urlSearch;
+        sessionStorage.setItem('lazada_mapSearch', urlSearch);
+    } else if (savedSearch && searchInput) {
         searchInput.value = savedSearch;
+    }
+    
+    // Clean up URL to prevent persistence on refresh
+    if (urlFilter || urlSearch) {
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
     
     // Restore limits dropdown
@@ -312,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.lz-filter-pills .lz-pill').forEach(p => p.classList.remove('active'));
     const activeBtn = document.querySelector(`.lz-filter-pills .lz-pill[onclick*="setFilter('${activeFilter}'"]`) || document.querySelector('.lz-filter-pills .lz-pill');
     if(activeBtn) activeBtn.classList.add('active');
+
     
     const isApiConnected = <?= isset($tokenWarning) && $tokenWarning ? 'false' : 'true' ?>;
     if (isApiConnected) {

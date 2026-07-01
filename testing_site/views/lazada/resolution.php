@@ -40,15 +40,7 @@ $conn = $db->getConnection();
     <div class="d-flex flex-wrap gap-2 mb-4">
         <button class="lz-pill active" style="background: #ef4444; color: white; border-color: #ef4444;">
             <i class="fa-solid fa-barcode"></i> Missing SKUs
-            <span class="filter-count" style="background: rgba(255,255,255,0.3);">3</span>
-        </button>
-        <button class="lz-pill">
-            <i class="fa-solid fa-box-open"></i> Out of Stock
-            <span class="filter-count">0</span>
-        </button>
-        <button class="lz-pill">
-            <i class="fa-solid fa-triangle-exclamation"></i> Sync Failures
-            <span class="filter-count">0</span>
+            <span class="filter-count" id="unmappedCount" style="background: rgba(255,255,255,0.3);">0</span>
         </button>
     </div>
 
@@ -58,7 +50,7 @@ $conn = $db->getConnection();
                 <div class="lz-card-header d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="mb-0 fw-bolder" style="color: var(--text-primary);">Action Required: Missing SKUs</h5>
-                        <div class="small text-muted mt-1">The following Lazada items cannot be synced because they do not have a corresponding local SKU. Please add the local SKU manually.</div>
+                        <div class="small text-muted mt-1">The following Lazada items cannot be synced because they do not have a corresponding local SKU. Please map them to a POS product.</div>
                     </div>
                 </div>
                 
@@ -70,84 +62,11 @@ $conn = $db->getConnection();
                                     <th>Lazada Item</th>
                                     <th width="150">Lazada ID</th>
                                     <th width="120">Price</th>
-                                    <th width="350">Resolve (Add SKU)</th>
+                                    <th width="200" class="text-end pe-4">Resolve</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- Mock Data Row 1 -->
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div style="width: 48px; height: 48px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                                <i class="fa-solid fa-image text-muted"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold" style="color: var(--text-primary);">Honda Click 125i CVT Belt Genuine</div>
-                                                <div class="small text-muted mt-1"><i class="fa-solid fa-shop me-1"></i>Ella Motor Parts</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge bg-light text-dark font-monospace border">LZ-882910</span></td>
-                                    <td class="fw-bold">₱ 850.00</td>
-                                    <td>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="Type local SKU..." style="font-size: 0.9rem; border-color: #e2e8f0; height: 42px;">
-                                            <button class="btn btn-primary fw-bold px-3 shadow-sm" type="button" style="background: var(--lazada-primary); border-color: var(--lazada-primary); height: 42px;">
-                                                <i class="fa-solid fa-plus me-1"></i> Add SKU
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Mock Data Row 2 -->
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div style="width: 48px; height: 48px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                                <i class="fa-solid fa-image text-muted"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold" style="color: var(--text-primary);">Yamaha NMAX 155 Brake Pad Front</div>
-                                                <div class="small text-muted mt-1"><i class="fa-solid fa-shop me-1"></i>Ella Motor Parts</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge bg-light text-dark font-monospace border">LZ-441299</span></td>
-                                    <td class="fw-bold">₱ 350.00</td>
-                                    <td>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="Type local SKU..." style="font-size: 0.9rem; border-color: #e2e8f0; height: 42px;">
-                                            <button class="btn btn-primary fw-bold px-3 shadow-sm" type="button" style="background: var(--lazada-primary); border-color: var(--lazada-primary); height: 42px;">
-                                                <i class="fa-solid fa-plus me-1"></i> Add SKU
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Mock Data Row 3 -->
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div style="width: 48px; height: 48px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                                <i class="fa-solid fa-image text-muted"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold" style="color: var(--text-primary);">Honda Beat Fi Air Filter Element</div>
-                                                <div class="small text-muted mt-1"><i class="fa-solid fa-shop me-1"></i>Ella Motor Parts</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge bg-light text-dark font-monospace border">LZ-110293</span></td>
-                                    <td class="fw-bold">₱ 220.00</td>
-                                    <td>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="Type local SKU..." style="font-size: 0.9rem; border-color: #e2e8f0; height: 42px;">
-                                            <button class="btn btn-primary fw-bold px-3 shadow-sm" type="button" style="background: var(--lazada-primary); border-color: var(--lazada-primary); height: 42px;">
-                                                <i class="fa-solid fa-plus me-1"></i> Add SKU
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                            <tbody id="missingSkusTbody">
+                                <tr><td colspan="4" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading missing SKUs...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -158,3 +77,102 @@ $conn = $db->getConnection();
 </div>
 
 <?php require_once '../../includes/footer.php'; ?>
+
+<script>
+document.addEventListener("DOMContentLoaded", async function() {
+    loadMissingSkus();
+});
+
+async function loadMissingSkus() {
+    try {
+        const res = await fetch(`${window.BASE_URL}api/lazada/get_resolution_data.php`);
+        const data = await res.json();
+        
+        if (data.success && data.missing_skus) {
+            document.getElementById('unmappedCount').innerText = data.missing_skus.length;
+            renderMissingSkus(data.missing_skus);
+        } else {
+            console.error(data.error);
+            document.getElementById('missingSkusTbody').innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Failed to load data.</td></tr>`;
+        }
+    } catch (e) {
+        console.error("Failed to fetch resolution data", e);
+        document.getElementById('missingSkusTbody').innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Network error.</td></tr>`;
+    }
+}
+
+function renderMissingSkus(skus) {
+    const tbody = document.getElementById('missingSkusTbody');
+    if (!skus || skus.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-5">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: #ecfdf5; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                        <i class="fa-solid fa-check fa-xl text-success"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark">All Caught Up!</h5>
+                    <p class="text-muted mb-0">There are no missing SKUs. All Lazada items are currently mapped.</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    skus.forEach(item => {
+        const imgHtml = item.lazada_image_url 
+            ? `<img src="${item.lazada_image_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`
+            : `<i class="fa-solid fa-image text-muted opacity-50"></i>`;
+            
+        const varBadge = item.lazada_variation_name 
+            ? `<span class="badge bg-light text-dark border ms-2 small" style="font-size: 0.7rem; font-weight: normal;">${escapeHtml(item.lazada_variation_name)}</span>` 
+            : '';
+            
+        // Use the seller sku if available to pre-fill the search, otherwise use item id
+        const searchParam = encodeURIComponent(item.lazada_seller_sku || item.lazada_item_id);
+
+        html += `
+            <tr>
+                <td class="ps-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+                            ${imgHtml}
+                        </div>
+                        <div>
+                            <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; line-height: 1.4;">
+                                ${escapeHtml(item.lazada_product_name)}
+                                ${varBadge}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="fw-600 text-dark" style="font-size: 0.9rem;">${item.lazada_item_id}</div>
+                    ${item.lazada_seller_sku ? `<div class="small text-muted" style="font-size: 0.75rem;">${escapeHtml(item.lazada_seller_sku)}</div>` : ''}
+                </td>
+                <td>
+                    <div class="fw-600 text-dark">₱${parseFloat(item.lazada_price).toFixed(2)}</div>
+                </td>
+                <td class="pe-4 text-end">
+                    <a href="${window.BASE_URL}views/lazada/mapping.php?filter=unmapped&search=${searchParam}" class="btn btn-sm btn-primary fw-bold px-3 shadow-sm" style="background: var(--lazada-primary); border-color: var(--lazada-primary); border-radius: 6px;">
+                        <i class="fa-solid fa-link me-1"></i> Resolve Mapping
+                    </a>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return (unsafe + '').replace(/[&<"']/g, function(m) {
+        switch (m) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '"': return '&quot;';
+            default: return '&#039;';
+        }
+    });
+}
+</script>
