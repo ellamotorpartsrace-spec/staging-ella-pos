@@ -46,8 +46,8 @@ $queries = [
         enable_stock_sync TINYINT(1) DEFAULT 0,
         respect_allocation TINYINT(1) DEFAULT 1,
         low_stock_alerts TINYINT(1) DEFAULT 1,
-        sync_interval_mins INT DEFAULT 15,
         low_stock_threshold INT DEFAULT 5,
+        buffer_stock INT DEFAULT 0,
         is_active TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

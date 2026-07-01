@@ -22,6 +22,8 @@ try {
     $syncInterval = isset($data['sync_interval_mins']) ? (int)$data['sync_interval_mins'] : 15;
     $lowStockThreshold = isset($data['low_stock_threshold']) ? (int)$data['low_stock_threshold'] : 5;
 
+    $bufferStock = isset($data['buffer_stock']) ? (int)$data['buffer_stock'] : 0;
+
     $stmt = $conn->query("SELECT id FROM lazada_config LIMIT 1");
     $exists = $stmt->fetchColumn();
 
@@ -32,14 +34,15 @@ try {
             low_stock_alerts = ?, 
             sync_interval_mins = ?, 
             low_stock_threshold = ?, 
+            buffer_stock = ?,
             updated_at = NOW() 
             WHERE id = ?");
-        $update->execute([$enableSync, $respectAlloc, $lowStockAlerts, $syncInterval, $lowStockThreshold, $exists]);
+        $update->execute([$enableSync, $respectAlloc, $lowStockAlerts, $syncInterval, $lowStockThreshold, $bufferStock, $exists]);
     } else {
         $insert = $conn->prepare("INSERT INTO lazada_config 
-            (app_key, app_secret, enable_stock_sync, respect_allocation, low_stock_alerts, sync_interval_mins, low_stock_threshold) 
-            VALUES ('', '', ?, ?, ?, ?, ?)");
-        $insert->execute([$enableSync, $respectAlloc, $lowStockAlerts, $syncInterval, $lowStockThreshold]);
+            (app_key, app_secret, enable_stock_sync, respect_allocation, low_stock_alerts, sync_interval_mins, low_stock_threshold, buffer_stock) 
+            VALUES ('', '', ?, ?, ?, ?, ?, ?)");
+        $insert->execute([$enableSync, $respectAlloc, $lowStockAlerts, $syncInterval, $lowStockThreshold, $bufferStock]);
     }
 
     echo json_encode(['success' => true, 'message' => 'Preferences saved successfully.']);
