@@ -64,10 +64,16 @@ try {
         ];
     }
 
-    echo json_encode([
+    $json = json_encode([
         'groups' => array_values($groups),
         'whitelist' => [] // No whitelist feature for Lazada yet
-    ]);
+    ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+
+    if ($json === false) {
+        echo json_encode(['error' => 'Failed to encode JSON: ' . json_last_error_msg()]);
+    } else {
+        echo $json;
+    }
 
 } catch (Exception $e) {
     echo json_encode(['error' => $e->getMessage()]);

@@ -69,22 +69,38 @@ try {
         foreach ($products as $prod) {
             $itemId = $prod['item_id'];
             $itemName = $prod['attributes']['name'] ?? 'Unknown Product';
-            $image = $prod['images'][0] ?? null;
-
-            if (isset($prod['skus']) && is_array($prod['skus'])) {
-                foreach ($prod['skus'] as $sku) {
+            $image = isset($prod['images']) && is_array($prod['images']) ? ($prod['images'][0] ?? null) : null;
+            
+            // Lazada API sometimes returns 'skus' or 'sku' or none
+            $skus = $prod['skus'] ?? $prod['sku'] ?? [];
+            
+            if (!empty($skus) && is_array($skus)) {
+                foreach ($skus as $sku) {
                     $allSkus[] = [
                         'item_id' => $itemId,
-                        'sku_id' => $sku['SkuId'],
+                        'sku_id' => $sku['SkuId'] ?? $itemId,
                         'product_name' => $itemName,
                         'variation_name' => $sku['Variation'] ?? null,
                         'seller_sku' => $sku['SellerSku'] ?? null,
-                        'stock' => $sku['quantity'] ?? 0,
+                        'stock' => $sku['quantity'] ?? $sku['Available'] ?? 0,
                         'price' => $sku['price'] ?? 0,
-                        'image_url' => $sku['Images'][0] ?? $image,
+                        'image_url' => (isset($sku['Images']) && is_array($sku['Images'])) ? ($sku['Images'][0] ?? $image) : $image,
                         'status' => $sku['Status'] ?? 'active'
                     ];
                 }
+            } else {
+                // Product exists but has no variations listed in the API
+                $allSkus[] = [
+                    'item_id' => $itemId,
+                    'sku_id' => $itemId,
+                    'product_name' => $itemName,
+                    'variation_name' => null,
+                    'seller_sku' => null,
+                    'stock' => 0,
+                    'price' => 0,
+                    'image_url' => $image,
+                    'status' => 'active'
+                ];
             }
         }
     }

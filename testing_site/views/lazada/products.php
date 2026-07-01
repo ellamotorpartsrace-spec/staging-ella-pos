@@ -131,9 +131,9 @@ require_once '../../includes/sidebar.php';
                 <thead style="background: #f8fafc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">
                     <tr>
                         <th class="ps-4 py-3 border-0">Product Info</th>
-                        <th class="py-3 border-0">Item ID / SKU</th>
-                        <th class="py-3 border-0">Variations</th>
-                        <th class="py-3 border-0">Lazada Stock</th>
+                        <th class="py-3 border-0">Product ID</th>
+                        <th class="py-3 border-0 text-center">Stock</th>
+                        <th class="py-3 border-0 text-end">Price</th>
                         <th class="pe-4 py-3 border-0 text-end">Mapping Status</th>
                     </tr>
                 </thead>
@@ -168,17 +168,31 @@ let allProducts = [];
 async function loadProducts() {
     try {
         const res = await fetch(`${window.BASE_URL}api/lazada/get_mappings.php`);
-        const data = await res.json();
+        const text = await res.text(); // fetch as text first to catch fatal errors
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error("Raw response:", text);
+            EllaToast.error("JSON Error: The server returned invalid data. Check console.");
+            showEmptyState();
+            return;
+        }
         
         if (data.groups) {
             allProducts = data.groups;
             renderProducts();
             updateStats();
+        } else if (data.error) {
+            console.error("API Error:", data.error);
+            EllaToast.error("Database Error: " + data.error);
+            showEmptyState();
         } else {
             showEmptyState();
         }
     } catch (e) {
         console.error("Failed to load products", e);
+        EllaToast.error("Network error while loading products.");
         showEmptyState();
     }
 }
@@ -236,50 +250,49 @@ function renderProducts() {
     
     let html = '';
     filteredProducts.forEach(p => {
-        let varsCount = p.variations ? p.variations.length : 0;
-        let totalStock = 0;
-        let mappedCount = 0;
-        
-        if (p.variations) {
+        if (p.variations && p.variations.length > 0) {
             p.variations.forEach(v => {
-                totalStock += v.online;
-                if (v.mapped) mappedCount++;
+                let imgHtml = p.imageUrl 
+                    ? `<img src="${p.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` 
+                    : `<i class="fa-solid fa-image text-muted opacity-50"></i>`;
+                
+                let varText = v.varName 
+                    ? `<div class="small text-muted mt-1 ms-2"><i class="fa-solid fa-level-up-alt fa-rotate-90 me-1"></i> Variation - ${v.varName}</div>`
+                    : '';
+
+                html += `
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+                                    ${imgHtml}
+                                </div>
+                                <div>
+                                    <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; max-width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">${p.name}</div>
+                                    ${varText}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-600 text-dark" style="font-size: 0.9rem;">${v.variationSku || p.itemId}</div>
+                            <div class="small text-muted" style="font-size: 0.75rem;">ID: ${p.itemId}</div>
+                        </td>
+                        <td class="text-center">
+                            <div class="fw-bold ${v.online > 0 ? 'text-success' : 'text-danger'}">${v.online}</div>
+                        </td>
+                        <td class="text-end">
+                            <div class="fw-600 text-dark">₱${parseFloat(v.price).toFixed(2)}</div>
+                        </td>
+                        <td class="pe-4 text-end">
+                            ${v.mapped 
+                                ? `<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-link me-1"></i> Mapped</span>` 
+                                : `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="fa-solid fa-link-slash me-1"></i> Unmapped</span>`
+                            }
+                        </td>
+                    </tr>
+                `;
             });
         }
-        
-        // Product row spanning logic
-        html += `
-            <tr style="border-bottom: 2px solid #f1f5f9;">
-                <td class="ps-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div style="width: 50px; height: 50px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
-                            ${p.imageUrl ? `<img src="${p.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` : `<i class="fa-solid fa-image text-muted opacity-50"></i>`}
-                        </div>
-                        <div>
-                            <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem;">${p.name}</div>
-                            <div class="small text-muted mt-1"><span class="badge bg-light text-dark border">Item ID: ${p.itemId}</span></div>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="fw-600 text-dark">${p.parentSku || '-'}</div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="badge bg-light text-dark border" style="font-size: 0.8rem;"><i class="fa-solid fa-layer-group me-1 text-muted"></i> ${varsCount} variants</div>
-                    </div>
-                </td>
-                <td>
-                    <div class="fw-bold ${totalStock > 0 ? 'text-success' : 'text-danger'}">${totalStock}</div>
-                </td>
-                <td class="pe-4 text-end">
-                    ${mappedCount === varsCount && varsCount > 0 
-                        ? `<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-link me-1"></i> Mapped</span>` 
-                        : `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="fa-solid fa-link-slash me-1"></i> ${varsCount - mappedCount} Unmapped</span>`
-                    }
-                </td>
-            </tr>
-        `;
     });
     
     tbody.innerHTML = html;
