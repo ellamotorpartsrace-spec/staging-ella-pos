@@ -80,7 +80,7 @@ try {
                         'item_id' => $itemId,
                         'sku_id' => $sku['SkuId'] ?? $itemId,
                         'product_name' => $itemName,
-                        'variation_name' => $sku['Variation'] ?? null,
+                        'variation_name' => $sku['Variation'] ?? $sku['color_family'] ?? $sku['size'] ?? $sku['name'] ?? null,
                         'seller_sku' => $sku['SellerSku'] ?? null,
                         'stock' => $sku['quantity'] ?? $sku['Available'] ?? 0,
                         'price' => $sku['price'] ?? 0,

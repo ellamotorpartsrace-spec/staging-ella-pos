@@ -337,8 +337,8 @@ function renderProducts() {
                     </td>
                     <td class="pe-4 text-end">
                         ${v.mapped 
-                            ? `<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-link me-1"></i> Mapped</span>` 
-                            : `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="fa-solid fa-link-slash me-1"></i> Unmapped</span>`
+                            ? `<span class="badge" style="background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 0.75rem; padding: 0.4em 0.8em; font-weight: 600;"><i class="fa-solid fa-link me-1"></i> Mapped</span>` 
+                            : `<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; font-size: 0.75rem; padding: 0.4em 0.8em; font-weight: 600;"><i class="fa-solid fa-link-slash me-1"></i> Unmapped</span>`
                         }
                     </td>
                 </tr>
@@ -388,8 +388,8 @@ function renderProducts() {
                         </td>
                         <td class="pe-4 text-end">
                             ${v.mapped 
-                                ? `<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-link me-1"></i> Mapped</span>` 
-                                : `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="fa-solid fa-link-slash me-1"></i> Unmapped</span>`
+                                ? `<span class="badge" style="background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 0.75rem; padding: 0.4em 0.8em; font-weight: 600;"><i class="fa-solid fa-link me-1"></i> Mapped</span>` 
+                                : `<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; font-size: 0.75rem; padding: 0.4em 0.8em; font-weight: 600;"><i class="fa-solid fa-link-slash me-1"></i> Unmapped</span>`
                             }
                         </td>
                     </tr>
