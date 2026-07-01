@@ -291,18 +291,39 @@ function showEmptyState() {
     updateStats();
 }
 
-function syncProducts() {
+async function syncProducts() {
     const btn = document.getElementById('btnRefreshProducts');
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Syncing...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Syncing...';
     btn.disabled = true;
     
-    // Simulate sync
-    setTimeout(() => {
-        alert("Lazada API sync initiated. This will run in the background.");
+    try {
+        let hasMore = true;
+        let offset = 0;
+        let totalProcessed = 0;
+
+        while (hasMore) {
+            const res = await fetch(`${window.BASE_URL}api/lazada/fetch_products.php?offset=${offset}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                totalProcessed += data.stats ? data.stats.total : 0;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Processed ${totalProcessed}...`;
+                
+                hasMore = data.has_more || false;
+                offset = data.next_offset || 0;
+            } else {
+                throw new Error(data.error || 'Unknown error occurred.');
+            }
+        }
+        
+        EllaToast.success(`Products fetched successfully! Processed: ${totalProcessed}`);
+        loadProducts(); // Reload table data
+    } catch (e) {
+        EllaToast.error('Sync error: ' + e.message);
+    } finally {
         btn.innerHTML = '<i class="fa-solid fa-rotate me-2"></i> Sync Products';
         btn.disabled = false;
-        loadProducts();
-    }, 2000);
+    }
 }
 
 document.getElementById('btnRefreshProducts').addEventListener('click', syncProducts);
