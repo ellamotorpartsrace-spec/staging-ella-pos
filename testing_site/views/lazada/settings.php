@@ -142,6 +142,10 @@ if ($isAuthorized) {
                     <div class="icon-box"><i class="fa-solid fa-plug"></i></div>
                     <span>API Integration</span>
                 </a>
+                <a class="lz-nav-pill" onclick="switchTab('tab-tokens', this)">
+                    <div class="icon-box"><i class="fa-solid fa-key"></i></div>
+                    <span>Token Management</span>
+                </a>
                 <a class="lz-nav-pill" onclick="switchTab('tab-sync', this)">
                     <div class="icon-box"><i class="fa-solid fa-rotate"></i></div>
                     <span>Sync Automation</span>
@@ -230,51 +234,6 @@ if ($isAuthorized) {
                             </button>
                         </div>
                         
-                        <?php if ($isAuthorized): ?>
-                        <div class="mt-5 pt-5 border-top">
-                            <div class="d-flex justify-content-between align-items-end mb-4">
-                                <div>
-                                    <h6 class="fw-bold text-dark mb-1" style="font-size: 1.1rem;"><i class="fa-solid fa-key me-2 text-primary"></i> Token Management</h6>
-                                    <p class="text-secondary small mb-0">Monitor and refresh your Lazada API authentication tokens.</p>
-                                </div>
-                                <button class="btn-lz-secondary px-4 shadow-sm" onclick="refreshTokens(this)">
-                                    <i class="fa-solid fa-rotate me-2"></i> Refresh Tokens
-                                </button>
-                            </div>
-                            
-                            <div class="lz-form-group d-flex justify-content-between align-items-center mb-3">
-                                <div>
-                                    <label class="lz-form-label text-secondary mb-1">Access Token</label>
-                                    <div class="fw-bold text-dark font-monospace" style="font-size: 0.9rem;" id="tokenValueText">
-                                        <?= substr($config['access_token'], 0, 10) ?>...<?= substr($config['access_token'], -5) ?>
-                                    </div>
-                                    <input type="hidden" id="tokenValueFull" value="<?= htmlspecialchars($config['access_token']) ?>">
-                                </div>
-                                <button class="btn btn-link text-secondary p-0 text-decoration-none" onclick="copyAccessToken()">
-                                    <i class="fa-solid fa-copy fs-5"></i>
-                                </button>
-                            </div>
-
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="lz-form-group">
-                                        <label class="lz-form-label text-secondary mb-1">Account ID</label>
-                                        <div class="fw-bold text-dark"><?= htmlspecialchars($config['account_name'] ?? $config['account_id']) ?></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="lz-form-group">
-                                        <label class="lz-form-label text-secondary mb-1">Token Status</label>
-                                        <?php if ($tokenStatus === 'valid'): ?>
-                                            <div class="fw-bold text-success"><i class="fa-solid fa-check-circle me-1"></i> Active</div>
-                                        <?php else: ?>
-                                            <div class="fw-bold text-danger"><i class="fa-solid fa-xmark-circle me-1"></i> Expired</div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <?php endif; ?>
 
                         <?php else: ?>
                         <div class="text-center py-5">
@@ -287,6 +246,67 @@ if ($isAuthorized) {
                         <div style="display:none">
                             <input id="appKey"><input id="appSecret"><select id="shopRegion"><option value="PH"></option></select>
                             <button id="btnSave"></button>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Token Management -->
+            <div id="tab-tokens" class="lz-tab-content">
+                <div class="lz-content-card">
+                    <div class="lz-card-header d-flex justify-content-between align-items-start pb-0 border-0">
+                        <div>
+                            <h3>Token Management</h3>
+                            <p class="subtitle">Monitor and refresh your Lazada API authentication tokens.</p>
+                        </div>
+                        <?php if ($isAuthorized): ?>
+                        <button class="btn-lz-secondary px-4 shadow-sm" onclick="refreshTokens(this)">
+                            <i class="fa-solid fa-rotate me-2"></i> Refresh Tokens
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div class="lz-card-body pt-3">
+                        <?php if ($isAuthorized): ?>
+                        <div class="lz-form-group d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <label class="lz-form-label text-secondary mb-1">Access Token</label>
+                                <div class="fw-bold text-dark font-monospace" style="font-size: 0.9rem;" id="tokenValueText">
+                                    <?= substr($config['access_token'], 0, 10) ?>...<?= substr($config['access_token'], -5) ?>
+                                </div>
+                                <input type="hidden" id="tokenValueFull" value="<?= htmlspecialchars($config['access_token']) ?>">
+                            </div>
+                            <button class="btn btn-link text-secondary p-0 text-decoration-none" onclick="copyAccessToken()">
+                                <i class="fa-solid fa-copy fs-5"></i>
+                            </button>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="lz-form-group">
+                                    <label class="lz-form-label text-secondary mb-1">Account ID</label>
+                                    <div class="fw-bold text-dark"><?= htmlspecialchars($config['account_name'] ?? $config['account_id']) ?></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="lz-form-group">
+                                    <label class="lz-form-label text-secondary mb-1">Token Status</label>
+                                    <?php if ($tokenStatus === 'valid'): ?>
+                                        <div class="fw-bold text-success"><i class="fa-solid fa-check-circle me-1"></i> Active</div>
+                                    <?php else: ?>
+                                        <div class="fw-bold text-danger"><i class="fa-solid fa-xmark-circle me-1"></i> Expired</div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php else: ?>
+                        <div class="text-center py-5">
+                            <div style="background: #f1f5f9; color: #64748b; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; font-size: 2rem;">
+                                <i class="fa-solid fa-key"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark">No Active Tokens</h4>
+                            <p class="text-secondary mb-0">You must authorize the Lazada integration first.</p>
                         </div>
                         <?php endif; ?>
                     </div>
