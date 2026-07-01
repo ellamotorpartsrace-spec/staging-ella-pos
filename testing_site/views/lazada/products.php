@@ -103,23 +103,16 @@ require_once '../../includes/sidebar.php';
         <div class="card-body p-3 d-flex align-items-center gap-3 flex-wrap">
             <div class="input-group" style="width: 320px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden;">
                 <span class="input-group-text bg-transparent border-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                <input type="text" class="form-control bg-transparent border-0 shadow-none" id="searchProducts" placeholder="Search by product name or SKU..." disabled style="font-size: 0.9rem;">
+                <input type="text" class="form-control bg-transparent border-0 shadow-none" id="searchProducts" placeholder="Search by product name or SKU..." oninput="handleSearch()" style="font-size: 0.9rem;">
             </div>
             
-            <button class="btn rounded-pill fw-bold px-4" style="background: #eef2ff; color: #111827; font-size: 0.85rem;" disabled>All</button>
-            <button class="btn btn-link text-decoration-none fw-bold px-3" style="color: #64748b; font-size: 0.85rem;" disabled><i class="fa-solid fa-circle-check text-success me-1"></i> In Stock</button>
-            <button class="btn btn-link text-decoration-none fw-bold px-3" style="color: #64748b; font-size: 0.85rem;" disabled><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Low Stock</button>
-            <button class="btn btn-link text-decoration-none fw-bold px-3" style="color: #64748b; font-size: 0.85rem;" disabled><i class="fa-solid fa-box-open text-danger me-1"></i> Out of Stock</button>
+            <button class="btn rounded-pill fw-bold px-4" id="btnFilterAll" onclick="setFilter('all')" style="background: #eef2ff; color: #111827; font-size: 0.85rem;">All</button>
+            <button class="btn btn-link text-decoration-none fw-bold px-3" id="btnFilterInstock" onclick="setFilter('instock')" style="color: #64748b; font-size: 0.85rem;"><i class="fa-solid fa-circle-check text-success me-1"></i> In Stock</button>
+            <button class="btn btn-link text-decoration-none fw-bold px-3" id="btnFilterLowstock" onclick="setFilter('lowstock')" style="color: #64748b; font-size: 0.85rem;"><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Low Stock</button>
+            <button class="btn btn-link text-decoration-none fw-bold px-3" id="btnFilterOutofstock" onclick="setFilter('outofstock')" style="color: #64748b; font-size: 0.85rem;"><i class="fa-solid fa-box-open text-danger me-1"></i> Out of Stock</button>
             
-            <div class="ms-auto d-flex gap-2">
-                <select class="form-select border-0 bg-light fw-600 shadow-none" style="border-radius:8px; font-size: 0.85rem;" disabled>
-                    <option>All Categories</option>
-                </select>
-                <select class="form-select border-0 bg-light fw-600 shadow-none" style="border-radius:8px; font-size: 0.85rem;" disabled>
-                    <option>Mapping: All</option>
-                    <option>Mapped</option>
-                    <option>Unmapped</option>
-                </select>
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <span class="small text-muted fw-bold" id="topPageInfo">Showing 0-0 of 0 products</span>
             </div>
         </div>
     </div>
@@ -130,11 +123,11 @@ require_once '../../includes/sidebar.php';
             <table class="table lz-table mb-0 align-middle table-hover">
                 <thead style="background: #f8fafc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">
                     <tr>
-                        <th class="ps-4 py-3 border-0">Product Info</th>
-                        <th class="py-3 border-0">Product ID</th>
-                        <th class="py-3 border-0 text-center">Stock</th>
-                        <th class="py-3 border-0 text-end">Price</th>
-                        <th class="pe-4 py-3 border-0 text-end">Mapping Status</th>
+                        <th class="ps-4 py-3 border-0" style="width: 55%;">Product Info</th>
+                        <th class="py-3 border-0" style="width: 15%;">Product ID</th>
+                        <th class="py-3 border-0 text-center" style="width: 10%;">Stock</th>
+                        <th class="py-3 border-0 text-end" style="width: 10%;">Price</th>
+                        <th class="pe-4 py-3 border-0 text-end" style="width: 10%;">Mapping Status</th>
                     </tr>
                 </thead>
                 <tbody id="productsTbody">
@@ -182,8 +175,39 @@ require_once '../../includes/sidebar.php';
 
 <script>
 let allProducts = [];
+let currentFilter = 'all';
 let currentPage = 1;
 let itemsPerPage = 25;
+
+function handleSearch() {
+    currentPage = 1;
+    renderProducts();
+}
+
+function setFilter(filterType) {
+    currentFilter = filterType;
+    
+    // Update active state styling
+    ['All', 'Instock', 'Lowstock', 'Outofstock'].forEach(type => {
+        let btn = document.getElementById('btnFilter' + type);
+        if(btn) {
+            if(type.toLowerCase() === filterType) {
+                btn.style.background = '#eef2ff';
+                btn.style.color = '#111827';
+                btn.classList.add('rounded-pill', 'px-4');
+                btn.classList.remove('btn-link', 'px-3');
+            } else {
+                btn.style.background = 'transparent';
+                btn.style.color = '#64748b';
+                btn.classList.remove('rounded-pill', 'px-4');
+                btn.classList.add('btn-link', 'px-3');
+            }
+        }
+    });
+    
+    currentPage = 1;
+    renderProducts();
+}
 
 function changePerPage() {
     itemsPerPage = parseInt(document.getElementById('rowsPerPage').value);
@@ -268,8 +292,25 @@ function renderProducts() {
     const searchTerm = document.getElementById('searchProducts').value.toLowerCase();
     
     let filteredProducts = allProducts;
+    
+    if (currentFilter !== 'all') {
+        filteredProducts = filteredProducts.filter(p => {
+            if (!p.variations || p.variations.length === 0) return false;
+            
+            // For stock filters, evaluate based on online stock
+            if (currentFilter === 'instock') {
+                return p.variations.some(v => v.online > 5);
+            } else if (currentFilter === 'lowstock') {
+                return p.variations.some(v => v.online > 0 && v.online <= 5);
+            } else if (currentFilter === 'outofstock') {
+                return p.variations.every(v => v.online === 0);
+            }
+            return true;
+        });
+    }
+
     if (searchTerm) {
-        filteredProducts = allProducts.filter(p => {
+        filteredProducts = filteredProducts.filter(p => {
             return p.name.toLowerCase().includes(searchTerm) || 
                    p.itemId.toString().includes(searchTerm) || 
                    (p.parentSku && p.parentSku.toLowerCase().includes(searchTerm)) ||
@@ -298,7 +339,10 @@ function renderProducts() {
     const endIdx = startIdx + itemsPerPage;
     const paginatedProducts = filteredProducts.slice(startIdx, endIdx);
     
-    document.getElementById('pageInfo').innerText = `Showing ${startIdx + 1}-${Math.min(endIdx, totalFiltered)} of ${totalFiltered}`;
+    const pageText = `Showing ${startIdx + 1}-${Math.min(endIdx, totalFiltered)} of ${totalFiltered} products`;
+    document.getElementById('pageInfo').innerText = pageText;
+    const topPageInfo = document.getElementById('topPageInfo');
+    if (topPageInfo) topPageInfo.innerText = pageText;
     document.getElementById('btnPrevPage').disabled = (currentPage === 1);
     document.getElementById('btnNextPage').disabled = (currentPage === maxPage);
     
