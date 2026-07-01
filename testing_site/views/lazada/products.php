@@ -123,7 +123,7 @@ require_once '../../includes/sidebar.php';
             <table class="table lz-table mb-0 align-middle table-hover">
                 <thead style="background: #f8fafc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">
                     <tr>
-                        <th class="ps-4 py-3 border-0" style="width: 55%;">Product Info</th>
+                        <th class="ps-4 py-3 border-0" style="width: 55%;">Product/Variation</th>
                         <th class="py-3 border-0" style="width: 15%;">Product ID</th>
                         <th class="py-3 border-0 text-center" style="width: 10%;">Stock</th>
                         <th class="py-3 border-0 text-end" style="width: 10%;">Price</th>
