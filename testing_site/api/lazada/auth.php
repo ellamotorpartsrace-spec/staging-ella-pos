@@ -30,10 +30,8 @@ try {
 
     $api = new LazadaAPI($config['app_key'], $config['app_secret'], $config['country_code'], $config['environment'] === 'sandbox');
     
-    // Build redirect URI to oauth_callback.php
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'];
-    $redirect_url = $protocol . '://' . $host . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/oauth_callback.php';
+    // Build redirect URI to oauth_callback.php using BASE_URL
+    $redirect_url = BASE_URL . 'api/lazada/oauth_callback.php';
 
     $authUrl = $api->getAuthUrl($redirect_url);
     
