@@ -563,7 +563,7 @@ try {
 <div id="page-content-wrapper">
 
     <!-- TOP NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top" style="z-index: 1030;">
         <div class="container-fluid">
             <button class="btn btn-outline-primary" id="sidebarToggle">
                 <i class="fa-solid fa-bars"></i>
