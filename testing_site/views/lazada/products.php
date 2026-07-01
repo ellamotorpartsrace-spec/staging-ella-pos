@@ -348,7 +348,7 @@ function renderProducts() {
     
     let html = '';
     paginatedProducts.forEach(p => {
-        let hasRealVariations = p.variations && (p.variations.length > 1 || (p.variations.length === 1 && p.variations[0].varName));
+        let hasRealVariations = p.variations && p.variations.length > 1;
 
         let imgHtml = p.imageUrl 
             ? `<img src="${p.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` 
