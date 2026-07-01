@@ -439,7 +439,7 @@ h6 {
     position: sticky !important;
     top: 0 !important;
     z-index: 1030 !important;
-    align-self: flex-start;
+    width: 100%;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
