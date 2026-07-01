@@ -140,14 +140,15 @@ require_once '../../includes/sidebar.php';
                 <tbody id="productsTbody">
                     <tr><td colspan="5" class="text-center py-5 text-muted"><i class="fa-solid fa-circle-notch fa-spin me-2"></i> Loading products from database...</td></tr>
                 </tbody>
+            </table>
         </div>
         <div class="card-footer bg-white border-top py-3 d-flex align-items-center justify-content-between" id="paginationControls" style="display: none !important;">
             <div class="d-flex align-items-center gap-2">
                 <span class="small text-muted">Rows per page:</span>
                 <select class="form-select form-select-sm" id="rowsPerPage" style="width: 70px;" onchange="changePerPage()">
                     <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50" selected>50</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
                     <option value="100">100</option>
                 </select>
             </div>
@@ -182,7 +183,7 @@ require_once '../../includes/sidebar.php';
 <script>
 let allProducts = [];
 let currentPage = 1;
-let itemsPerPage = 50;
+let itemsPerPage = 25;
 
 function changePerPage() {
     itemsPerPage = parseInt(document.getElementById('rowsPerPage').value);
@@ -303,7 +304,7 @@ function renderProducts() {
     
     let html = '';
     paginatedProducts.forEach(p => {
-        let hasRealVariations = p.variations && p.variations.length > 0 && p.variations.some(v => v.varName);
+        let hasRealVariations = p.variations && (p.variations.length > 1 || (p.variations.length === 1 && p.variations[0].varName));
 
         let imgHtml = p.imageUrl 
             ? `<img src="${p.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` 
@@ -320,7 +321,7 @@ function renderProducts() {
                                 ${imgHtml}
                             </div>
                             <div>
-                                <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; max-width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">${p.name}</div>
+                                <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; word-wrap: break-word;">${p.name}</div>
                             </div>
                         </div>
                     </td>
@@ -347,12 +348,12 @@ function renderProducts() {
             html += `
                 <tr style="background: #fdfdfd; border-bottom: 1px solid #f1f5f9;">
                     <td class="ps-4" colspan="5">
-                        <div class="d-flex align-items-center gap-3 py-1">
+                        <div class="d-flex align-items-center gap-3 py-2">
                             <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
                                 ${imgHtml}
                             </div>
                             <div>
-                                <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; max-width: 500px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">${p.name}</div>
+                                <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; word-wrap: break-word;">${p.name}</div>
                             </div>
                         </div>
                     </td>
@@ -360,13 +361,18 @@ function renderProducts() {
             `;
             
             p.variations.forEach(v => {
+                let dispName = v.varName || v.variationSku || 'Variant';
+
                 html += `
                     <tr style="border-bottom: 1px solid #f1f5f9;">
                         <td class="ps-4">
-                            <div class="d-flex align-items-center gap-3">
-                                <div style="width: 48px; margin-right: 0; flex-shrink: 0;"></div>
+                            <div class="d-flex align-items-start gap-3" style="padding-left: 2rem;">
+                                <div style="margin-top: 2px; flex-shrink: 0;">
+                                    <span style="color: #3b82f6; font-weight: 800; font-size: 1.1rem;">&mdash;</span>
+                                </div>
                                 <div>
-                                    <div class="fw-bold text-dark" style="font-size: 0.9rem;"><span style="color:#f97316; font-weight: 800; margin-right: 5px;">&mdash;</span> ${v.varName}</div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.9rem;">${dispName}</div>
+                                    <div class="small text-muted mt-1" style="font-size: 0.75rem;">Seller Sku: ${v.variationSku || 'None'}</div>
                                 </div>
                             </div>
                         </td>
