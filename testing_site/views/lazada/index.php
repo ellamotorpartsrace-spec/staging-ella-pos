@@ -328,3 +328,24 @@ require_once '../../includes/sidebar.php';
 </div>
 
 <?php require_once '../../includes/footer.php'; ?>
+
+<script>
+document.addEventListener("DOMContentLoaded", async function() {
+    try {
+        const res = await fetch(`${window.BASE_URL}api/lazada/get_dashboard_stats.php`);
+        const data = await res.json();
+        
+        if (data.success && data.stats) {
+            document.getElementById('lzTotalVariations').innerText = data.stats.total_variations || 0;
+            document.getElementById('lzMapped').innerText = data.stats.mapped_items || 0;
+            document.getElementById('lzUnmapped').innerText = data.stats.unmapped_items || 0;
+            
+            // Wait, is there a total_products element? Let's check if the ID exists.
+            const tpEl = document.getElementById('lzTotalProducts');
+            if (tpEl) tpEl.innerText = data.stats.total_products || 0;
+        }
+    } catch (e) {
+        console.error("Failed to load dashboard stats", e);
+    }
+});
+</script>
