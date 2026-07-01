@@ -133,10 +133,26 @@ $errors = [];
 foreach ($queries as $query) {
     try {
         $conn->exec($query);
-        $successCount++;
+        echo "Table created/verified successfully.<br>\n";
     } catch (PDOException $e) {
-        $errors[] = $e->getMessage() . "\nQuery: " . $query;
+        echo "Error creating table: " . $e->getMessage() . "<br>\n";
     }
+}
+
+// Ensure the new sync_status column is present (Migration)
+try {
+    $conn->exec("ALTER TABLE lazada_product_mappings ADD COLUMN sync_status ENUM('active','inactive') DEFAULT 'active'");
+    echo "Added sync_status column.<br>\n";
+} catch (PDOException $e) {
+    // Column already exists or error
+}
+
+// Ensure mapping_status enum is updated (Migration)
+try {
+    $conn->exec("ALTER TABLE lazada_product_mappings MODIFY COLUMN mapping_status ENUM('unmapped', 'auto', 'manual', 'mapped') DEFAULT 'unmapped'");
+    echo "Updated mapping_status enum.<br>\n";
+} catch (PDOException $e) {
+    // Already updated or error
 }
 
 // Initial config insert for default main platform
