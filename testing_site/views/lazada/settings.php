@@ -74,56 +74,56 @@ if ($isAuthorized) {
 #cleanupProgressLog::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,0.5); }
 </style>
 
-<div class="container-fluid py-2 lz-animate">
+<div class="container-fluid py-3 lz-animate lz-settings-container">
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
 
     <?php if ($authSuccess): ?>
-    <div class="alert alert-success d-flex align-items-center gap-2 mb-4 rounded-4 border-0 shadow-sm" role="alert" style="background: #ecfdf5; color: #10b981;">
+    <div class="lz-alert-box lz-alert-success mb-4 shadow-sm">
         <i class="fa-solid fa-circle-check fs-5"></i>
         <div><strong>Shop authorized successfully!</strong> Account: <?= htmlspecialchars($config['account_name'] ?? $config['account_id'] ?? '') ?> — You can now sync products.</div>
     </div>
     <?php endif; ?>
 
-    <!-- Hero Header -->
-    <div class="lz-hero-header">
-        <nav aria-label="breadcrumb" style="position:relative;z-index:2;">
-            <ol class="breadcrumb mb-3" style="font-size:.85rem;">
-                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" style="color: rgba(255,255,255,0.7); text-decoration: none; font-weight: 500;">Lazada Dashboard</a></li>
-                <li class="breadcrumb-item active" style="color: white; font-weight: 600;" aria-current="page">Configuration</li>
+    <!-- Premium Hero Header -->
+    <div class="lz-hero-premium">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-3" style="font-size:.85rem; opacity: 0.8;">
+                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" class="text-white text-decoration-none">Lazada Dashboard</a></li>
+                <li class="breadcrumb-item active text-white fw-bold" aria-current="page">Configuration</li>
             </ol>
         </nav>
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position:relative;z-index:2;">
-            <div class="d-flex align-items-center gap-3">
-                <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <i class="fa-solid fa-sliders" style="color: #2563eb; font-size: 1.8rem;"></i>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-4">
+            <div class="d-flex align-items-center gap-4">
+                <div style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 16px; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-sliders text-white" style="font-size: 2rem;"></i>
                 </div>
                 <div>
-                    <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px; color: white;">Configuration Center</h1>
-                    <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Advanced settings, rules, and synchronization controls.</p>
+                    <h1 class="mb-1 text-white fw-bolder" style="font-size: 2.2rem; letter-spacing: -0.5px;">Settings Engine</h1>
+                    <p class="mb-0 text-white" style="opacity: 0.8; font-size: 1rem;">Advanced integration controls and synchronization rules.</p>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
                 <?php if ($isAuthorized): ?>
                 <div class="text-end">
-                    <div class="small fw-bold text-uppercase mb-1" style="color: rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.5px;">API Status</div>
-                    <div class="d-flex align-items-center gap-2 bg-white px-3 py-1 rounded-pill" style="box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <div class="text-white text-uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em; opacity: 0.7;">Connection Status</div>
+                    <div class="d-flex align-items-center gap-2 bg-white px-3 py-1 rounded-pill shadow-sm">
                         <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.2);"></div>
-                        <span class="text-dark fw-bold" style="font-size: 0.85rem;">Connected</span>
+                        <span class="text-dark fw-bold" style="font-size: 0.85rem;">Active</span>
                     </div>
                 </div>
                 <div class="text-end ms-2">
-                    <div class="small fw-bold text-uppercase mb-1" style="color: rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.5px;">Token Expiry</div>
-                    <div class="d-flex align-items-center gap-2 bg-white px-3 py-1 rounded-pill" style="box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <div class="text-white text-uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em; opacity: 0.7;">Token Expiry</div>
+                    <div class="d-flex align-items-center gap-2 bg-white px-3 py-1 rounded-pill shadow-sm">
                         <i class="fa-solid fa-clock text-primary" style="font-size: 0.8rem;"></i>
                         <span class="text-dark fw-bold" id="tokenExpiry" style="font-size: 0.85rem;">—</span>
                     </div>
                 </div>
                 <?php else: ?>
                 <div class="text-end">
-                    <div class="small fw-bold text-uppercase mb-1" style="color: rgba(255,255,255,0.7); font-size: 0.7rem; letter-spacing: 0.5px;">API Status</div>
-                    <div class="d-flex align-items-center gap-2 bg-white px-3 py-1 rounded-pill" style="box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <div class="text-white text-uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em; opacity: 0.7;">Connection Status</div>
+                    <div class="d-flex align-items-center gap-2 bg-white px-3 py-1 rounded-pill shadow-sm">
                         <div style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.2);"></div>
-                        <span class="text-dark fw-bold" style="font-size: 0.85rem;">Not Connected</span>
+                        <span class="text-dark fw-bold" style="font-size: 0.85rem;">Disconnected</span>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -161,105 +161,115 @@ if ($isAuthorized) {
             <!-- TAB 1: API Integration -->
             <div id="tab-api" class="lz-tab-content active">
                 <div class="lz-content-card">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="lz-card-header d-flex justify-content-between align-items-start pb-0 border-0">
                         <div>
                             <h3>API Integration</h3>
-                            <p class="subtitle mb-0">Connect Ella POS directly to your Lazada Seller Center.</p>
+                            <p class="subtitle">Securely connect Ella POS to your Lazada Seller Center.</p>
                         </div>
                         <?php if ($isConfigured && !$isAuthorized): ?>
-                            <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="authorizeShop()">
+                            <button class="btn-lz-primary shadow-sm" onclick="authorizeShop()">
                                 <i class="fa-solid fa-right-to-bracket me-2"></i> Authorize Lazada
                             </button>
                         <?php endif; ?>
                     </div>
+                    
+                    <div class="lz-card-body pt-3">
+                        <?php if ($isAdmin): ?>
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label class="lz-form-label">Environment Target</label>
+                                <div class="d-inline-flex p-1 gap-1" style="background: #f1f5f9; border-radius: 14px;">
+                                    <button class="btn <?= $config['environment'] === 'sandbox' ? 'bg-white text-primary shadow-sm' : 'text-secondary' ?> fw-bold border-0" style="border-radius: 10px; width: 150px; padding: 0.6rem;" id="envSandbox" onclick="setEnv('sandbox')">Sandbox (Test)</button>
+                                    <button class="btn <?= $config['environment'] === 'production' ? 'bg-white text-primary shadow-sm' : 'text-secondary' ?> fw-bold border-0" style="border-radius: 10px; width: 150px; padding: 0.6rem;" id="envLive" onclick="setEnv('production')">Production (Live)</button>
+                                </div>
+                            </div>
 
-                    <?php if ($isAdmin): ?>
-                    <div class="row g-4">
-                        <div class="col-12">
-                            <label class="lz-form-label">Environment</label>
-                            <div class="d-flex gap-2 p-1" style="background: #f1f5f9; border-radius: 12px; display: inline-flex;">
-                                <button class="btn <?= $config['environment'] === 'sandbox' ? 'btn-white shadow-sm' : 'btn-transparent text-secondary' ?> fw-bold border-0 rounded-3" style="width: 140px;" id="envSandbox" onclick="setEnv('sandbox')">Sandbox</button>
-                                <button class="btn <?= $config['environment'] === 'production' ? 'btn-white shadow-sm' : 'btn-transparent text-secondary' ?> fw-bold border-0 rounded-3" style="width: 140px;" id="envLive" onclick="setEnv('production')">Production</button>
+                            <div class="col-md-6">
+                                <div class="lz-form-group">
+                                    <label class="lz-form-label">App Key <span class="text-danger">*</span></label>
+                                    <input type="text" class="lz-input" id="appKey" placeholder="Enter your Lazada App Key" value="<?= htmlspecialchars($config['app_key']) ?>">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="lz-form-group d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <label class="lz-form-label">App Secret <span class="text-danger">*</span></label>
+                                        <input type="password" class="lz-input" id="appSecret" placeholder="Enter your App Secret" value="<?= htmlspecialchars($config['app_secret']) ?>">
+                                    </div>
+                                    <button class="btn btn-link text-secondary p-0 ms-2 text-decoration-none" type="button" onclick="toggleKeyVisibility('appSecret', 'keyEyeIcon')">
+                                        <i class="fa-solid fa-eye" id="keyEyeIcon" style="font-size: 1.2rem;"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="lz-form-group">
+                                    <label class="lz-form-label">Shop Region <span class="text-danger">*</span></label>
+                                    <select class="lz-select" id="shopRegion">
+                                        <option value="PH" <?= $config['country_code'] === 'PH' ? 'selected' : '' ?>>🇵🇭 Philippines (PH)</option>
+                                        <option value="SG" <?= $config['country_code'] === 'SG' ? 'selected' : '' ?>>🇸🇬 Singapore (SG)</option>
+                                        <option value="MY" <?= $config['country_code'] === 'MY' ? 'selected' : '' ?>>🇲🇾 Malaysia (MY)</option>
+                                        <option value="TH" <?= $config['country_code'] === 'TH' ? 'selected' : '' ?>>🇹🇭 Thailand (TH)</option>
+                                        <option value="ID" <?= $config['country_code'] === 'ID' ? 'selected' : '' ?>>🇮🇩 Indonesia (ID)</option>
+                                        <option value="VN" <?= $config['country_code'] === 'VN' ? 'selected' : '' ?>>🇻🇳 Vietnam (VN)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="lz-form-label">App Key <span class="text-danger">*</span></label>
-                            <input type="text" class="lz-input" id="appKey" placeholder="e.g. 123456" value="<?= htmlspecialchars($config['app_key']) ?>">
+                        <div class="mt-5 text-end">
+                            <button class="btn-lz-primary px-5" onclick="saveCredentials()" id="btnSave">
+                                <i class="fa-solid fa-floppy-disk me-2"></i> Save Integration
+                            </button>
                         </div>
-
-                        <div class="col-md-6">
-                            <label class="lz-form-label">App Secret <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="password" class="lz-input border-end-0" style="border-top-right-radius:0; border-bottom-right-radius:0;" id="appSecret" placeholder="Your secret key" value="<?= htmlspecialchars($config['app_secret']) ?>">
-                                <button class="btn btn-light border" style="border-radius: 0 10px 10px 0; border-color: #cbd5e1 !important; border-left: none !important; color: #64748b;" type="button" onclick="toggleKeyVisibility('appSecret', 'keyEyeIcon')">
-                                    <i class="fa-solid fa-eye" id="keyEyeIcon"></i>
-                                </button>
+                        <?php else: ?>
+                        <div class="text-center py-5">
+                            <div style="background: #f1f5f9; color: #64748b; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; font-size: 2rem;">
+                                <i class="fa-solid fa-lock"></i>
                             </div>
+                            <h4 class="fw-bold text-dark">Access Locked</h4>
+                            <p class="text-secondary mb-0">Only administrators have permission to modify API connection details.</p>
                         </div>
-
-                        <div class="col-md-6">
-                            <label class="lz-form-label">Region <span class="text-danger">*</span></label>
-                            <select class="lz-select bg-light" id="shopRegion">
-                                <option value="PH" <?= $config['country_code'] === 'PH' ? 'selected' : '' ?>>🇵🇭 Philippines (PH)</option>
-                                <option value="SG" <?= $config['country_code'] === 'SG' ? 'selected' : '' ?>>🇸🇬 Singapore (SG)</option>
-                                <option value="MY" <?= $config['country_code'] === 'MY' ? 'selected' : '' ?>>🇲🇾 Malaysia (MY)</option>
-                                <option value="TH" <?= $config['country_code'] === 'TH' ? 'selected' : '' ?>>🇹🇭 Thailand (TH)</option>
-                                <option value="ID" <?= $config['country_code'] === 'ID' ? 'selected' : '' ?>>🇮🇩 Indonesia (ID)</option>
-                                <option value="VN" <?= $config['country_code'] === 'VN' ? 'selected' : '' ?>>🇻🇳 Vietnam (VN)</option>
-                            </select>
+                        <div style="display:none">
+                            <input id="appKey"><input id="appSecret"><select id="shopRegion"><option value="PH"></option></select>
+                            <button id="btnSave"></button>
                         </div>
+                        <?php endif; ?>
                     </div>
-
-                    <div class="mt-4 pt-4 border-top">
-                        <button class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow-sm" onclick="saveCredentials()" id="btnSave">
-                            <i class="fa-solid fa-floppy-disk me-2"></i> Save Integration Settings
-                        </button>
-                    </div>
-                    <?php else: ?>
-                    <div class="text-center py-5">
-                        <div style="background: #f1f5f9; color: #64748b; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; font-size: 1.5rem;">
-                            <i class="fa-solid fa-lock"></i>
-                        </div>
-                        <h5 class="fw-bold text-dark">Locked</h5>
-                        <p class="text-secondary small mb-0">Only administrators can modify API connection settings.</p>
-                    </div>
-                    <div style="display:none">
-                        <input id="appKey"><input id="appSecret"><select id="shopRegion"><option value="PH"></option></select>
-                        <button id="btnSave"></button>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
 
             <!-- TAB 2: Sync Automation -->
             <div id="tab-sync" class="lz-tab-content">
                 <div class="lz-content-card">
-                    <h3>Sync Automation</h3>
-                    <p class="subtitle">Control how frequently Ella POS pushes stock updates to Lazada.</p>
-
-                    <div class="d-flex align-items-center justify-content-between p-4 mb-4 rounded-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                        <div>
-                            <div class="fw-bolder text-dark fs-5 mb-1">Auto-Sync Engine</div>
-                            <div class="text-secondary small">Automatically push inventory changes to Lazada in the background.</div>
-                        </div>
-                        <label class="lz-switch">
-                            <input type="checkbox" id="enableSync" <?= $config['enable_stock_sync'] ? 'checked' : '' ?> onchange="savePreferences()">
-                            <span class="lz-switch-slider"></span>
-                        </label>
+                    <div class="lz-card-header border-0 pb-0">
+                        <h3>Sync Automation</h3>
+                        <p class="subtitle">Configure how Ella POS automatically communicates with Lazada.</p>
                     </div>
+                    <div class="lz-card-body pt-4">
 
-                    <div class="row g-4">
-                        <div class="col-md-6">
+                        <div class="lz-switch-row mb-5">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1" style="font-size: 1.1rem;">Auto-Sync Engine</h6>
+                                <p class="text-secondary small mb-0">Enable background job to automatically push POS stock updates to Lazada.</p>
+                            </div>
+                            <label class="lz-switch">
+                                <input type="checkbox" id="enableSync" <?= $config['enable_stock_sync'] ? 'checked' : '' ?> onchange="savePreferences()">
+                                <span class="lz-switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="lz-form-group w-50">
                             <label class="lz-form-label">Sync Frequency (Cron)</label>
                             <select class="lz-select" id="syncInterval" onchange="savePreferences()">
-                                <option value="5" <?= $config['sync_interval_mins'] == 5 ? 'selected' : '' ?>>Every 5 minutes</option>
+                                <option value="5" <?= $config['sync_interval_mins'] == 5 ? 'selected' : '' ?>>Every 5 minutes (Recommended)</option>
                                 <option value="15" <?= $config['sync_interval_mins'] == 15 ? 'selected' : '' ?>>Every 15 minutes</option>
                                 <option value="30" <?= $config['sync_interval_mins'] == 30 ? 'selected' : '' ?>>Every 30 minutes</option>
-                                <option value="60" <?= $config['sync_interval_mins'] == 60 ? 'selected' : '' ?>>Every hour</option>
+                                <option value="60" <?= $config['sync_interval_mins'] == 60 ? 'selected' : '' ?>>Every 1 hour</option>
                             </select>
-                            <div class="form-text mt-2 text-secondary small"><i class="fa-solid fa-circle-info me-1"></i> Determines how often the background job checks for stock discrepancies.</div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -267,46 +277,52 @@ if ($isAuthorized) {
             <!-- TAB 3: Inventory Rules -->
             <div id="tab-inventory" class="lz-tab-content">
                 <div class="lz-content-card">
-                    <h3>Inventory Rules</h3>
-                    <p class="subtitle">Safety mechanisms to prevent overselling and manage stock levels.</p>
-
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <label class="lz-form-label">Safety Stock Floor</label>
-                            <select class="lz-select" id="bufferStock" onchange="savePreferences()">
-                                <option value="0" <?= $config['buffer_stock'] == 0 ? 'selected' : '' ?>>No Floor (Sync Exact Amount)</option>
-                                <option value="1" <?= $config['buffer_stock'] == 1 ? 'selected' : '' ?>>Hide 1 unit</option>
-                                <option value="2" <?= $config['buffer_stock'] == 2 ? 'selected' : '' ?>>Hide 2 units</option>
-                                <option value="3" <?= $config['buffer_stock'] == 3 ? 'selected' : '' ?>>Hide 3 units</option>
-                                <option value="5" <?= $config['buffer_stock'] == 5 ? 'selected' : '' ?>>Hide 5 units</option>
-                            </select>
-                            <div class="form-text mt-2 text-secondary small">Always keep this amount hidden from Lazada buyers to protect your walk-in store availability.</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="lz-form-label">Low Stock Warning Level</label>
-                            <select class="lz-select" id="lowStockThreshold" onchange="savePreferences()">
-                                <option value="1" <?= $config['low_stock_threshold'] == 1 ? 'selected' : '' ?>>1 unit or less</option>
-                                <option value="2" <?= $config['low_stock_threshold'] == 2 ? 'selected' : '' ?>>2 units or less</option>
-                                <option value="3" <?= $config['low_stock_threshold'] == 3 ? 'selected' : '' ?>>3 units or less</option>
-                                <option value="5" <?= $config['low_stock_threshold'] == 5 ? 'selected' : '' ?>>5 units or less</option>
-                                <option value="10" <?= $config['low_stock_threshold'] == 10 ? 'selected' : '' ?>>10 units or less</option>
-                            </select>
-                            <div class="form-text mt-2 text-secondary small">Highlights items in the Allocation dashboard when they fall below this amount.</div>
-                        </div>
+                    <div class="lz-card-header border-0 pb-0">
+                        <h3>Inventory Rules</h3>
+                        <p class="subtitle">Advanced safety mechanisms to protect your physical store inventory.</p>
                     </div>
+                    <div class="lz-card-body pt-4">
 
-                    <hr class="my-4" style="border-color: #f1f5f9;">
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-6">
+                                <div class="lz-form-group h-100">
+                                    <label class="lz-form-label text-primary">Safety Stock Floor</label>
+                                    <select class="lz-select mb-2" id="bufferStock" onchange="savePreferences()">
+                                        <option value="0" <?= $config['buffer_stock'] == 0 ? 'selected' : '' ?>>Sync Exact POS Stock (No Floor)</option>
+                                        <option value="1" <?= $config['buffer_stock'] == 1 ? 'selected' : '' ?>>Hide 1 unit</option>
+                                        <option value="2" <?= $config['buffer_stock'] == 2 ? 'selected' : '' ?>>Hide 2 units</option>
+                                        <option value="3" <?= $config['buffer_stock'] == 3 ? 'selected' : '' ?>>Hide 3 units</option>
+                                        <option value="5" <?= $config['buffer_stock'] == 5 ? 'selected' : '' ?>>Hide 5 units</option>
+                                    </select>
+                                    <p class="small text-secondary mt-3 mb-0" style="line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i> Will always deduct this amount from the stock pushed to Lazada to prevent walk-in stockouts.</p>
+                                </div>
+                            </div>
 
-                    <div class="d-flex align-items-center justify-content-between p-4 rounded-4" style="background: #fff1f2; border: 1px solid #ffe4e6;">
-                        <div>
-                            <div class="fw-bolder text-danger fs-6 mb-1"><i class="fa-solid fa-bell me-2"></i> POS Stockout Notifications</div>
-                            <div class="text-danger opacity-75 small">Trigger a popup alert within the POS whenever a Lazada product hits zero stock.</div>
+                            <div class="col-md-6">
+                                <div class="lz-form-group h-100">
+                                    <label class="lz-form-label text-warning">Low Stock Warning Level</label>
+                                    <select class="lz-select mb-2" id="lowStockThreshold" onchange="savePreferences()">
+                                        <option value="1" <?= $config['low_stock_threshold'] == 1 ? 'selected' : '' ?>>Alert at 1 unit</option>
+                                        <option value="2" <?= $config['low_stock_threshold'] == 2 ? 'selected' : '' ?>>Alert at 2 units</option>
+                                        <option value="3" <?= $config['low_stock_threshold'] == 3 ? 'selected' : '' ?>>Alert at 3 units</option>
+                                        <option value="5" <?= $config['low_stock_threshold'] == 5 ? 'selected' : '' ?>>Alert at 5 units</option>
+                                        <option value="10" <?= $config['low_stock_threshold'] == 10 ? 'selected' : '' ?>>Alert at 10 units</option>
+                                    </select>
+                                    <p class="small text-secondary mt-3 mb-0" style="line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i> Highlights items in the internal Allocation dashboard when they fall below this critical amount.</p>
+                                </div>
+                            </div>
                         </div>
-                        <label class="lz-switch">
-                            <input type="checkbox" id="oosAlerts" <?= $config['low_stock_alerts'] ? 'checked' : '' ?> onchange="savePreferences()">
-                            <span class="lz-switch-slider"></span>
-                        </label>
+
+                        <div class="lz-switch-row" style="background: #fff1f2; border-color: #fecdd3;">
+                            <div>
+                                <h6 class="fw-bold text-danger mb-1" style="font-size: 1.1rem;"><i class="fa-solid fa-bell me-2"></i> POS Stockout Notifications</h6>
+                                <p class="text-danger opacity-75 small mb-0">Trigger a popup alert within the POS when a Lazada mapped product hits zero stock.</p>
+                            </div>
+                            <label class="lz-switch">
+                                <input type="checkbox" id="oosAlerts" <?= $config['low_stock_alerts'] ? 'checked' : '' ?> onchange="savePreferences()">
+                                <span class="lz-switch-slider" style="background: #fca5a5;"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -314,56 +330,75 @@ if ($isAuthorized) {
             <!-- TAB 4: Data Tools -->
             <div id="tab-tools" class="lz-tab-content">
                 <div class="lz-content-card">
-                    <h3>Data Tools</h3>
-                    <p class="subtitle">Manual overrides and catalog maintenance operations.</p>
+                    <div class="lz-card-header border-0 pb-0">
+                        <h3>Data Tools</h3>
+                        <p class="subtitle">Manual overrides and catalog maintenance operations.</p>
+                    </div>
+                    <div class="lz-card-body pt-4">
 
-                    <?php if ($isAuthorized): ?>
-                    <div class="mb-5">
-                        <h6 class="fw-bold text-dark mb-3">Force Catalog Fetch</h6>
-                        <p class="small text-secondary mb-3">Fetch new or updated products directly from your Lazada store into Ella POS immediately.</p>
-                        
-                        <div id="importStatus" class="mb-4" style="display:none">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold small" id="syncProgressLabel" style="color: #1e293b;">Initializing...</span>
+                        <?php if ($isAuthorized): ?>
+                        <div class="p-4 mb-4 rounded-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div style="background: #fef3c7; color: #d97706; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-1">Force Catalog Fetch</h5>
+                                    <p class="small text-secondary mb-0">Pull newly created or updated products directly from Lazada immediately.</p>
+                                </div>
                             </div>
-                            <div class="progress mb-2" style="height: 6px; border-radius: 3px; background: #e2e8f0;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" id="syncProgressBar" role="progressbar" style="width: 100%;"></div>
+                            
+                            <div id="importStatus" class="mb-4 mt-4" style="display:none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold small text-dark" id="syncProgressLabel">Initializing...</span>
+                                </div>
+                                <div class="progress mb-2" style="height: 8px; border-radius: 4px; background: #e2e8f0;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" id="syncProgressBar" role="progressbar" style="width: 100%;"></div>
+                                </div>
+                                <div class="lz-alert-box lz-alert-warning py-2 small" id="syncLogText"><i class="fa-solid fa-spinner fa-spin me-2"></i>Contacting Lazada API...</div>
                             </div>
-                            <div class="alert alert-warning py-2 small mb-0 border-0" id="syncLogText" style="background: #fffbeb; color: #d97706;"><i class="fa-solid fa-spinner fa-spin me-2"></i>Contacting Lazada API...</div>
+
+                            <button class="btn-lz-primary w-100" style="background: #d97706; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);" onclick="startSmartSync()" id="btnImport">
+                                Execute Fetch Sequence
+                            </button>
                         </div>
 
-                        <button class="btn btn-warning px-4 py-2 rounded-pill fw-bold text-white shadow-sm" onclick="startSmartSync()" id="btnImport">
-                            <i class="fa-solid fa-cloud-arrow-down me-2"></i> Execute Catalog Fetch
-                        </button>
-                    </div>
+                        <div class="p-4 rounded-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div style="background: #eff6ff; color: #2563eb; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-1">Orphaned Item Scanner</h5>
+                                    <p class="small text-secondary mb-0">Detect and remove internal mappings for products deleted from the Lazada store.</p>
+                                </div>
+                            </div>
+                            
+                            <div id="cleanupStatus" class="mb-4 mt-4" style="display:none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold small text-dark" id="cleanupProgressLabel">Initializing...</span>
+                                </div>
+                                <div class="progress mb-2" style="height: 8px; border-radius: 4px; background: #e2e8f0;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="cleanupProgressBar" style="width: 0%;"></div>
+                                </div>
+                                <div class="lz-alert-box lz-alert-info py-2 small" id="cleanupLogText" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;">
+                                    <i class="fa-solid fa-spinner fa-spin me-2"></i>Scanning catalog...
+                                </div>
+                            </div>
 
-                    <div>
-                        <h6 class="fw-bold text-dark mb-3">Orphaned Item Scanner</h6>
-                        <p class="small text-secondary mb-3">Detect and clear internal mappings for products that have been deleted in the Lazada Seller Center.</p>
-                        
-                        <div id="cleanupStatus" class="mb-3" style="display:none">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold small" id="cleanupProgressLabel" style="color: #1e293b;">Initializing...</span>
-                            </div>
-                            <div class="progress mb-2" style="height: 6px; border-radius: 3px; background: #e2e8f0;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="cleanupProgressBar" style="width: 0%;"></div>
-                            </div>
-                            <div class="alert alert-info py-2 small mb-0 border-0" id="cleanupLogText" style="background: #eff6ff; color: #2563eb;">
-                                <i class="fa-solid fa-spinner fa-spin me-2"></i>Scanning catalog...
-                            </div>
+                            <button class="btn-lz-secondary w-100" onclick="startCleanup()" id="btnCleanup">
+                                Run System Scanner
+                            </button>
                         </div>
+                        <?php else: ?>
+                        <div class="text-center py-5">
+                            <i class="fa-solid fa-plug-circle-xmark fs-1 mb-3 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold text-dark">API Integration Required</h5>
+                            <p class="small text-secondary mb-0">You must authorize your Lazada shop in the "API Integration" tab before using these data tools.</p>
+                        </div>
+                        <?php endif; ?>
 
-                        <button class="btn btn-outline-primary px-4 py-2 rounded-pill fw-bold" onclick="startCleanup()" id="btnCleanup">
-                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Run Scanner
-                        </button>
                     </div>
-                    <?php else: ?>
-                    <div class="alert alert-secondary border-0 rounded-4 p-4 text-center">
-                        <i class="fa-solid fa-plug-circle-xmark fs-2 mb-3 text-secondary opacity-50"></i>
-                        <h6 class="fw-bold">API Integration Required</h6>
-                        <p class="small mb-0">You must authorize your Lazada shop in the "API Integration" tab before you can use Data Tools.</p>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
 
@@ -433,8 +468,8 @@ if (tokenExpiresTime) {
 
 function setEnv(env) {
     currentEnv = env;
-    document.getElementById('envSandbox').className = `btn ${env === 'sandbox' ? 'btn-white shadow-sm' : 'btn-transparent text-secondary'} fw-bold border-0 rounded-3`;
-    document.getElementById('envLive').className = `btn ${env === 'production' ? 'btn-white shadow-sm' : 'btn-transparent text-secondary'} fw-bold border-0 rounded-3`;
+    document.getElementById('envSandbox').className = `btn ${env === 'sandbox' ? 'bg-white text-primary shadow-sm' : 'text-secondary'} fw-bold border-0`;
+    document.getElementById('envLive').className = `btn ${env === 'production' ? 'bg-white text-primary shadow-sm' : 'text-secondary'} fw-bold border-0`;
 }
 
 function toggleKeyVisibility(inputId, iconId) {
@@ -478,7 +513,7 @@ async function saveCredentials() {
     } catch (e) {
         EllaToast.error('Network error: ' + e.message);
     } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Save Integration Settings'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Save Integration'; }
     }
 }
 
@@ -527,7 +562,7 @@ async function startSmartSync() {
     status.style.display = 'block';
     
     progLbl.textContent = 'Fetching products from Lazada...';
-    logText.className = 'alert alert-warning py-2 small mb-0 border-0';
+    logText.className = 'lz-alert-box lz-alert-warning py-2 small';
     logText.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Contacting Lazada API...';
 
     try {
@@ -536,26 +571,22 @@ async function startSmartSync() {
         
         if (data.success) {
             progLbl.textContent = 'Fetch Completed!';
-            logText.className = 'alert alert-success py-2 small mb-0 mt-2 border-0';
-            logText.style.background = '#ecfdf5';
-            logText.style.color = '#10b981';
+            logText.className = 'lz-alert-box lz-alert-success py-2 small';
             const newCount = data.stats ? data.stats.new : 0;
             const upCount = data.stats ? data.stats.updated : 0;
-            logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i><strong>Success!</strong><br>New: ${newCount} · Updated: ${upCount}`;
+            logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i><strong>Success!</strong>&nbsp;&nbsp; New: ${newCount} · Updated: ${upCount}`;
             EllaToast.success(data.message);
         } else {
             throw new Error(data.error || 'Unknown error occurred.');
         }
     } catch (e) {
         progLbl.textContent = 'Fetch Failed';
-        logText.className = 'alert alert-danger py-2 small mb-0 mt-2 border-0';
-        logText.style.background = '#fef2f2';
-        logText.style.color = '#ef4444';
+        logText.className = 'lz-alert-box lz-alert-danger py-2 small';
         logText.innerHTML = `<i class="fa-solid fa-xmark me-2"></i>${e.message}`;
         EllaToast.error('Fetch error: ' + e.message);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down me-2"></i> Execute Catalog Fetch Again';
+        btn.innerHTML = 'Execute Fetch Sequence';
     }
 }
 
@@ -578,13 +609,11 @@ async function startCleanup() {
     setTimeout(() => {
         bar.style.width = '100%';
         label.textContent = 'Scanner Complete';
-        log.className = 'alert alert-success py-2 small mb-0 border-0';
-        log.style.background = '#ecfdf5';
-        log.style.color = '#10b981';
-        log.innerHTML = '<i class="fa-solid fa-check me-2"></i>Catalog is clean. No ghost products found.';
+        log.className = 'lz-alert-box lz-alert-success py-2 small border-0';
+        log.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i>Catalog is clean. No ghost products found.';
         
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles me-2"></i> Run Scanner Again';
+        btn.innerHTML = 'Run Scanner Again';
         EllaToast.success('Scanner finished.');
     }, 2000);
 }
