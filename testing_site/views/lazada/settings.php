@@ -36,6 +36,8 @@ if (!$config) {
 }
 if (!isset($config['buffer_stock'])) $config['buffer_stock'] = 0;
 if (!isset($config['low_stock_alerts'])) $config['low_stock_alerts'] = 1;
+if (!isset($config['sync_prices'])) $config['sync_prices'] = 0;
+if (!isset($config['price_markup_percent'])) $config['price_markup_percent'] = 0.00;
 
 $isConfigured = !empty($config['app_key']) && !empty($config['app_secret']);
 $isAuthorized = !empty($config['access_token']);
@@ -147,6 +149,10 @@ if ($isAuthorized) {
                 <a class="lz-nav-pill" onclick="switchTab('tab-inventory', this)">
                     <div class="icon-box"><i class="fa-solid fa-shield-halved"></i></div>
                     <span>Inventory Rules</span>
+                </a>
+                <a class="lz-nav-pill" onclick="switchTab('tab-smart-sync', this)">
+                    <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
+                    <span>Smart Sync</span>
                 </a>
                 <a class="lz-nav-pill" onclick="switchTab('tab-tools', this)">
                     <div class="icon-box"><i class="fa-solid fa-toolbox"></i></div>
@@ -270,6 +276,26 @@ if ($isAuthorized) {
                             </select>
                         </div>
 
+                        <div class="mt-5 pt-4" style="border-top: 1px solid #e2e8f0;">
+                            <h6 class="fw-bold text-dark mb-1" style="font-size: 1.1rem;">System Cron Job Setup</h6>
+                            <p class="text-secondary small mb-4">Required configuration to make the automation run in the background (cPanel / Server).</p>
+                            
+                            <div class="lz-alert-box lz-alert-info mb-4 shadow-sm" style="background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe;">
+                                <i class="fa-solid fa-server fs-5 text-primary"></i>
+                                <div>To make the Auto-Sync Engine trigger automatically, you must add this command to your server's Cron Jobs. Set it to run every minute (<code>* * * * *</code>).</div>
+                            </div>
+                            
+                            <div class="lz-form-group">
+                                <label class="lz-form-label text-primary">Linux / cPanel Cron Command</label>
+                                <div class="d-flex gap-2">
+                                    <input type="text" class="lz-input bg-white" readonly value="wget -qO- <?= rtrim(BASE_URL, '/') ?>/api/lazada/cron_sync.php &> /dev/null" id="cronCmd" onclick="this.select()">
+                                    <button class="btn-lz-secondary px-4 text-nowrap shadow-sm" onclick="copyCron()">
+                                        <i class="fa-solid fa-copy me-2"></i> Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -327,42 +353,61 @@ if ($isAuthorized) {
                 </div>
             </div>
 
-            <!-- TAB 4: Data Tools -->
+            <!-- TAB 4: Smart Sync Engine -->
+            <div id="tab-smart-sync" class="lz-tab-content">
+                <div class="lz-content-card">
+                    <div class="lz-card-header border-0 pb-0">
+                        <h3>Smart Sync Engine</h3>
+                        <p class="subtitle">Intelligently fetch products and stock levels from Lazada using optimized batch processing.</p>
+                    </div>
+                    <div class="lz-card-body pt-4">
+
+                        <div class="lz-form-group w-50 mb-4">
+                            <label class="lz-form-label text-primary">Sync Mode</label>
+                            <select class="lz-select" id="syncMode">
+                                <option value="quick" selected>⚡ Quick Sync (Only changed/new products)</option>
+                                <option value="full">🔄 Full Sync (Re-fetch entire catalog)</option>
+                                <option value="stock">📦 Stock Sync Only (Fastest)</option>
+                                <option value="price">💰 Price Sync Only</option>
+                            </select>
+                            <p class="small text-secondary mt-3 mb-0" style="line-height: 1.4;"><i class="fa-solid fa-circle-info me-1"></i> Quick Sync is recommended for daily use to prevent Lazada API rate limits.</p>
+                        </div>
+
+                        <?php if ($isAuthorized): ?>
+                        <div id="importStatus" class="mb-4 mt-4" style="display:none">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold small text-dark" id="syncProgressLabel">Initializing...</span>
+                            </div>
+                            <div class="progress mb-2" style="height: 8px; border-radius: 4px; background: #e2e8f0;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" id="syncProgressBar" role="progressbar" style="width: 100%;"></div>
+                            </div>
+                            <div class="lz-alert-box lz-alert-warning py-2 small" id="syncLogText"><i class="fa-solid fa-spinner fa-spin me-2"></i>Contacting Lazada API...</div>
+                        </div>
+
+                        <button class="btn-lz-primary px-5 shadow-sm" onclick="startSmartSync()" id="btnImport">
+                            <i class="fa-solid fa-cloud-arrow-down me-2"></i> Execute Smart Sync
+                        </button>
+                        <?php else: ?>
+                        <div class="lz-alert-box lz-alert-danger mt-4">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <div>Please authorize your Lazada shop in the API Integration tab before syncing.</div>
+                        </div>
+                        <?php endif; ?>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: Data Tools -->
             <div id="tab-tools" class="lz-tab-content">
                 <div class="lz-content-card">
                     <div class="lz-card-header border-0 pb-0">
                         <h3>Data Tools</h3>
-                        <p class="subtitle">Manual overrides and catalog maintenance operations.</p>
+                        <p class="subtitle">System maintenance operations and troubleshooting tools.</p>
                     </div>
                     <div class="lz-card-body pt-4">
 
                         <?php if ($isAuthorized): ?>
-                        <div class="p-4 mb-4 rounded-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                            <div class="d-flex align-items-center gap-3 mb-3">
-                                <div style="background: #fef3c7; color: #d97706; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
-                                    <i class="fa-solid fa-cloud-arrow-down"></i>
-                                </div>
-                                <div>
-                                    <h5 class="fw-bold text-dark mb-1">Force Catalog Fetch</h5>
-                                    <p class="small text-secondary mb-0">Pull newly created or updated products directly from Lazada immediately.</p>
-                                </div>
-                            </div>
-                            
-                            <div id="importStatus" class="mb-4 mt-4" style="display:none">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold small text-dark" id="syncProgressLabel">Initializing...</span>
-                                </div>
-                                <div class="progress mb-2" style="height: 8px; border-radius: 4px; background: #e2e8f0;">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" id="syncProgressBar" role="progressbar" style="width: 100%;"></div>
-                                </div>
-                                <div class="lz-alert-box lz-alert-warning py-2 small" id="syncLogText"><i class="fa-solid fa-spinner fa-spin me-2"></i>Contacting Lazada API...</div>
-                            </div>
-
-                            <button class="btn-lz-primary w-100" style="background: #d97706; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);" onclick="startSmartSync()" id="btnImport">
-                                Execute Fetch Sequence
-                            </button>
-                        </div>
-
                         <div class="p-4 rounded-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
                             <div class="d-flex align-items-center gap-3 mb-3">
                                 <div style="background: #eff6ff; color: #2563eb; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
@@ -586,8 +631,19 @@ async function startSmartSync() {
         EllaToast.error('Fetch error: ' + e.message);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Execute Fetch Sequence';
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down me-2"></i> Execute Smart Sync';
     }
+}
+
+function copyCron() {
+    const cmd = document.getElementById('cronCmd');
+    cmd.select();
+    cmd.setSelectionRange(0, 99999); // For mobile devices
+    navigator.clipboard.writeText(cmd.value).then(() => {
+        EllaToast.success('Cron command copied to clipboard!');
+    }).catch(() => {
+        EllaToast.error('Failed to copy. Please manually copy the text.');
+    });
 }
 
 async function startCleanup() {
