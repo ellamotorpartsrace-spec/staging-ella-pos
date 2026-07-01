@@ -45,11 +45,14 @@ try {
 
     $api->setAccessToken($config['access_token']);
 
-    $response = $api->call('/products/get', [
-        'filter' => 'live',
+    $params = [
         'offset' => $offset,
         'limit' => $limit
-    ], 'GET');
+    ];
+    $response = $api->call('/products/get', $params, 'GET');
+
+    // Debug log to catch exactly what Lazada is returning behind the scenes
+    file_put_contents(__DIR__ . '/lazada_sync_debug.log', date('Y-m-d H:i:s') . " | Offset $offset | Response: " . json_encode($response) . "\n", FILE_APPEND);
 
     if (!isset($response['code']) || $response['code'] !== '0' || !isset($response['data']['products'])) {
         $err = $response['message'] ?? 'Unknown API Error';
