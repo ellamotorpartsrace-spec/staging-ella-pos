@@ -60,6 +60,7 @@ try {
             'mapStatus' => $r['mapping_status'],
             'matchedPosSku' => $r['matched_pos_sku'] ?? null,
             'online' => (int)$r['lazada_stock'],
+            'price' => (float)$r['lazada_price'],
         ];
     }
 

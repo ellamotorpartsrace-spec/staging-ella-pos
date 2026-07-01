@@ -257,7 +257,7 @@ function renderProducts() {
                     : `<i class="fa-solid fa-image text-muted opacity-50"></i>`;
                 
                 let varText = v.varName 
-                    ? `<div class="small text-muted mt-1 ms-2"><i class="fa-solid fa-level-up-alt fa-rotate-90 me-1"></i> Variation - ${v.varName}</div>`
+                    ? `<div class="small text-muted mt-1" style="padding-left: 20px;">- ${v.varName}</div>`
                     : '';
 
                 html += `
