@@ -326,8 +326,7 @@ function renderProducts() {
                         </div>
                     </td>
                     <td>
-                        <div class="fw-600 text-dark" style="font-size: 0.9rem;">${v.variationSku || p.itemId}</div>
-                        <div class="small text-muted" style="font-size: 0.75rem;">ID: ${p.itemId}</div>
+                        <div class="fw-600 text-dark" style="font-size: 0.9rem;">${p.itemId}</div>
                     </td>
                     <td class="text-center">
                         <div class="fw-bold ${v.online > 0 ? 'text-success' : 'text-danger'}">${v.online}</div>
@@ -372,13 +371,11 @@ function renderProducts() {
                                 </div>
                                 <div>
                                     <div class="fw-bold text-dark" style="font-size: 0.9rem;">${dispName}</div>
-                                    <div class="small text-muted mt-1" style="font-size: 0.75rem;">Seller Sku: ${v.variationSku || 'None'}</div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div class="fw-600 text-dark" style="font-size: 0.9rem;">${v.variationSku || p.itemId}</div>
-                            <div class="small text-muted" style="font-size: 0.75rem;">ID: ${p.itemId}</div>
+                            <div class="fw-600 text-dark" style="font-size: 0.9rem;">${p.itemId}</div>
                         </td>
                         <td class="text-center">
                             <div class="fw-bold ${v.online > 0 ? 'text-success' : 'text-danger'}">${v.online}</div>
