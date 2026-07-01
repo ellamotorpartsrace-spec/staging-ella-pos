@@ -21,11 +21,10 @@ try {
             m.*,
             u.unit_name as pos_unit_name,
             u.multiplier as pos_unit_multiplier,
-            s.set_name as pos_bundle_name,
-            s.set_sku as pos_bundle_sku
+            NULL as pos_bundle_name,
+            NULL as pos_bundle_sku
         FROM lazada_product_mappings m
         LEFT JOIN product_units u ON m.pos_unit_id = u.id
-        LEFT JOIN product_unit_sets s ON m.pos_bundle_set_id = s.id
         WHERE m.platform_name = ?
         ORDER BY m.lazada_product_name ASC, m.lazada_variation_name ASC
     ");
