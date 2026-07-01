@@ -598,13 +598,13 @@ async function saveCredentials() {
         const data = await res.json();
         if (data.success) {
             EllaToast.success(data.message);
-            setTimeout(() => window.location.reload(), 1000); // Reload to reflect changes
+            setTimeout(() => window.location.reload(), 800);
         } else {
-            EllaToast.error(data.error);
+            EllaToast.error(data.error || 'Failed to save credentials');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Save Integration'; }
         }
     } catch (e) {
         EllaToast.error('Network error: ' + e.message);
-    } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Save Integration'; }
     }
 }
