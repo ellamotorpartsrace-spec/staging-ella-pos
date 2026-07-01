@@ -1833,7 +1833,7 @@ async function triggerManualSync() {
     try {
         const ids = MAPPED_FLAT.map(v => v.id);
         const totalItems = ids.length;
-        const chunkSize = 100;
+        const chunkSize = 20; // Reduced from 100 to prevent Hostinger execution timeouts
         let processedCount = 0;
         let successCount = 0;
         let changedCount = sessionChangedCount;

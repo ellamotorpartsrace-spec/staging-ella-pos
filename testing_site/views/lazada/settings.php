@@ -658,19 +658,35 @@ async function startSmartSync() {
     logText.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Contacting Lazada API...';
 
     try {
-        const res = await fetch(`${window.BASE_URL}api/lazada/fetch_products.php`);
-        const data = await res.json();
-        
-        if (data.success) {
-            progLbl.textContent = 'Fetch Completed!';
-            logText.className = 'lz-alert-box lz-alert-success py-2 small';
-            const newCount = data.stats ? data.stats.new : 0;
-            const upCount = data.stats ? data.stats.updated : 0;
-            logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i><strong>Success!</strong>&nbsp;&nbsp; New: ${newCount} · Updated: ${upCount}`;
-            EllaToast.success(data.message);
-        } else {
-            throw new Error(data.error || 'Unknown error occurred.');
+        let hasMore = true;
+        let offset = 0;
+        let totalNew = 0;
+        let totalUpdated = 0;
+
+        while (hasMore) {
+            const res = await fetch(`${window.BASE_URL}api/lazada/fetch_products.php?offset=${offset}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                const newCount = data.stats ? data.stats.new : 0;
+                const upCount = data.stats ? data.stats.updated : 0;
+                totalNew += newCount;
+                totalUpdated += upCount;
+                
+                progLbl.textContent = `Fetching... (Processed ${offset + (data.stats ? data.stats.total : 0)} items)`;
+                
+                hasMore = data.has_more || false;
+                offset = data.next_offset || 0;
+            } else {
+                throw new Error(data.error || 'Unknown error occurred.');
+            }
         }
+
+        progLbl.textContent = 'Fetch Completed!';
+        logText.className = 'lz-alert-box lz-alert-success py-2 small';
+        logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i><strong>Success!</strong>&nbsp;&nbsp; Total New: ${totalNew} · Total Updated: ${totalUpdated}`;
+        EllaToast.success('Products fetched successfully!');
+
     } catch (e) {
         progLbl.textContent = 'Fetch Failed';
         logText.className = 'lz-alert-box lz-alert-danger py-2 small';

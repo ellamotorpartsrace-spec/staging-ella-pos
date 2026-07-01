@@ -63,7 +63,7 @@ try {
 
     // Calculate allocation
     $allocationRatio = (float)$mapping['stock_allocation_ratio'];
-    $safetyFloor = (int)$mapping['safety_stock_floor'];
+    $safetyFloor = (int)$mapping['safety_floor'];
 
     $allocatedStock = floor($posStock * ($allocationRatio / 100));
     $finalStock = max(0, $allocatedStock - $safetyFloor);
@@ -104,9 +104,10 @@ try {
     </Product>
 </Request>";
 
+    $api->setAccessToken($mapping['access_token']);
     $response = $api->call('/product/price_quantity/update', [
         'payload' => $xmlPayload
-    ], 'POST', $mapping['access_token']);
+    ], 'POST');
 
     if (!isset($response['code']) || $response['code'] !== '0') {
         $err = $response['message'] ?? 'Unknown API Error';

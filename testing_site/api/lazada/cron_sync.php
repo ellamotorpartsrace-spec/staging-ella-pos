@@ -55,7 +55,7 @@ try {
             continue;
         }
 
-        $xmlSkus = "";
+        $updatesToPush = [];
         $updateCount = 0;
 
         foreach ($mappings as $map) {
@@ -79,30 +79,50 @@ try {
             // Only update if stock changed
             if ($finalStock !== (int)$map['lazada_stock']) {
                 $skuIdStr = $map['lazada_sku_id'] ? "<SkuId>{$map['lazada_sku_id']}</SkuId>" : "";
-                $xmlSkus .= "
+                $updatesToPush[] = [
+                    'xml' => "
                 <Sku>
                     {$skuIdStr}
                     <SellerSku><![CDATA[{$map['lazada_seller_sku']}]]></SellerSku>
                     <Quantity>{$finalStock}</Quantity>
-                </Sku>";
-                
-                // Update local DB to reflect pushed stock
-                $conn->prepare("UPDATE lazada_product_mappings SET lazada_stock = ?, last_synced_at = NOW() WHERE id = ?")
-                     ->execute([$finalStock, $map['id']]);
-                
+                </Sku>",
+                    'map_id' => $map['id'],
+                    'final_stock' => $finalStock
+                ];
                 $updateCount++;
             }
         }
 
         if ($updateCount > 0) {
-            $xmlPayload = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<Request>\n    <Product>\n        <Skus>{$xmlSkus}\n        </Skus>\n    </Product>\n</Request>";
+            // Lazada API limit is usually 50 SKUs per request. We'll chunk it to 50.
+            $chunks = array_chunk($updatesToPush, 50);
+            $startTime = microtime(true);
             
-            $response = $api->call('/product/price_quantity/update', ['payload' => $xmlPayload], 'POST');
-            
-            if (isset($response['code']) && $response['code'] === '0') {
-                echo "Successfully synced $updateCount items for $platform.\n";
-            } else {
-                echo "Error syncing $platform: " . json_encode($response) . "\n";
+            foreach ($chunks as $chunkIndex => $chunk) {
+                // Safeguard for strict hosting environments (like Hostinger)
+                if (microtime(true) - $startTime > 40) {
+                    echo "Execution time limit reached. Gracefully exiting batch process. Will resume next cron run.\n";
+                    break;
+                }
+
+                $xmlSkus = "";
+                foreach ($chunk as $item) {
+                    $xmlSkus .= $item['xml'];
+                }
+                
+                $xmlPayload = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<Request>\n    <Product>\n        <Skus>{$xmlSkus}\n        </Skus>\n    </Product>\n</Request>";
+                $response = $api->call('/product/price_quantity/update', ['payload' => $xmlPayload], 'POST');
+                
+                if (isset($response['code']) && $response['code'] === '0') {
+                    // Success, update local DB
+                    foreach ($chunk as $item) {
+                        $conn->prepare("UPDATE lazada_product_mappings SET lazada_stock = ?, last_synced_at = NOW() WHERE id = ?")
+                             ->execute([$item['final_stock'], $item['map_id']]);
+                    }
+                    echo "Successfully synced batch " . ($chunkIndex + 1) . " of " . count($chunks) . " for $platform.\n";
+                } else {
+                    echo "Error syncing batch " . ($chunkIndex + 1) . " for $platform: " . json_encode($response) . "\n";
+                }
             }
         } else {
             echo "No stock changes needed for $platform.\n";

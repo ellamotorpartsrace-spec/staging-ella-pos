@@ -40,30 +40,29 @@ try {
     // 2. Fetch products from Lazada API
     // We will use /products/get endpoint.
     // Handling pagination for a large number of products
-    $allSkus = [];
-    $offset = 0;
+    $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
     $limit = 50;
-    $hasMore = true;
 
-    while ($hasMore) {
-        $response = $api->call('/products/get', [
-            'filter' => 'live',
-            'offset' => $offset,
-            'limit' => $limit
-        ], 'GET', $config['access_token']);
+    $api->setAccessToken($config['access_token']);
 
-        if (!isset($response['code']) || $response['code'] !== '0' || !isset($response['data']['products'])) {
-            $err = $response['message'] ?? 'Unknown API Error';
-            echo json_encode(['success' => false, 'error' => "Failed to fetch products: $err"]);
-            exit;
-        }
+    $response = $api->call('/products/get', [
+        'filter' => 'live',
+        'offset' => $offset,
+        'limit' => $limit
+    ], 'GET');
 
-        $products = $response['data']['products'];
-        if (empty($products)) {
-            $hasMore = false;
-            break;
-        }
+    if (!isset($response['code']) || $response['code'] !== '0' || !isset($response['data']['products'])) {
+        $err = $response['message'] ?? 'Unknown API Error';
+        echo json_encode(['success' => false, 'error' => "Failed to fetch products: $err"]);
+        exit;
+    }
 
+    $products = $response['data']['products'];
+    $hasMore = count($products) === $limit;
+    $nextOffset = $offset + $limit;
+    $allSkus = [];
+
+    if (!empty($products)) {
         foreach ($products as $prod) {
             $itemId = $prod['item_id'];
             $itemName = $prod['attributes']['name'] ?? 'Unknown Product';
@@ -85,16 +84,10 @@ try {
                 }
             }
         }
-
-        $offset += $limit;
-        // If we received fewer items than the limit, we're at the end.
-        if (count($products) < $limit) {
-            $hasMore = false;
-        }
     }
 
-    if (empty($allSkus)) {
-        echo json_encode(['success' => true, 'message' => 'No active products found on Lazada.']);
+    if (empty($allSkus) && $offset === 0) {
+        echo json_encode(['success' => true, 'message' => 'No active products found on Lazada.', 'has_more' => false]);
         exit;
     }
 
@@ -147,12 +140,14 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => "Successfully fetched " . count($allSkus) . " SKUs.",
+        'message' => "Successfully fetched " . count($allSkus) . " SKUs on this page.",
         'stats' => [
             'total' => count($allSkus),
             'new' => $newCount,
             'updated' => $updateCount
-        ]
+        ],
+        'has_more' => $hasMore,
+        'next_offset' => $nextOffset
     ]);
 
 } catch (Exception $e) {
