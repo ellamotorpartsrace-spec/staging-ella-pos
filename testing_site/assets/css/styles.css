@@ -64,7 +64,7 @@ body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: var(--bg-body);
     color: var(--text-primary);
-    overflow-x: hidden;
+    overflow-x: clip;
     min-height: 100vh;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -85,7 +85,7 @@ h6 {
 
 /* --- WRAPPER --- */
 #wrapper {
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
     position: relative;
     display: flex;
