@@ -250,26 +250,70 @@ function renderProducts() {
     
     let html = '';
     filteredProducts.forEach(p => {
-        if (p.variations && p.variations.length > 0) {
-            p.variations.forEach(v => {
-                let imgHtml = p.imageUrl 
-                    ? `<img src="${p.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` 
-                    : `<i class="fa-solid fa-image text-muted opacity-50"></i>`;
-                
-                let varText = v.varName 
-                    ? `<div class="small text-muted mt-1" style="padding-left: 20px;">- ${v.varName}</div>`
-                    : '';
+        let hasRealVariations = p.variations && p.variations.length > 0 && p.variations.some(v => v.varName);
 
+        let imgHtml = p.imageUrl 
+            ? `<img src="${p.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` 
+            : `<i class="fa-solid fa-image text-muted opacity-50"></i>`;
+
+        if (!hasRealVariations && p.variations && p.variations.length > 0) {
+            // SINGLE ITEM - No variations. Render one complete row.
+            let v = p.variations[0];
+            html += `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+                                ${imgHtml}
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; max-width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">${p.name}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="fw-600 text-dark" style="font-size: 0.9rem;">${v.variationSku || p.itemId}</div>
+                        <div class="small text-muted" style="font-size: 0.75rem;">ID: ${p.itemId}</div>
+                    </td>
+                    <td class="text-center">
+                        <div class="fw-bold ${v.online > 0 ? 'text-success' : 'text-danger'}">${v.online}</div>
+                    </td>
+                    <td class="text-end">
+                        <div class="fw-600 text-dark">₱${parseFloat(v.price).toFixed(2)}</div>
+                    </td>
+                    <td class="pe-4 text-end">
+                        ${v.mapped 
+                            ? `<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-link me-1"></i> Mapped</span>` 
+                            : `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="fa-solid fa-link-slash me-1"></i> Unmapped</span>`
+                        }
+                    </td>
+                </tr>
+            `;
+        } else if (p.variations) {
+            // HAS VARIATIONS - Render Parent row, then Child rows
+            html += `
+                <tr style="background: #fdfdfd; border-bottom: 1px solid #f1f5f9;">
+                    <td class="ps-4" colspan="5">
+                        <div class="d-flex align-items-center gap-3 py-1">
+                            <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+                                ${imgHtml}
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; max-width: 500px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">${p.name}</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            p.variations.forEach(v => {
                 html += `
                     <tr style="border-bottom: 1px solid #f1f5f9;">
                         <td class="ps-4">
                             <div class="d-flex align-items-center gap-3">
-                                <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
-                                    ${imgHtml}
-                                </div>
+                                <div style="width: 48px; margin-right: 0; flex-shrink: 0;"></div>
                                 <div>
-                                    <div class="fw-bold" style="color: #1e293b; font-size: 0.95rem; max-width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">${p.name}</div>
-                                    ${varText}
+                                    <div class="fw-bold text-dark" style="font-size: 0.9rem;"><span style="color:#f97316; font-weight: 800; margin-right: 5px;">&mdash;</span> ${v.varName}</div>
                                 </div>
                             </div>
                         </td>
