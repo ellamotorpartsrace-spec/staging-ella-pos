@@ -44,9 +44,9 @@ $current_title = $page_title ?? 'Ella Motor Parts';
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     </noscript>
 
-    <link href="<?= BASE_URL ?>assets/css/styles.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>assets/css/ella-toast.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>assets/css/ella-hotkeys.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>assets/css/styles.css?v=<?= time() ?>" rel="stylesheet">
+    <link href="<?= BASE_URL ?>assets/css/ella-toast.css?v=<?= time() ?>" rel="stylesheet">
+    <link href="<?= BASE_URL ?>assets/css/ella-hotkeys.css?v=<?= time() ?>" rel="stylesheet">
 
 
     <link rel="icon" type="image/png" href="<?= BASE_URL ?>assets/img/logo.png">
