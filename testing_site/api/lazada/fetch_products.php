@@ -76,12 +76,33 @@ try {
             
             if (!empty($skus) && is_array($skus)) {
                 foreach ($skus as $sku) {
-                    $allSkus[] = [
-                        'item_id' => $itemId,
-                        'sku_id' => $sku['SkuId'] ?? $itemId,
-                        'product_name' => $itemName,
-                        'variation_name' => $sku['Variation'] ?? $sku['color_family'] ?? $sku['size'] ?? $sku['name'] ?? null,
-                        'seller_sku' => $sku['SellerSku'] ?? null,
+                        $varName = $sku['Variation'] ?? $sku['color_family'] ?? $sku['size'] ?? $sku['name'] ?? null;
+                        
+                        // Fallback 1: check saleProp object which Lazada often uses for custom variations
+                        if (!$varName && !empty($sku['saleProp'])) {
+                            $saleProps = is_string($sku['saleProp']) ? json_decode($sku['saleProp'], true) : $sku['saleProp'];
+                            if (is_array($saleProps) && !empty($saleProps)) {
+                                $varName = reset($saleProps);
+                            }
+                        }
+                        
+                        // Fallback 2: grab the first non-standard string attribute
+                        if (!$varName) {
+                            $standardKeys = ['Status', 'quantity', 'Available', 'price', 'SellerSku', 'ShopSku', 'SkuId', 'package_width', 'package_height', 'package_length', 'package_weight', 'special_price', 'special_from_date', 'special_from_time', 'special_to_date', 'special_to_time', 'Images', 'tax_class', 'barcode', 'color_thumbnail', 'fbl_warehouse', 'multiWarehouseInventories', 'saleProp', 'url', 'Url', 'name'];
+                            foreach ($sku as $k => $v) {
+                                if (!in_array($k, $standardKeys) && is_string($v) && !empty($v) && !is_numeric($v)) {
+                                    $varName = $v;
+                                    break;
+                                }
+                            }
+                        }
+
+                        $allSkus[] = [
+                            'item_id' => $itemId,
+                            'sku_id' => $sku['SkuId'] ?? $itemId,
+                            'product_name' => $itemName,
+                            'variation_name' => $varName,
+                            'seller_sku' => $sku['SellerSku'] ?? null,
                         'stock' => $sku['quantity'] ?? $sku['Available'] ?? 0,
                         'price' => $sku['price'] ?? 0,
                         'image_url' => (isset($sku['Images']) && is_array($sku['Images'])) ? ($sku['Images'][0] ?? $image) : $image,
