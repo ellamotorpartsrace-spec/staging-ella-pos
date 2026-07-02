@@ -96,8 +96,8 @@ if ($isAuthorized) {
         </nav>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-4">
             <div class="d-flex align-items-center gap-4">
-                <div style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 16px; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-sliders text-white" style="font-size: 2rem;"></i>
+                <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <i class="fa-solid fa-sliders" style="color: #2563eb; font-size: 1.8rem;"></i>
                 </div>
                 <div>
                     <h1 class="mb-1 text-white fw-bolder" style="font-size: 2.2rem; letter-spacing: -0.5px;">Settings Engine</h1>
