@@ -665,7 +665,7 @@ function renderTable(){
             ? `<img src="${escHtml(g.imageUrl)}" class="lz-product-img" alt="Product Image">`
             : `<div class="lz-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        const isSimple = g.variations.length === 1 && (!g.variations[0].varName || g.variations[0].varName.toLowerCase() === 'main item');
+        const isSimple = g.variations.length === 1;
 
         if (isSimple) {
             const v = vars[0];

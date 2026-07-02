@@ -1206,7 +1206,7 @@ function renderMapped(){
             ? `<img src="${escHtml(g.imageUrl)}" class="lz-product-img" alt="Product Image">`
             : `<div class="lz-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        const isSimple = g.vars && g.vars.length === 1 && (!g.vars[0].varName || g.vars[0].varName.toLowerCase() === 'main item');
+        const isSimple = g.vars && g.vars.length === 1;
 
         if (isSimple) {
             const v = vars[0];
@@ -1393,7 +1393,7 @@ function renderUnmapped(){
             ? `<img src="${escHtml(g.imageUrl)}" class="lz-product-img" alt="Product Image">`
             : `<div class="lz-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        const isSimple = g.vars && g.vars.length === 1 && (!g.vars[0].varName || g.vars[0].varName.toLowerCase() === 'main item');
+        const isSimple = g.vars && g.vars.length === 1;
 
         if (isSimple) {
             const v = g.vars[0];
