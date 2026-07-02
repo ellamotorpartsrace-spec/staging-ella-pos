@@ -45,10 +45,18 @@ try {
 
     $api->setAccessToken($config['access_token']);
 
+    $mode = isset($_GET['mode']) ? $_GET['mode'] : 'full';
+
     $params = [
         'offset' => $offset,
         'limit' => $limit
     ];
+
+    if (in_array($mode, ['quick', 'stock', 'price'])) {
+        // Look back 7 days like Shopee
+        $fromTime = time() - 604800; // 7 days ago
+        $params['update_after'] = date('Y-m-d\TH:i:sP', $fromTime);
+    }
     $response = $api->call('/products/get', $params, 'GET');
 
     // Debug log to catch exactly what Lazada is returning behind the scenes
@@ -138,12 +146,7 @@ try {
     $upd = $conn->prepare("UPDATE lazada_product_mappings SET sync_status = 'inactive' WHERE platform_name = ?");
     $upd->execute([$platform]);
 
-    $insertStmt = $conn->prepare("
-        INSERT INTO lazada_product_mappings 
-        (platform_name, lazada_item_id, lazada_sku_id, lazada_product_name, lazada_variation_name, 
-         lazada_seller_sku, lazada_stock, lazada_price, lazada_image_url, sync_status, last_synced_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())
-        ON DUPLICATE KEY UPDATE 
+    $updateClause = "
             lazada_product_name = VALUES(lazada_product_name),
             lazada_variation_name = VALUES(lazada_variation_name),
             lazada_seller_sku = VALUES(lazada_seller_sku),
@@ -152,6 +155,29 @@ try {
             lazada_image_url = VALUES(lazada_image_url),
             sync_status = 'active',
             last_synced_at = NOW()
+    ";
+
+    if ($mode === 'stock') {
+        $updateClause = "
+            lazada_stock = VALUES(lazada_stock),
+            sync_status = 'active',
+            last_synced_at = NOW()
+        ";
+    } elseif ($mode === 'price') {
+        $updateClause = "
+            lazada_price = VALUES(lazada_price),
+            sync_status = 'active',
+            last_synced_at = NOW()
+        ";
+    }
+
+    $insertStmt = $conn->prepare("
+        INSERT INTO lazada_product_mappings 
+        (platform_name, lazada_item_id, lazada_sku_id, lazada_product_name, lazada_variation_name, 
+         lazada_seller_sku, lazada_stock, lazada_price, lazada_image_url, sync_status, last_synced_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())
+        ON DUPLICATE KEY UPDATE 
+            $updateClause
     ");
 
     $newCount = 0;

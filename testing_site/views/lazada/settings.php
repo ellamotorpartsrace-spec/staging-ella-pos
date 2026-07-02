@@ -664,6 +664,7 @@ function authorizeShop() {
 }
 
 async function startSmartSync() {
+    const mode = document.getElementById('syncMode').value;
     const btn = document.getElementById('btnImport');
     const status = document.getElementById('importStatus');
     const logText = document.getElementById('syncLogText');
@@ -684,7 +685,7 @@ async function startSmartSync() {
         let totalUpdated = 0;
 
         while (hasMore) {
-            const res = await fetch(`${window.BASE_URL}api/lazada/fetch_products.php?offset=${offset}`);
+            const res = await fetch(`${window.BASE_URL}api/lazada/fetch_products.php?offset=${offset}&mode=${mode}`);
             const data = await res.json();
             
             if (data.success) {
@@ -704,14 +705,35 @@ async function startSmartSync() {
 
         progLbl.textContent = 'Fetch Completed!';
         logText.className = 'lz-alert-box lz-alert-success py-2 small';
-        logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i><strong>Success!</strong>&nbsp;&nbsp; Total New: ${totalNew} · Total Updated: ${totalUpdated}`;
+        const summaryMsg = `Total New: ${totalNew} · Total Updated: ${totalUpdated}`;
+        logText.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i><strong>Success!</strong>&nbsp;&nbsp; ${summaryMsg}`;
         EllaToast.success('Products fetched successfully!');
+        
+        // Log to DB
+        await fetch(`${window.BASE_URL}api/lazada/log_product_sync.php`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                status: 'success',
+                summary: `Synced (${summaryMsg})`
+            })
+        });
 
     } catch (e) {
         progLbl.textContent = 'Fetch Failed';
         logText.className = 'lz-alert-box lz-alert-danger py-2 small';
         logText.innerHTML = `<i class="fa-solid fa-xmark me-2"></i>${e.message}`;
         EllaToast.error('Fetch error: ' + e.message);
+        
+        // Log Error
+        await fetch(`${window.BASE_URL}api/lazada/log_product_sync.php`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                status: 'failed',
+                error: e.message
+            })
+        });
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down me-2"></i> Execute Smart Sync';
