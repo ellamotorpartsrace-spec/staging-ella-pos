@@ -447,7 +447,7 @@ $totalUnmapped = count($unmappedRows);
         <!-- Breadcrumb inside -->
         <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
             <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
-                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" style="color: rgba(255,255,255,0.7); text-decoration: none; font-weight: 500;">Lazada Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" class="text-white text-decoration-none fw-bold px-2 py-1 rounded" style="background: rgba(255, 255, 255, 0.2); transition: background 0.2s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'"><i class="fa-solid fa-arrow-left me-1"></i> Lazada Dashboard</a></li>
                 <li class="breadcrumb-item active" style="color: white; font-weight: 600;">Stock Allocation</li>
             </ol>
         </nav>

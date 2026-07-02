@@ -90,7 +90,7 @@ if ($isAuthorized) {
     <div class="lz-hero-premium">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-3" style="font-size:.85rem; opacity: 0.8;">
-                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" class="text-white text-decoration-none">Lazada Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" class="text-white text-decoration-none fw-bold px-2 py-1 rounded" style="background: rgba(255, 255, 255, 0.2); transition: background 0.2s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'"><i class="fa-solid fa-arrow-left me-1"></i> Lazada Dashboard</a></li>
                 <li class="breadcrumb-item active text-white fw-bold" aria-current="page">Configuration</li>
             </ol>
         </nav>
