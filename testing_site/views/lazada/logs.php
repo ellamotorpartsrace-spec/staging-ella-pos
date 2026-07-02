@@ -47,7 +47,7 @@ $stmt = $conn->prepare("
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             WHERE m.lazada_item_id = l.lazada_item_id 
             ORDER BY m.id DESC LIMIT 1) as mapped_pos_variation,
-           (SELECT v.variation_sku 
+           (SELECT v.sku 
             FROM lazada_product_mappings m 
             JOIN product_variations v ON m.pos_product_id = v.variation_id
             WHERE m.lazada_item_id = l.lazada_item_id 
