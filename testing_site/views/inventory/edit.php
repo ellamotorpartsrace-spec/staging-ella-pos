@@ -34,8 +34,18 @@ $sql = "
             SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
             FROM shopee_product_mappings m
             LEFT JOIN product_units u ON m.pos_unit_id = u.id
-            WHERE m.pos_product_id = v.variation_id AND m.mapping_status IN ('auto','manual')
-        ) as shopee_allocated
+            WHERE (m.pos_product_id = v.variation_id OR (v.sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null') AND m.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
+              AND m.mapping_status IN ('auto','manual')
+              AND (m.pos_bundle_set_id IS NULL OR m.pos_bundle_set_id = 0)
+        ) as shopee_allocated,
+        (
+            SELECT COALESCE(SUM(m2.lazada_stock * COALESCE(u2.multiplier, 1)), 0)
+            FROM lazada_product_mappings m2
+            LEFT JOIN product_units u2 ON m2.pos_unit_id = u2.id
+            WHERE (m2.pos_product_id = v.variation_id OR (v.sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null') AND m2.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
+              AND m2.mapping_status IN ('auto','manual','mapped')
+              AND (m2.pos_bundle_set_id IS NULL OR m2.pos_bundle_set_id = 0)
+        ) as lazada_allocated
     FROM product_variations v
     JOIN products p ON v.product_id = p.product_id
     LEFT JOIN (
@@ -57,7 +67,7 @@ if (!$product) {
     exit;
 }
 
-$physical_stock = max(0, $product['current_stock'] - $product['shopee_allocated']);
+$physical_stock = max(0, $product['current_stock'] - $product['shopee_allocated'] - $product['lazada_allocated']);
 
 
 // 3. Fetch Categories
@@ -329,7 +339,7 @@ if (strpos($return_url, 'edit.php') !== false || strpos($return_url, 'update_pro
                                             </div>
                                             <div class="flex-grow-1">
                                                 <label class="form-label fw-bold mb-0 small text-uppercase text-muted">Current Inventory</label>
-                                                <div class="h4 mb-0 fw-bold text-dark" title="Total: <?= $product['current_stock'] ?> | Online: <?= $product['shopee_allocated'] ?>"><?= $physical_stock ?> <small class="text-muted fw-normal"><?= $product['unit_type'] ?></small></div>
+                                                <div class="h4 mb-0 fw-bold text-dark" title="Total: <?= $product['current_stock'] ?> | Shopee: <?= $product['shopee_allocated'] ?> | Lazada: <?= $product['lazada_allocated'] ?>"><?= $physical_stock ?> <small class="text-muted fw-normal"><?= $product['unit_type'] ?></small></div>
                                             </div>
                                         </div>
                                         
