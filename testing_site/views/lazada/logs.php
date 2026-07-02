@@ -158,7 +158,7 @@ require_once '../../includes/sidebar.php';
 }
 .premium-search-box:focus-within {
     border-color: var(--lazada-primary);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+    box-shadow: 0 0 0 3px rgba(238, 77, 45, 0.1);
 }
 .premium-search-box i {
     color: var(--text-secondary);
@@ -310,80 +310,52 @@ require_once '../../includes/sidebar.php';
 
 <div class="lz-page lz-animate">
     <?php require_once __DIR__ . '/lazada_token_warning.php'; ?>
-    
-    <!-- Hero Header -->
-    <div class="mb-4" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); border-radius: 16px; padding: 2rem 2.5rem; box-shadow: 0 10px 30px rgba(30,58,138,0.15); position: relative; overflow: hidden;">
-        <!-- Breadcrumb inside -->
-        <nav aria-label="breadcrumb" style="position: relative; z-index: 2;">
-            <ol class="breadcrumb mb-3" style="font-size: 0.85rem;">
-                <li class="breadcrumb-item"><a href="<?= BASE_URL ?>views/lazada/index.php" class="text-white text-decoration-none fw-bold px-2 py-1 rounded" style="background: rgba(255, 255, 255, 0.2); transition: background 0.2s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'"><i class="fa-solid fa-arrow-left me-1"></i> Lazada Dashboard</a></li>
-                <li class="breadcrumb-item active" style="color: white; font-weight: 600;">Sync Logs</li>
-            </ol>
-        </nav>
-        
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position: relative; z-index: 2;">
-            <div class="d-flex align-items-center gap-3">
-                <div style="background: white; border-radius: 14px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <i class="fa-solid fa-clock-rotate-left" style="color: #2563eb; font-size: 1.8rem;"></i>
-                </div>
-                <div>
-                    <h1 class="mb-1 fw-bolder" style="font-size: 2rem; letter-spacing: -0.5px; color: white;">Sync Logs</h1>
-                    <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.95rem;">Track every stock update, product sync, mapping change, and system event</p>
-                </div>
-            </div>
-            <div class="d-flex gap-2">
-            </div>
+    <div class="lz-breadcrumb">
+        <a href="<?= BASE_URL ?>views/lazada/index.php">Lazada Sync</a>
+        <i class="fa-solid fa-chevron-right" style="font-size:0.6rem"></i>
+        <span>Sync Logs</span>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="lz-title mb-0"><i class="fa-solid fa-clock-rotate-left text-lazada me-2"></i>Sync Logs</h1>
+            <p class="lz-subtitle mb-0">Track every stock update, product sync, mapping change, and system event</p>
         </div>
-        <!-- Decorative bg -->
-        <div style="position: absolute; top: -50px; right: -50px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: 1;"></div>
+        <div class="d-flex gap-2">
+            <!-- Clear History button removed -->
+        </div>
     </div>
 
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
-            <div class="lz-stat-card d-flex align-items-center gap-3">
-                <div class="lz-icon-box" style="background:var(--lz-success-bg);color:var(--lz-success)">
-                    <i class="fa-solid fa-check-circle"></i>
-                </div>
-                <div>
-                    <div class="lz-stat-label">Successful</div>
-                    <div class="lz-stat-value"><?= number_format($counts['success'] ?? 0) ?></div>
-                </div>
+            <div class="lz-stat-card accent-success">
+                <div class="lz-stat-icon" style="background:var(--lz-success-bg);color:var(--lz-success)"><i class="fa-solid fa-check-circle"></i></div>
+                <div><div class="lz-stat-label">Successful</div><div class="lz-stat-value"><?= number_format($counts['success'] ?? 0) ?></div></div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="lz-stat-card d-flex align-items-center gap-3">
-                <div class="lz-icon-box" style="background:var(--lz-danger-bg);color:var(--lz-danger)">
-                    <i class="fa-solid fa-circle-xmark"></i>
-                </div>
-                <div>
-                    <div class="lz-stat-label">Failed</div>
-                    <div class="lz-stat-value"><?= number_format($counts['failed'] ?? 0) ?></div>
-                </div>
+            <div class="lz-stat-card accent-danger">
+                <div class="lz-stat-icon" style="background:var(--lz-danger-bg);color:var(--lz-danger)"><i class="fa-solid fa-circle-xmark"></i></div>
+                <div><div class="lz-stat-label">Failed</div><div class="lz-stat-value"><?= number_format($counts['failed'] ?? 0) ?></div></div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="lz-stat-card d-flex align-items-center gap-3">
-                <div class="lz-icon-box" style="background:var(--lz-warning-bg);color:var(--lz-warning)">
-                    <i class="fa-solid fa-rotate"></i>
-                </div>
-                <div>
-                    <div class="lz-stat-label"><?= $periodLabel ?></div>
-                    <div class="lz-stat-value"><?= number_format($counts['total'] ?? 0) ?></div>
-                </div>
+            <div class="lz-stat-card accent-warning">
+                <div class="lz-stat-icon" style="background:var(--lz-warning-bg);color:var(--lz-warning)"><i class="fa-solid fa-rotate"></i></div>
+                <div><div class="lz-stat-label"><?= $periodLabel ?></div><div class="lz-stat-value"><?= number_format($counts['total'] ?? 0) ?></div></div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="lz-stat-card d-flex align-items-center gap-3">
-                <div class="lz-icon-box" style="background:var(--lz-info-bg);color:var(--lz-info)">
-                    <i class="fa-solid fa-percent"></i>
-                </div>
-                <div>
-                    <div class="lz-stat-label">Success Rate</div>
-                    <div class="lz-stat-value"><?= $successRateFormatted ?></div>
-                </div>
+            <div class="lz-stat-card accent-info">
+                <div class="lz-stat-icon" style="background:var(--lz-info-bg);color:var(--lz-info)"><i class="fa-solid fa-percent"></i></div>
+                <div><div class="lz-stat-label">Success Rate</div><div class="lz-stat-value"><?= $successRateFormatted ?></div></div>
             </div>
         </div>
     </div>
+
+    <!-- Filters -->
+    <div class="lz-card mb-4">
+        <form method="GET" action="" id="filterForm" class="w-100 m-0">
             <div class="lz-card-body filter-row">
                 
                 <!-- Search Box -->
@@ -500,7 +472,7 @@ function renderLogs() {
             const safeVar = (l.posVarName || '').replace(/"/g, '&quot;');
             const safeBrand = (l.posBrand || '').replace(/"/g, '&quot;');
             const brandHtml = safeBrand ? `<div style='font-size:0.7rem;color:#6366f1;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:2px'>${safeBrand}</div>` : '';
-            const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#1e3a8a;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
+            const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
             const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'>${brandHtml}<div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
             const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="logs-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
             return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none;" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}"></i></a>`;
@@ -510,7 +482,7 @@ function renderLogs() {
         switch(l.event) {
             case 'product_import': 
                 if (l.product.includes('Quick Sync')) {
-                    eventBadge = '<span class="lz-badge" style="background:rgba(30,58,138,0.12);color:#1e3a8a"><i class="fa-solid fa-bolt me-1"></i>Quick Sync</span>';
+                    eventBadge = '<span class="lz-badge" style="background:rgba(238,77,45,0.12);color:#ee4d2d"><i class="fa-solid fa-bolt me-1"></i>Quick Sync</span>';
                 } else if (l.product.includes('Full Sync')) {
                     eventBadge = '<span class="lz-badge" style="background:rgba(59,130,246,0.12);color:#3b82f6"><i class="fa-solid fa-arrows-rotate me-1"></i>Full Sync</span>';
                 } else if (l.product.includes('Stock Sync')) {
@@ -596,7 +568,7 @@ function renderLogs() {
                     }
                 } else {
                     const newHtml = getPopoverHtml(l.newStock, '#6366f1');
-                    details = `<span class="small"><i class="fa-solid fa-arrows-rotate me-1" style="color:#6610f2"></i><span class="text-secondary">Relinked:</span> <del class="font-monospace text-muted ms-1" style="font-size:0.8rem;padding:2px 6px;background:rgba(0,0,0,0.04);border-radius:4px">${l.oldStock}</del> <i class="fa-solid fa-arrow-right mx-1" style="color:#1e3a8a;font-size:0.72rem"></i> <span class="font-monospace fw-semibold" style="background:rgba(99,102,241,0.08);color:#6366f1;padding:2px 7px;border-radius:4px;border:1px solid rgba(99,102,241,0.2)">${newHtml}</span></span>`;
+                    details = `<span class="small"><i class="fa-solid fa-arrows-rotate me-1" style="color:#6610f2"></i><span class="text-secondary">Relinked:</span> <del class="font-monospace text-muted ms-1" style="font-size:0.8rem;padding:2px 6px;background:rgba(0,0,0,0.04);border-radius:4px">${l.oldStock}</del> <i class="fa-solid fa-arrow-right mx-1" style="color:#ee4d2d;font-size:0.72rem"></i> <span class="font-monospace fw-semibold" style="background:rgba(99,102,241,0.08);color:#6366f1;padding:2px 7px;border-radius:4px;border:1px solid rgba(99,102,241,0.2)">${newHtml}</span></span>`;
                 }
             }
 
@@ -763,3 +735,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script src="../../views/lazada/lazada_alerts.js"></script>
 <?php require_once '../../includes/footer.php'; ?>
+
