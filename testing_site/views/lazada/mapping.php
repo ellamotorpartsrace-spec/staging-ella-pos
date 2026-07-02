@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Lazada Sync â€” Product Mapping';
+$page_title = 'Lazada Sync — Product Mapping';
 require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 requirePermission('lazada_mapping');
@@ -274,7 +274,7 @@ $conn = $db->getConnection();
 window.BASE_URL = '<?= BASE_URL ?>';
 let manualMapModal;
 document.addEventListener('DOMContentLoaded', () => {
-    // Use Popover event delegation globally â€” hover to show, mouseout to hide
+    // Use Popover event delegation globally — hover to show, mouseout to hide
     if (typeof bootstrap !== 'undefined') {
         new bootstrap.Popover(document.body, {
             selector: '[data-bs-toggle="popover"]',
@@ -544,7 +544,7 @@ async function runAutoMatch(isReRun = false, btn = null) {
                 posId: matches[0].id,
                 posUnitId: matches[0].unit_id || null,
                 status: 'auto',
-                displayName: v.groupName + (v.varName ? ` â€” ${v.varName}` : ''),
+                displayName: v.groupName + (v.varName ? ` — ${v.varName}` : ''),
                 posSkuDisplay: matches[0].sku
             });
             count++;
@@ -672,7 +672,7 @@ function renderTable(){
                     case 'missing_sku': statusBadge=`<span class="lz-badge lz-badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> No SKU</span>`;break;
                     default:            statusBadge=`<span class="lz-badge lz-badge-neutral">${escHtml(v.mapStatus)}</span>`;
                 }
-                const posCell=posSku?(posItem ? formatPosChoiceBadge(posItem) : `<span class="lz-badge lz-badge-success">${escHtml(posSku)}</span>`):`<span class="text-secondary">â€”</span>`;
+                const posCell=posSku?(posItem ? formatPosChoiceBadge(posItem) : `<span class="lz-badge lz-badge-success">${escHtml(posSku)}</span>`):`<span class="text-secondary">—</span>`;
                 let linkPopover = '';
                 if (v.mapped && posItem) {
                     const safeName = escHtml(posItem.product_name || '');
@@ -690,9 +690,9 @@ function renderTable(){
                     ? `<button class="btn btn-sm btn-ghost text-danger" onclick="unlinkItem(${v.id}, this)"><i class="fa-solid fa-unlink me-1"></i>Unlink</button>`
                     : `<button class="btn btn-sm btn-outline-lazada" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
 
-                html += `<tr class="lz-group-start">
-                    <td>
-                        <div class="d-flex align-items-center gap-3" style="min-width:0;">
+                html += `<tr class="lz-group-start" style="border-bottom: 2px solid #cbd5e1;">
+                    <td class="ps-3">
+                        <div class="d-flex align-items-center gap-3 py-1" style="min-width:0;">
                             ${imgHtml}
                             <div style="min-width:0;">
                                 <div class="d-flex align-items-start gap-2 mb-1" style="min-width:0;">
@@ -723,9 +723,9 @@ function renderTable(){
             }
         } else {
             // Parent Row
-            html += `<tr class="lz-group-start">
-                <td>
-                    <div class="d-flex align-items-center gap-3" style="min-width:0;">
+            html += `<tr class="lz-group-start" style="background: #fdfdfd; border-top: 2px solid #cbd5e1; border-bottom: 1px solid #e2e8f0;">
+                <td class="ps-3">
+                    <div class="d-flex align-items-center gap-3 py-1" style="min-width:0;">
                         ${imgHtml}
                         <div style="min-width:0;">
                             <div class="d-flex align-items-start gap-2 mb-1" style="min-width:0;">
@@ -741,11 +741,7 @@ function renderTable(){
                         <span class="small text-secondary" style="font-size:0.72rem;margin-top:2px">ID: ${escHtml(g.itemId)}</span>
                     </div>
                 </td>
-                <td><span class="text-secondary">â€”</span></td>
-                <td class="text-center"><span class="text-secondary">â€”</span></td>
-                <td><span class="text-secondary">â€”</span></td>
-                <td><span class="text-secondary">â€”</span></td>
-                <td class="text-end"><span class="text-secondary">â€”</span></td>
+                <td colspan="5"></td>
             </tr>`;
 
             // Variation Rows
@@ -760,7 +756,7 @@ function renderTable(){
                     case 'missing_sku': statusBadge=`<span class="lz-badge lz-badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> No SKU</span>`;break;
                     default:            statusBadge=`<span class="lz-badge lz-badge-neutral">${escHtml(v.mapStatus)}</span>`;
                 }
-                const posCell=pos?formatPosChoiceBadge(pos):`<span class="text-secondary">â€”</span>`;
+                const posCell=pos?formatPosChoiceBadge(pos):`<span class="text-secondary">—</span>`;
                 let linkPopover = '';
                 if (v.mapped && pos) {
                     const safeName = escHtml(pos.product_name || '');
@@ -782,13 +778,17 @@ function renderTable(){
                     ? `<span class="lz-var-name-text">${escHtml(v.varName)}</span>`
                     : `<span class="lz-var-name-text text-secondary fst-italic">Main Item</span>`;
 
-                html += `<tr>
-                    <td class="lz-tree-indent">
-                        <div class="d-flex align-items-center">
+                const isLast = index === vars.length - 1;
+                const borderStyle = isLast ? 'border-bottom: 2px solid #cbd5e1;' : 'border-bottom: 1px solid #f1f5f9;';
+
+                html += `<tr style="${borderStyle}">
+                    <td class="lz-tree-indent ps-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-level-up-alt fa-rotate-90 text-muted opacity-50"></i>
                             ${vNameHtml}
                         </div>
                     </td>
-                    <td><span class="text-secondary">â€”</span></td>
+                    <td></td>
                     <td>${(() => {
                         const key = (getMatchKey(v) || '').toLowerCase().trim();
                         const isDuplicate = key && lazadaSkuCounts[key] > 1;
@@ -859,7 +859,7 @@ function openManualMap(id) {
     const v = ALL_ITEMS.find(x => x.id === id);
     if (!v) return;
     
-    document.getElementById('mmLazadaName').textContent = v.groupName + (v.varName ? ` â€” ${v.varName}` : '');
+    document.getElementById('mmLazadaName').textContent = v.groupName + (v.varName ? ` — ${v.varName}` : '');
     document.getElementById('mmLazadaSku').textContent = getMatchKey(v) || 'No SKU';
     document.getElementById('mmPosSearch').value = '';
     const unitToggle = document.getElementById('mmUnitToggle');
@@ -1132,7 +1132,7 @@ async function doUnlink(id) {
             if (p) p.used = false;
             v.mapped = false; v.posId = null; v.posUnitId = null; v.posBundleSetId = null; v.matchedPosSku = null; v.mapStatus = 'unmapped';
             updateCounts(); renderTable();
-            if (typeof EllaToast !== 'undefined') EllaToast.warning(`Unlinked: ${v.groupName}${v.varName ? ' â€” ' + v.varName : ''}`);
+            if (typeof EllaToast !== 'undefined') EllaToast.warning(`Unlinked: ${v.groupName}${v.varName ? ' — ' + v.varName : ''}`);
         } else {
             if (typeof EllaToast !== 'undefined') EllaToast.error(data.error || 'Failed to unlink item');
             renderTable();
@@ -1204,7 +1204,7 @@ function updateCounts(){
     if(fcEl('fc-missing'))  fcEl('fc-missing').textContent  = missing;
 }
 
-// saveMappings() removed â€” every action (Link, Unlink, Auto-Match) saves to DB instantly via the API.
+// saveMappings() removed — every action (Link, Unlink, Auto-Match) saves to DB instantly via the API.
 
 function toggleGroup(itemId, btn) {
     const rows = document.querySelectorAll('.group-vars-' + itemId);
