@@ -1240,7 +1240,8 @@ function renderMapped(){
             if (v) {
                 const available = v.online;
                 let totalAllocated = getExistingAllocatedBase(v);
-                const rem = v.total - totalAllocated;
+                const otherAlloc = v.otherAllocated || 0;
+                const rem = v.total - totalAllocated - otherAlloc;
                 let badge = '';
                 if (totalAllocated > v.total && v.online > 0) badge = `<span class="lz-badge lz-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
                 else if (v.online === 0) badge = `<span class="lz-badge lz-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
@@ -1285,7 +1286,10 @@ function renderMapped(){
                         <span class="fw-bold text-lazada d-block">${v.online.toLocaleString()}</span>
                         <span class="text-secondary small font-normal" style="font-size:0.72rem;">${unitMultiplier(v) > 1 ? `${toBaseQty(v.online, v).toLocaleString()} pcs - ` : ''}${actualPct}%</span>
                     </td>
-                    <td class="text-center fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</td>
+                    <td class="text-center">
+                        <span class="fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</span>
+                        ${otherAlloc > 0 ? `<div class="mt-1" style="font-size: 0.65rem; color: #6c757d;">(-${otherAlloc.toLocaleString()} Shopee)</div>` : ''}
+                    </td>
                     <td>${badge}</td>
                     <td class="text-end">
                         <div class="d-flex align-items-center justify-content-end gap-2">
