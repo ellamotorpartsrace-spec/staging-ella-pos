@@ -465,6 +465,8 @@ async function syncProducts() {
         let hasMore = true;
         let offset = 0;
         let totalProcessed = 0;
+        let totalNew = 0;
+        let totalUpdated = 0;
 
         while (hasMore) {
             const res = await fetch(`${window.BASE_URL}api/lazada/fetch_products.php?offset=${offset}`);
@@ -472,6 +474,8 @@ async function syncProducts() {
             
             if (data.success) {
                 totalProcessed += data.stats ? data.stats.total : 0;
+                totalNew += data.stats ? data.stats.new : 0;
+                totalUpdated += data.stats ? data.stats.updated : 0;
                 btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Processed ${totalProcessed}...`;
                 
                 hasMore = data.has_more || false;
@@ -481,10 +485,32 @@ async function syncProducts() {
             }
         }
         
-        EllaToast.success(`Products fetched successfully! Processed: ${totalProcessed}`);
+        const summaryMsg = `Total New: ${totalNew} · Total Updated: ${totalUpdated}`;
+        EllaToast.success(`Products fetched successfully! ${summaryMsg}`);
+        
+        // Log to DB
+        await fetch(`${window.BASE_URL}api/lazada/log_product_sync.php`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                status: 'success',
+                summary: `Synced (${summaryMsg})`
+            })
+        });
+        
         loadProducts(); // Reload table data
     } catch (e) {
         EllaToast.error('Sync error: ' + e.message);
+        
+        // Log Error
+        await fetch(`${window.BASE_URL}api/lazada/log_product_sync.php`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                status: 'failed',
+                error: e.message
+            })
+        });
     } finally {
         btn.innerHTML = '<i class="fa-solid fa-rotate me-2"></i> Sync Products';
         btn.disabled = false;
