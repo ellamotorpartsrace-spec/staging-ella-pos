@@ -682,6 +682,7 @@ $totalUnmapped = count($unmappedRows);
                                 <div class="stock-card-label text-uppercase text-success mb-1" style="font-size: 0.68rem; letter-spacing: 0.05em; font-weight: 700;">POS Remaining</div>
                                 <div class="stock-card-number text-success fw-extrabold" id="mRemainingCalc" style="font-size: 2.2rem; line-height: 1.1; font-weight: 800 !important; margin-top: 2px;">0</div>
                                 <div class="stock-card-sub text-muted" style="font-size: 0.65rem; font-weight: 500; margin-top: 2px;">Stays in Store</div>
+                                <div id="mOtherAllocated" class="text-muted font-normal lh-1 mt-1 d-none" style="font-size: 0.65rem;"></div>
                             </div>
                         </div>
 
@@ -1673,10 +1674,18 @@ function calcModal(){
             });
         }
     }
-    const remaining = Math.max(0, currentEdit.total - totalOnlineBase);
+    const otherAlloc = currentEdit.otherAllocated || 0;
+    const remaining = Math.max(0, currentEdit.total - totalOnlineBase - otherAlloc);
     const warn=document.getElementById('mWarning');
     
     document.getElementById('mRemainingCalc').textContent=remaining;
+    const otherDiv = document.getElementById('mOtherAllocated');
+    if (otherAlloc > 0) {
+        otherDiv.textContent = `(-${otherAlloc.toLocaleString()} Shopee)`;
+        otherDiv.classList.remove('d-none');
+    } else {
+        otherDiv.classList.add('d-none');
+    }
     
     // Dynamic Stock Breakdown Meter calculations
     const totalStock = currentEdit.total;
