@@ -119,9 +119,9 @@ require_once '../../includes/sidebar.php';
 
     <!-- Products Table -->
     <div class="card border-0 rounded-4 mb-4" style="box-shadow: 0 4px 15px rgba(0,0,0,0.03); overflow: hidden;" id="productsContainer">
-        <div class="table-responsive">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
             <table class="table lz-table mb-0 align-middle table-hover">
-                <thead style="background: #f8fafc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">
+                <thead style="background: #f8fafc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     <tr>
                         <th class="ps-4 py-3 border-0" style="width: 55%;">Product/Variation</th>
                         <th class="py-3 border-0" style="width: 15%;">Product ID</th>
