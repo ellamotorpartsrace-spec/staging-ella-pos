@@ -17,7 +17,15 @@ $mappedStmt = $conn->prepare("
         m.stock_allocation_ratio, m.pos_product_id, m.pos_unit_id, m.pos_bundle_set_id,
         (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0) + COALESCE(i3.quantity,0)) as pos_qty,
         COALESCE(v.sku, m.matched_pos_sku, m.lazada_seller_sku, m.lazada_seller_sku) as sku,
-        u.unit_name, u.multiplier
+        u.unit_name, u.multiplier,
+        CAST((
+            SELECT COALESCE(SUM(sm.shopee_stock * COALESCE(su.multiplier, 1)), 0)
+            FROM shopee_product_mappings sm
+            LEFT JOIN product_units su ON sm.pos_unit_id = su.id
+            WHERE (sm.pos_product_id = v.variation_id OR (v.sku NOT IN ('', '-', 'N/A', 'NA', 'none', 'null') AND sm.matched_pos_sku = v.sku COLLATE utf8mb4_unicode_ci))
+              AND sm.mapping_status IN ('auto','manual')
+              AND (sm.pos_bundle_set_id IS NULL OR sm.pos_bundle_set_id = 0)
+        ) AS SIGNED) as other_allocated
     FROM lazada_product_mappings m
     LEFT JOIN product_variations v ON m.pos_product_id = v.variation_id
     LEFT JOIN product_units u ON m.pos_unit_id = u.id
@@ -273,7 +281,8 @@ foreach ($mappedRows as $r) {
         'unitName'=>$isBundle ? 'Bundle Set' : ($r['unit_name'] ?? null),
         'multiplier'=>$multiplier,
         'isBundle'=>$isBundle,
-        'bundleDetails'=>$isBundle ? ($bundleStockDetailsMap[(int)$r['id']] ?? []) : []
+        'bundleDetails'=>$isBundle ? ($bundleStockDetailsMap[(int)$r['id']] ?? []) : [],
+        'otherAllocated'=>(int)($r['other_allocated'] ?? 0)
     ];
 }
 
@@ -558,7 +567,7 @@ $totalUnmapped = count($unmappedRows);
                         <th style="width: 1%; white-space: nowrap;">Variation SKU</th>
                         <th class="text-center" style="width: 1%; white-space: nowrap;">Overall Stock</th>
                         <th class="text-center" style="width: 1%; white-space: nowrap;">Allocated</th>
-                        <th class="text-center" style="width: 1%; white-space: nowrap;">Current Stock</th>
+                        <th class="text-center" style="width: 1%; white-space: nowrap;">Remaining POS Stock</th>
                         <th class="text-center" style="width: 1%; white-space: nowrap;">Status</th>
                         <th class="text-end" style="width: 1%; white-space: nowrap;">Action</th>
                     </tr>
@@ -1316,7 +1325,8 @@ function renderMapped(){
             vars.forEach(v=>{
                 const available = v.online;
                 let totalAllocated = getExistingAllocatedBase(v);
-                const rem = v.total - totalAllocated;
+                const other = v.otherAllocated || 0;
+                const rem = v.total - totalAllocated - other;
                 let badge = '';
                 if (totalAllocated > v.total && v.online > 0) badge = `<span class="lz-badge lz-badge-danger" style="background:rgba(220,53,69,0.12);color:#dc3545"><i class="fa-solid fa-arrow-trend-up"></i> Overallocated</span>`;
                 else if (v.online === 0) badge = `<span class="lz-badge lz-badge-neutral"><i class="fa-solid fa-minus-circle"></i> Unallocated</span>`;
@@ -1362,7 +1372,10 @@ function renderMapped(){
                         <span class="fw-bold text-lazada d-block">${v.online.toLocaleString()}</span>
                         <span class="text-secondary small font-normal" style="font-size:0.72rem;">${unitMultiplier(v) > 1 ? `${toBaseQty(v.online, v).toLocaleString()} pcs - ` : ''}${actualPct}%</span>
                     </td>
-                    <td class="text-center fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</td>
+                    <td class="text-center">
+                        <div class="fw-bold ${rem < 0 ? 'text-danger' : 'text-success'}">${rem.toLocaleString()}</div>
+                        ${other > 0 ? `<div class="text-muted font-normal lh-1 mt-1" style="font-size:0.65rem;" title="${other.toLocaleString()} reserved for Shopee">(-${other.toLocaleString()} Shopee)</div>` : ''}
+                    </td>
                     <td>${badge}</td>
                     <td class="text-end">
                         <div class="d-flex align-items-center justify-content-end gap-2">
