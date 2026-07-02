@@ -13,7 +13,7 @@ $mappedRows = $conn->query("
     SELECT m.id, m.shopee_item_id, m.shopee_product_name, m.shopee_variation_name,
         m.shopee_model_id, m.shopee_stock, m.mapping_status, m.shopee_image_url,
         m.stock_allocation_ratio, m.pos_product_id, m.pos_unit_id, m.pos_bundle_set_id,
-        (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0)) as pos_qty,
+        (COALESCE(i1.quantity,0) + COALESCE(i2.quantity,0) + COALESCE(i3.quantity,0)) as pos_qty,
         COALESCE(v.sku, m.matched_pos_sku, m.shopee_variation_sku, m.shopee_parent_sku) as sku,
         u.unit_name, u.multiplier
     FROM shopee_product_mappings m
@@ -21,6 +21,7 @@ $mappedRows = $conn->query("
     LEFT JOIN product_units u ON m.pos_unit_id = u.id
     LEFT JOIN inventory i1 ON v.variation_id = i1.variation_id AND i1.store_id = 1
     LEFT JOIN inventory i2 ON v.variation_id = i2.variation_id AND i2.store_id = 2
+    LEFT JOIN inventory i3 ON v.variation_id = i3.variation_id AND i3.store_id = 3
     WHERE m.mapping_status IN ('auto','manual')
     ORDER BY m.shopee_product_name ASC, m.shopee_variation_name ASC
 ")->fetchAll(PDO::FETCH_ASSOC);

@@ -1,4 +1,12 @@
 <?php
+require_once 'config/config.php';
+require_once 'config/database.php';
+$db = new Database();
+$conn = $db->getConnection();
+$stmt = $conn->prepare("SELECT * FROM inventory WHERE variation_id = 6415");
+$stmt->execute();
+print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
+
 require 'testing_site/config/config.php';
 $db = new Database();
 $conn = $db->getConnection();
