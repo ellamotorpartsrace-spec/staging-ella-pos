@@ -370,7 +370,7 @@ $totalUnmapped = count($unmappedRows);
 .lz-table tbody tr { animation: rowSlideIn .25s ease-out forwards; }
 
 /* ── Parent / Variation Separators ── */
-.lz-group-start > td { border-top: 3px solid rgba(15,19,109,0.1) !important; padding-top: 1.25rem !important; }
+.lz-group-start > td { border-top: 6px solid rgba(15,19,109,0.15) !important; padding-top: 1.25rem !important; }
 .lz-group-start:first-child > td { border-top: none !important; padding-top: 0.75rem !important; }
 .lz-var-row { background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%); transition: background 0.2s; }
 .lz-var-row:hover { background: #f1f5f9; }

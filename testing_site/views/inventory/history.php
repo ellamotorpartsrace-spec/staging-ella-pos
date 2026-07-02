@@ -30,7 +30,7 @@ $sqlProd = "
         v.variation_name, v.sku, v.barcode, v.unit_type,
         COALESCE(i_phys.quantity, 0) as physical_stock,
         COALESCE(i_online.quantity, 0) as online_stock,
-        COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) as total_stock,
+        COALESCE(i_phys.quantity, 0) + COALESCE(i_online.quantity, 0) + COALESCE(i_lazada.quantity, 0) as total_stock,
         CAST((
             SELECT COALESCE(SUM(m.shopee_stock * COALESCE(u.multiplier, 1)), 0)
             FROM shopee_product_mappings m

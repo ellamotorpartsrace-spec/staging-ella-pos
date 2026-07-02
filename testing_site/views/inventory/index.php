@@ -491,17 +491,17 @@ if (count($products) > 0) {
                                         $phys = max(0, $qty - $shopee - $lazada);
                                         $thresh = $row['low_stock_threshold'];
 
-                                        if ($phys == 0) {
+                                        if ($qty == 0) {
                                             echo '<span class="badge bg-danger-subtle text-danger border border-danger"><i class="fa-solid fa-circle-xmark"></i> Out</span>';
-                                        } elseif ($phys <= $thresh) {
-                                            echo '<span class="badge bg-warning-subtle text-dark border border-warning"><i class="fa-solid fa-triangle-exclamation"></i> Low: ' . $phys . '</span>';
+                                        } elseif ($qty <= $thresh) {
+                                            echo '<span class="badge bg-warning-subtle text-dark border border-warning"><i class="fa-solid fa-triangle-exclamation"></i> Low: ' . $qty . '</span>';
                                         } else {
-                                            echo '<span class="badge bg-success-subtle text-success border border-success">' . $phys . ' ' . $row['unit_type'] . '</span>';
+                                            echo '<span class="badge bg-success-subtle text-success border border-success">' . $qty . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
                                         <?php if (!empty($row['is_mapped'])): ?>
                                             <div class="text-muted fw-semibold text-nowrap" style="font-size: 0.7rem; margin-top: 4px;">
-                                                Total: <?= $qty ?> <span class="mx-1">|</span> 
+                                                POS: <?= $phys ?> <span class="mx-1">|</span> 
                                                 <?php if ($shopee > 0 || !empty($row['is_shopee_mapped'])): ?>
                                                     <span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> <?= $shopee ?></span>
                                                 <?php endif; ?>
@@ -604,17 +604,17 @@ if (count($products) > 0) {
                                     class="d-flex justify-content-between align-items-center pt-2 border-top mobile-card-footer">
                                     <div class="flex-shrink-0">
                                         <?php
-                                        if ($phys == 0) {
+                                        if ($qty == 0) {
                                             echo '<span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Out of Stock</span>';
-                                        } elseif ($phys <= $row['low_stock_threshold']) {
-                                            echo '<span class="badge bg-warning-subtle text-dark border border-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i>Low: ' . $phys . ' ' . $row['unit_type'] . '</span>';
+                                        } elseif ($qty <= $row['low_stock_threshold']) {
+                                            echo '<span class="badge bg-warning-subtle text-dark border border-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i>Low: ' . $qty . ' ' . $row['unit_type'] . '</span>';
                                         } else {
-                                            echo '<span class="badge bg-success-subtle text-success border border-success">' . $phys . ' ' . $row['unit_type'] . '</span>';
+                                            echo '<span class="badge bg-success-subtle text-success border border-success">' . $qty . ' ' . $row['unit_type'] . '</span>';
                                         }
                                         ?>
                                         <?php if (!empty($row['is_mapped'])): ?>
                                             <div class="text-muted fw-semibold ms-2 d-inline-block text-nowrap" style="font-size: 0.75rem;">
-                                                Total: <?= $qty ?> <span class="mx-1">|</span> 
+                                                POS: <?= $phys ?> <span class="mx-1">|</span> 
                                                 <?php if ($shopee > 0 || !empty($row['is_shopee_mapped'])): ?>
                                                     <span class="text-info text-nowrap me-1" title="Shopee Allocated"><i class="fa-solid fa-globe" style="color: #ee4d2d;"></i> <?= $shopee ?></span>
                                                 <?php endif; ?>
