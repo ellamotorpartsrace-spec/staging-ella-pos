@@ -158,6 +158,11 @@ $unmappedStmt = $conn->prepare("
 $unmappedStmt->execute([$platform]);
 $unmappedRows = $unmappedStmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Get total variations per item to correctly identify standalone products
+$varCountStmt = $conn->prepare("SELECT lazada_item_id, COUNT(*) as cnt FROM lazada_product_mappings WHERE platform_name = ? GROUP BY lazada_item_id");
+$varCountStmt->execute([$platform]);
+$varCounts = $varCountStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
 // Count POS ID / SKU frequencies
 $dupCounts = [];
 foreach ($mappedRows as $r) {
@@ -221,7 +226,7 @@ foreach ($mappedRows as $r) {
 $mappedGroups = [];
 foreach ($mappedRows as $r) {
     $iid = $r['lazada_item_id'];
-    if (!isset($mappedGroups[$iid])) $mappedGroups[$iid] = ['itemId'=>$iid,'name'=>$r['lazada_product_name'],'imageUrl'=>$r['lazada_image_url']??'','vars'=>[]];
+    if (!isset($mappedGroups[$iid])) $mappedGroups[$iid] = ['itemId'=>$iid,'name'=>$r['lazada_product_name'],'imageUrl'=>$r['lazada_image_url']??'','totalVars'=>$varCounts[$iid]??1,'vars'=>[]];
     
     $posId = (int)($r['pos_product_id'] ?? 0);
     $sku = trim($r['sku'] ?? '');
@@ -275,7 +280,7 @@ foreach ($mappedRows as $r) {
 $unmappedGroups = [];
 foreach ($unmappedRows as $r) {
     $iid = $r['lazada_item_id'];
-    if (!isset($unmappedGroups[$iid])) $unmappedGroups[$iid] = ['itemId'=>$iid,'name'=>$r['lazada_product_name'],'imageUrl'=>$r['lazada_image_url']??'','vars'=>[]];
+    if (!isset($unmappedGroups[$iid])) $unmappedGroups[$iid] = ['itemId'=>$iid,'name'=>$r['lazada_product_name'],'imageUrl'=>$r['lazada_image_url']??'','totalVars'=>$varCounts[$iid]??1,'vars'=>[]];
     $unmappedGroups[$iid]['vars'][] = ['id'=>(int)$r['id'],'varName'=>$r['lazada_variation_name']??'','sku'=>$r['sku'],'online'=>(int)$r['lazada_stock']];
 }
 
@@ -363,6 +368,13 @@ $totalUnmapped = count($unmappedRows);
 /* ── Row entry animation ── */
 @keyframes rowSlideIn { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:translateX(0); } }
 .lz-table tbody tr { animation: rowSlideIn .25s ease-out forwards; }
+
+/* ── Parent / Variation Separators ── */
+.lz-group-start > td { border-top: 3px solid rgba(15,19,109,0.1) !important; padding-top: 1.25rem !important; }
+.lz-group-start:first-child > td { border-top: none !important; padding-top: 0.75rem !important; }
+.lz-var-row { background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%); transition: background 0.2s; }
+.lz-var-row:hover { background: #f1f5f9; }
+.lz-var-row > td { border-top: 1px dashed rgba(15,19,109,0.1) !important; border-bottom: none !important; padding-top: 0.6rem; padding-bottom: 0.6rem; }
 
 /* ── Reserved cell chip ── */
 .reserved-chip {
@@ -1210,7 +1222,7 @@ function renderMapped(){
             ? `<img src="${escHtml(g.imageUrl)}" class="lz-product-img" alt="Product Image">`
             : `<div class="lz-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        const isSimple = g.vars && g.vars.length === 1 && (!g.vars[0].varName || g.vars[0].varName.trim() === '' || g.vars[0].varName.trim().toLowerCase() === 'main item');
+        const isSimple = g.totalVars === 1;
 
         if (isSimple) {
             const v = vars[0];
@@ -1324,7 +1336,7 @@ function renderMapped(){
                     : '';
                 const bundleBreakdown = bundleFormulaHtml(v);
 
-                html += `<tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                html += `<tr class="lz-var-row">
                     <td class="ps-4">
                         <div class="d-flex align-items-center gap-3" style="padding-left: 1.5rem;">
                             <i class="fa-solid fa-turn-up fa-rotate-90 text-muted" style="opacity: 0.4; font-size: 1rem;"></i>
@@ -1400,7 +1412,7 @@ function renderUnmapped(){
             ? `<img src="${escHtml(g.imageUrl)}" class="lz-product-img" alt="Product Image">`
             : `<div class="lz-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        const isSimple = g.vars && g.vars.length === 1 && (!g.vars[0].varName || g.vars[0].varName.trim() === '' || g.vars[0].varName.trim().toLowerCase() === 'main item');
+        const isSimple = g.totalVars === 1;
 
         if (isSimple) {
             const v = g.vars[0];
@@ -1455,7 +1467,7 @@ function renderUnmapped(){
                     ? `<span class="lz-var-name-text">${escHtml(v.varName)}</span>`
                     : `<span class="lz-var-name-text text-secondary fst-italic">Main Item</span>`;
 
-                html += `<tr>
+                html += `<tr class="lz-var-row">
                     <td class="lz-tree-indent">
                         <div class="d-flex align-items-center">
                             ${vNameHtml}
