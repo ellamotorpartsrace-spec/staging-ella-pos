@@ -390,7 +390,7 @@ function renderProducts() {
             // HAS VARIATIONS - Render Parent row, then Child rows
             html += `
                 <tr style="background: #fdfdfd; border-bottom: 1px solid #f1f5f9;">
-                    <td class="ps-4" colspan="5">
+                    <td class="ps-4">
                         <div class="d-flex align-items-center gap-3 py-2">
                             <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
                                 ${imgHtml}
@@ -400,6 +400,10 @@ function renderProducts() {
                             </div>
                         </div>
                     </td>
+                    <td>
+                        <div class="fw-600 text-dark" style="font-size: 0.9rem;">${p.itemId}</div>
+                    </td>
+                    <td colspan="3"></td>
                 </tr>
             `;
             
@@ -421,9 +425,7 @@ function renderProducts() {
                                 </div>
                             </div>
                         </td>
-                        <td>
-                            <div class="fw-600 text-dark" style="font-size: 0.9rem;">${p.itemId}</div>
-                        </td>
+                        <td></td>
                         <td class="text-center">
                             <div class="fw-bold ${v.online > 0 ? 'text-success' : 'text-danger'}">${v.online}</div>
                         </td>
