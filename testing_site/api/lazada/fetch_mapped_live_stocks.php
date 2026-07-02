@@ -92,11 +92,95 @@ try {
 
                     $changed = ($oldStock !== $liveStock);
 
+                    // Fetch POS physical stock and POS online stock for UI update
+                    $posPhysStock = 0;
+                    $posOnlineStock = 0;
+                    $bundleTotalSets = null;
+                    $posProductId = $map['pos_product_id'] ?? null;
+                    
+                    if (!empty($posProductId)) {
+                        $invStmt = $conn->prepare("SELECT store_id, quantity FROM inventory WHERE variation_id = ?");
+                        $invStmt->execute([$posProductId]);
+                        $invRows = $invStmt->fetchAll(PDO::FETCH_ASSOC);
+                        foreach ($invRows as $row) {
+                            if ((int)$row['store_id'] === 1) {
+                                $posPhysStock = (float) $row['quantity'];
+                            } elseif ((int)$row['store_id'] === 3) {
+                                $posOnlineStock = (float) $row['quantity'];
+                            }
+                        }
+                    } elseif (!empty($map['pos_bundle_set_id'])) {
+                        $bundleSetId = (int)$map['pos_bundle_set_id'];
+                        $compStmt = $conn->prepare("
+                            SELECT
+                                si.component_variation_id,
+                                si.component_qty,
+                                COALESCE(cu.multiplier, 1) AS component_unit_multiplier,
+                                (COALESCE(i1.quantity, 0) + COALESCE(i3.quantity, 0)) AS component_base_qty,
+                                COALESCE(res.reserved_base_qty, 0) AS reserved_base_qty
+                            FROM product_unit_set_items si
+                            LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+                            LEFT JOIN inventory i1 ON i1.variation_id = si.component_variation_id AND i1.store_id = 1
+                            LEFT JOIN inventory i3 ON i3.variation_id = si.component_variation_id AND i3.store_id = 3
+                            LEFT JOIN (
+                                SELECT
+                                    m.pos_product_id,
+                                    SUM(m.lazada_stock * COALESCE(u.multiplier, 1)) AS reserved_base_qty
+                                FROM lazada_product_mappings m
+                                LEFT JOIN product_units u ON u.id = m.pos_unit_id
+                                WHERE m.mapping_status IN ('auto','manual')
+                                  AND m.pos_bundle_set_id IS NULL
+                                  AND m.pos_product_id IS NOT NULL
+                                GROUP BY m.pos_product_id
+                            ) res ON res.pos_product_id = si.component_variation_id
+                            WHERE si.product_set_id = ?
+                        ");
+                        $compStmt->execute([$bundleSetId]);
+                        $compRows = $compStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        $otherBundleReserveStmt = $conn->prepare("
+                            SELECT
+                                si.component_variation_id,
+                                SUM(m.lazada_stock * si.component_qty * COALESCE(cu.multiplier, 1)) AS reserved_base_qty
+                            FROM lazada_product_mappings m
+                            JOIN product_unit_set_items si ON si.product_set_id = m.pos_bundle_set_id
+                            LEFT JOIN product_units cu ON cu.id = si.component_unit_id
+                            WHERE m.mapping_status IN ('auto','manual')
+                              AND m.id != ?
+                            GROUP BY si.component_variation_id
+                        ");
+                        $otherBundleReserveStmt->execute([$mapId]);
+                        $otherBundleReserves = [];
+                        foreach ($otherBundleReserveStmt->fetchAll(PDO::FETCH_ASSOC) as $obr) {
+                            $otherBundleReserves[$obr['component_variation_id']] = (int)$obr['reserved_base_qty'];
+                        }
+
+                        $minSets = null;
+                        foreach ($compRows as $comp) {
+                            $baseQty = (int)$comp['component_base_qty'];
+                            $reservedSimple = (int)$comp['reserved_base_qty'];
+                            $reservedOtherBundles = $otherBundleReserves[$comp['component_variation_id']] ?? 0;
+                            $requiredPerSet = (int)$comp['component_qty'] * (int)$comp['component_unit_multiplier'];
+                            
+                            $pairableBase = max(0, $baseQty - $reservedSimple - $reservedOtherBundles);
+                            $possibleSets = ($requiredPerSet > 0) ? floor($pairableBase / $requiredPerSet) : 0;
+                            
+                            if ($minSets === null || $possibleSets < $minSets) {
+                                $minSets = $possibleSets;
+                            }
+                        }
+                        $bundleTotalSets = $minSets !== null ? $minSets : 0;
+                    }
+
                     $updated[] = [
                         'id' => $mapId,
                         'changed' => $changed,
                         'lazada_stock' => $liveStock,
-                        'lazada_price' => $livePrice
+                        'lazada_price' => $livePrice,
+                        'stock_allocation_ratio' => (int)($map['stock_allocation_ratio'] ?? 0),
+                        'pos_physical_stock' => $posPhysStock,
+                        'pos_online_stock' => $posOnlineStock,
+                        'bundle_total_sets' => $bundleTotalSets
                     ];
 
                     if ($changed && !$skipLog) {

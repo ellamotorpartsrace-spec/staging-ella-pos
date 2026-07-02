@@ -1937,9 +1937,11 @@ async function refreshLiveRow(id, btn) {
             const item = MAPPED_FLAT.find(v => v.id === id);
             if (item) {
                 item.online = upd.lazada_stock;
-                item.total = item.isBundle ? (parseInt(upd.bundle_total_sets, 10) || 0) : (upd.pos_physical_stock + upd.pos_online_stock);
-                item.unitTotal = Math.floor(item.total / unitMultiplier(item));
-                item.ratio = upd.stock_allocation_ratio;
+                if (typeof upd.pos_physical_stock !== 'undefined') {
+                    item.total = item.isBundle ? (parseInt(upd.bundle_total_sets, 10) || 0) : (upd.pos_physical_stock + upd.pos_online_stock);
+                    item.unitTotal = Math.floor(item.total / unitMultiplier(item));
+                    item.ratio = upd.stock_allocation_ratio;
+                }
                 const avail = item.online;
                 item.status = item.online === 0 ? 'unallocated' : (avail <= 5 ? 'low' : 'synced');
             }
