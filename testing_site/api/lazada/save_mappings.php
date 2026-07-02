@@ -5,6 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/auth.php';
 
 requireLogin();
+require_once __DIR__ . '/sync_helpers.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -45,9 +46,11 @@ try {
         $posSku = $m['posSku'] ?? null;
 
         // Fetch current lazada stock and pos stock to calculate the ratio so we preserve the old stock
-        $fetchMap = $conn->prepare("SELECT lazada_stock FROM lazada_product_mappings WHERE id = ?");
+        $fetchMap = $conn->prepare("SELECT lazada_stock, pos_product_id FROM lazada_product_mappings WHERE id = ?");
         $fetchMap->execute([$id]);
-        $lazStock = (int)$fetchMap->fetchColumn();
+        $oldMap = $fetchMap->fetch(PDO::FETCH_ASSOC);
+        $lazStock = (int)($oldMap['lazada_stock'] ?? 0);
+        $oldPosId = (int)($oldMap['pos_product_id'] ?? 0);
 
         $posStock = 0;
         if ($posBundleSetId) {
@@ -90,6 +93,19 @@ try {
             $id,
             $platform
         ]);
+        
+        if ($status === 'unmapped') {
+            if ($oldPosId) {
+                propagateStockToPos($conn, $oldPosId, 0, $id);
+            }
+        } else {
+            if ($posId) {
+                if ($oldPosId && $oldPosId !== (int)$posId) {
+                    propagateStockToPos($conn, $oldPosId, 0, null);
+                }
+                propagateStockToPos($conn, $posId, $lazStock, $id);
+            }
+        }
         
         $count++;
     }

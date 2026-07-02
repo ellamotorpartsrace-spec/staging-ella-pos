@@ -185,18 +185,18 @@ $conn = $db->getConnection();
 
 
     <!-- Mapping Table (Grouped) -->
-    <div class="lz-card mb-4">
-        <div class="lz-card-body p-0 lz-table-wrap">
-            <table class="lz-table">
-                <thead>
+    <div class="card border-0 rounded-4 mb-4" style="box-shadow: 0 4px 15px rgba(0,0,0,0.03); overflow: hidden;">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+            <table class="table lz-table mb-0 align-middle table-hover">
+                <thead style="background: #f8fafc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     <tr>
-                        <th style="min-width:200px">Product / Variation</th>
-                        <th>Parent SKU & Item ID</th>
-                        <th>Variation SKU</th>
-                        <th class="text-center"><i class="fa-solid fa-arrows-left-right"></i></th>
-                        <th>POS Match</th>
-                        <th>Status</th>
-                        <th class="text-end">Action</th>
+                        <th class="ps-4 py-3 border-0" style="width: 35%;">Product / Variation</th>
+                        <th class="py-3 border-0" style="width: 15%;">Product ID</th>
+                        <th class="py-3 border-0" style="width: 15%;">Variation SKU</th>
+                        <th class="py-3 border-0 text-center" style="width: 5%;"><i class="fa-solid fa-arrows-left-right"></i></th>
+                        <th class="py-3 border-0" style="width: 15%;">POS Match</th>
+                        <th class="py-3 border-0" style="width: 10%;">Status</th>
+                        <th class="pe-4 py-3 border-0 text-end" style="width: 5%;">Action</th>
                     </tr>
                 </thead>
                 <tbody id="mapTableBody">
@@ -212,18 +212,20 @@ $conn = $db->getConnection();
             </table>
         </div>
         <!-- Premium Pagination Footer -->
-        <div class="lz-card-footer d-flex align-items-center justify-content-between flex-wrap gap-3 border-top p-3">
+        <div class="card-footer bg-white border-top py-3 d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary small">Items per page:</span>
-                <select class="form-select form-select-sm" id="itemsPerPageSelect" onchange="changeItemsPerPage(this.value)" style="width: auto;">
+                <span class="small text-muted">Rows per page:</span>
+                <select class="form-select form-select-sm" id="itemsPerPageSelect" onchange="changeItemsPerPage(this.value)" style="width: 70px;">
                     <option value="10">10</option>
                     <option value="25" selected>25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                 </select>
             </div>
-            <div class="text-secondary small fw-bold" id="paginationStatus">Page 1 of 1 (0 items)</div>
-            <div class="d-flex align-items-center gap-1" id="paginationButtons"></div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="small text-muted" id="paginationStatus">Page 1 of 1 (0 items)</span>
+                <div class="btn-group" id="paginationButtons"></div>
+            </div>
         </div>
     </div>
 
@@ -575,9 +577,18 @@ async function runAutoMatch(isReRun = false, btn = null) {
         if (data.success) {
             if (typeof EllaToast !== 'undefined') {
                 EllaToast.success(`Auto-Match Applied! Linked ${count} product${count !== 1 ? 's' : ''} successfully.`);
+                EllaToast.info(`Syncing initial stock for ${count} items in the background...`);
             }
             updateCounts();
             renderTable();
+            // Trigger initial stock sync in the background for auto matched items
+            pendingAutoMatches.forEach(m => {
+                fetch(`${window.BASE_URL}api/lazada/sync_individual.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ mapping_id: m.id })
+                }).catch(e => console.error('Initial sync error:', e));
+            });
         } else {
             throw new Error(data.error || 'Failed to save auto-matches');
         }
@@ -648,9 +659,7 @@ function renderTable(){
         const g = item.group;
         const vars = item.matchedVars;
 
-        const parentSkuHtml = g.variations[0] && g.variations[0].parentSku
-            ? `<span class="lz-sku-code">${escHtml(g.variations[0].parentSku)}</span>`
-            : `<span class="text-danger" style="font-size:.75rem;font-style:italic">empty</span>`;
+        const parentSkuHtml = ``;
 
         const imgHtml = g.imageUrl
             ? `<img src="${escHtml(g.imageUrl)}" class="lz-product-img" alt="Product Image">`
@@ -703,10 +712,7 @@ function renderTable(){
                         </div>
                     </td>
                     <td>
-                        <div class="d-flex flex-column">
-                            ${parentSkuHtml}
-                            <span class="small text-secondary" style="font-size:0.72rem;margin-top:2px">ID: ${escHtml(g.itemId)}</span>
-                        </div>
+                        <div class="fw-600 text-dark" style="font-size: 0.9rem;">${escHtml(g.itemId)}</div>
                     </td>
                     <td>${(() => {
                         const key = (getMatchKey(v) || '').toLowerCase().trim();
@@ -736,10 +742,7 @@ function renderTable(){
                     </div>
                 </td>
                 <td>
-                    <div class="d-flex flex-column">
-                        ${parentSkuHtml}
-                        <span class="small text-secondary" style="font-size:0.72rem;margin-top:2px">ID: ${escHtml(g.itemId)}</span>
-                    </div>
+                    <div class="fw-600 text-dark" style="font-size: 0.9rem;">${escHtml(g.itemId)}</div>
                 </td>
                 <td colspan="5"></td>
             </tr>`;
@@ -1070,6 +1073,16 @@ async function linkFromModal() {
                 const displayTarget = p.sku ? `SKU ${p.sku}` : p.product_name;
                 EllaToast.success(`Successfully Linked to ${displayTarget}`);
             }
+            // Trigger initial stock sync in the background
+            fetch(`${window.BASE_URL}api/lazada/sync_individual.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ mapping_id: v.id })
+            }).then(r => r.json()).then(res => {
+                if(res.success && typeof EllaToast !== 'undefined') {
+                    EllaToast.info(`Initial stock pushed to Lazada: ${res.pushed_stock}`);
+                }
+            }).catch(e => console.error('Initial sync error:', e));
         } else {
             EllaToast.error(data.error || 'Failed to save mapping');
         }

@@ -61,10 +61,19 @@ try {
         foreach ($mappings as $map) {
             if (empty($map['pos_product_id']) || empty($map['lazada_seller_sku'])) continue;
 
-            // Get POS stock
-            $stockStmt = $conn->prepare("SELECT SUM(stock) FROM product_units WHERE product_id = ? AND unit_id = ?");
-            $stockStmt->execute([$map['pos_product_id'], $map['pos_unit_id']]);
-            $posStock = (int)$stockStmt->fetchColumn();
+            // Get POS stock from inventory table
+            $invStmt = $conn->prepare("SELECT SUM(quantity) FROM inventory WHERE variation_id = ?");
+            $invStmt->execute([$map['pos_product_id']]);
+            $posBaseStock = (float)$invStmt->fetchColumn();
+            
+            $multiplier = 1;
+            if ($map['pos_unit_id']) {
+                $unitStmt = $conn->prepare("SELECT multiplier FROM product_units WHERE id = ?");
+                $unitStmt->execute([$map['pos_unit_id']]);
+                $multiplier = (int)$unitStmt->fetchColumn() ?: 1;
+            }
+            
+            $posStock = floor($posBaseStock / $multiplier);
 
             // Calculate Allocation
             $allocRatio = $config['respect_allocation'] ? (float)$map['stock_allocation_ratio'] : 100.0;
