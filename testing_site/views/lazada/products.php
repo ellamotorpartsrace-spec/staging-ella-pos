@@ -358,7 +358,7 @@ function renderProducts() {
             // SINGLE ITEM - No variations. Render one complete row.
             let v = p.variations[0];
             html += `
-                <tr style="border-bottom: 1px solid #f1f5f9;">
+                <tr style="border-bottom: 2px solid #cbd5e1;">
                     <td class="ps-4">
                         <div class="d-flex align-items-center gap-3">
                             <div style="width: 48px; height: 48px; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
@@ -407,14 +407,17 @@ function renderProducts() {
                 </tr>
             `;
             
-            p.variations.forEach(v => {
+            p.variations.forEach((v, index) => {
+                let isLast = index === p.variations.length - 1;
+                let borderStyle = isLast ? 'border-bottom: 2px solid #cbd5e1;' : 'border-bottom: 1px solid #f1f5f9;';
+                
                 let dispName = v.varName || v.variationSku || 'Variant';
                 let variationImgHtml = p.imageUrl 
                     ? `<img src="${p.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` 
                     : `<i class="fa-solid fa-image text-muted opacity-50" style="font-size: 14px;"></i>`;
 
                 html += `
-                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <tr style="${borderStyle}">
                         <td class="ps-4">
                             <div class="d-flex align-items-center gap-3" style="padding-left: 2rem;">
                                 <div style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
