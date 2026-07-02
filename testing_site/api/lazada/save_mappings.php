@@ -46,7 +46,7 @@ try {
         $posSku = $m['posSku'] ?? null;
 
         // Fetch current lazada stock and pos stock to calculate the ratio so we preserve the old stock
-        $fetchMap = $conn->prepare("SELECT lazada_stock, pos_product_id FROM lazada_product_mappings WHERE id = ?");
+        $fetchMap = $conn->prepare("SELECT lazada_stock, pos_product_id, lazada_item_id, lazada_sku_id, lazada_product_name, lazada_seller_sku FROM lazada_product_mappings WHERE id = ?");
         $fetchMap->execute([$id]);
         $oldMap = $fetchMap->fetch(PDO::FETCH_ASSOC);
         $lazStock = (int)($oldMap['lazada_stock'] ?? 0);
@@ -106,6 +106,9 @@ try {
                 propagateStockToPos($conn, $posId, $lazStock, $id);
             }
         }
+        
+        $logSync = $conn->prepare("INSERT INTO lazada_sync_logs (platform_name, event_type, lazada_item_id, lazada_sku_id, product_name, sku, old_value, new_value, status, source, created_by, created_at) VALUES (?, 'mapping', ?, ?, ?, ?, 'Unmapped', 'Mapped', 'success', 'Manual Mapping', ?, NOW())");
+        $logSync->execute([$platform, $oldMap['lazada_item_id'], $oldMap['lazada_sku_id'], $oldMap['lazada_product_name'], $oldMap['lazada_seller_sku'], $_SESSION['user_id'] ?? null]);
         
         $count++;
     }

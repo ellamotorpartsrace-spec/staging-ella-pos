@@ -32,7 +32,16 @@ try {
         WHERE id = ? AND platform_name = ?
     ");
 
+    $fetch = $conn->prepare("SELECT lazada_item_id, lazada_sku_id, lazada_product_name, lazada_seller_sku FROM lazada_product_mappings WHERE id = ?");
+    $fetch->execute([(int)$input['id']]);
+    $old = $fetch->fetch(PDO::FETCH_ASSOC);
+
     $stmt->execute([(int)$input['id'], $platform]);
+
+    if ($old) {
+        $logSync = $conn->prepare("INSERT INTO lazada_sync_logs (platform_name, event_type, lazada_item_id, lazada_sku_id, product_name, sku, old_value, new_value, status, source, created_by, created_at) VALUES (?, 'mapping', ?, ?, ?, ?, 'Mapped', 'Unmapped', 'success', 'Manual Unlink', ?, NOW())");
+        $logSync->execute([$platform, $old['lazada_item_id'], $old['lazada_sku_id'], $old['lazada_product_name'], $old['lazada_seller_sku'], $_SESSION['user_id'] ?? null]);
+    }
 
     echo json_encode(['success' => true]);
 

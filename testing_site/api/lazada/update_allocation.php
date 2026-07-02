@@ -36,12 +36,24 @@ try {
         exit;
     }
 
+    $fetch = $conn->prepare("SELECT stock_allocation_ratio, safety_floor, lazada_item_id, lazada_sku_id, lazada_product_name, lazada_seller_sku FROM lazada_product_mappings WHERE id = ?");
+    $fetch->execute([$mapping_id]);
+    $old = $fetch->fetch(PDO::FETCH_ASSOC);
+
     $upd = $conn->prepare("
         UPDATE lazada_product_mappings 
-        SET stock_allocation_ratio = ?, safety_stock_floor = ? 
+        SET stock_allocation_ratio = ?, safety_floor = ? 
         WHERE id = ?
     ");
     $upd->execute([$ratio, $floor, $mapping_id]);
+
+    if ($old) {
+        $oldVal = "Ratio: {$old['stock_allocation_ratio']}%, Floor: {$old['safety_floor']}";
+        $newVal = "Ratio: {$ratio}%, Floor: {$floor}";
+        
+        $logSync = $conn->prepare("INSERT INTO lazada_sync_logs (platform_name, event_type, lazada_item_id, lazada_sku_id, product_name, sku, old_value, new_value, status, source, created_by, created_at) VALUES (?, 'allocation_update', ?, ?, ?, ?, ?, ?, 'success', 'Update Allocation', ?, NOW())");
+        $logSync->execute([$platform, $old['lazada_item_id'], $old['lazada_sku_id'], $old['lazada_product_name'], $old['lazada_seller_sku'], $oldVal, $newVal, $_SESSION['user_id'] ?? null]);
+    }
 
     echo json_encode(['success' => true, 'message' => 'Allocation rules updated.']);
 

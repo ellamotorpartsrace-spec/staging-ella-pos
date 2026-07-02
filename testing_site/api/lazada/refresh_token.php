@@ -51,9 +51,16 @@ try {
             WHERE id = ?");
         $update->execute([$access_token, $refresh_token, $expires_at, $refresh_expires_at, $config['id']]);
 
+        $logSync = $conn->prepare("INSERT INTO lazada_sync_logs (platform_name, event_type, source, status, created_by, created_at) VALUES (?, 'token_refresh', 'Manual Refresh', 'success', ?, NOW())");
+        $logSync->execute([$platform, $_SESSION['user_id'] ?? null]);
+
         echo json_encode(['success' => true, 'message' => 'Tokens refreshed successfully.', 'expires_at' => $expires_at]);
     } else {
         $errMsg = $response['message'] ?? 'Unknown API Error';
+        
+        $logSync = $conn->prepare("INSERT INTO lazada_sync_logs (platform_name, event_type, source, status, error_message, created_by, created_at) VALUES (?, 'token_refresh', 'Manual Refresh', 'failed', ?, ?, NOW())");
+        $logSync->execute([$platform, $errMsg, $_SESSION['user_id'] ?? null]);
+        
         echo json_encode(['success' => false, 'error' => $errMsg]);
     }
 
