@@ -24,6 +24,7 @@ $mappedStmt = $conn->prepare("
     LEFT JOIN inventory i1 ON v.variation_id = i1.variation_id AND i1.store_id = 1
     LEFT JOIN inventory i2 ON v.variation_id = i2.variation_id AND i2.store_id = 2
     WHERE m.platform_name = ? AND m.mapping_status IN ('auto','manual','mapped')
+      AND (m.pos_product_id > 0 OR m.pos_bundle_set_id > 0)
     ORDER BY m.lazada_product_name ASC, m.lazada_variation_name ASC
 ");
 $mappedStmt->execute([$platform]);
@@ -148,7 +149,10 @@ $unmappedStmt = $conn->prepare("
     SELECT id, lazada_item_id, lazada_product_name, lazada_variation_name, lazada_stock, lazada_image_url,
         COALESCE(lazada_seller_sku, lazada_seller_sku,'') as sku
     FROM lazada_product_mappings
-    WHERE platform_name = ? AND mapping_status NOT IN ('auto','manual','mapped')
+    WHERE platform_name = ? 
+      AND mapping_status != 'ignored' 
+      AND (pos_product_id IS NULL OR pos_product_id = 0) 
+      AND (pos_bundle_set_id IS NULL OR pos_bundle_set_id = 0)
     ORDER BY lazada_product_name ASC, lazada_variation_name ASC
 ");
 $unmappedStmt->execute([$platform]);
@@ -1206,7 +1210,7 @@ function renderMapped(){
             ? `<img src="${escHtml(g.imageUrl)}" class="lz-product-img" alt="Product Image">`
             : `<div class="lz-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        const isSimple = g.vars && g.vars.length === 1;
+        const isSimple = g.vars && g.vars.length === 1 && (!g.vars[0].varName || g.vars[0].varName.trim() === '' || g.vars[0].varName.trim().toLowerCase() === 'main item');
 
         if (isSimple) {
             const v = vars[0];
@@ -1396,7 +1400,7 @@ function renderUnmapped(){
             ? `<img src="${escHtml(g.imageUrl)}" class="lz-product-img" alt="Product Image">`
             : `<div class="lz-img-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        const isSimple = g.vars && g.vars.length === 1;
+        const isSimple = g.vars && g.vars.length === 1 && (!g.vars[0].varName || g.vars[0].varName.trim() === '' || g.vars[0].varName.trim().toLowerCase() === 'main item');
 
         if (isSimple) {
             const v = g.vars[0];
