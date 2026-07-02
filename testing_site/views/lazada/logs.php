@@ -482,7 +482,7 @@ function renderLogs() {
     document.querySelectorAll('.popover').forEach(p => p.remove());
 
     body.innerHTML = items.map(l => {
-        const getPopoverHtml = (text, iconColor) => {
+        const getPopoverHtml = (text, iconColor, isStrike = false) => {
             const safeName = (l.posName || l.product || 'Unknown Product').replace(/"/g, '&quot;');
             const safeVar = (l.posVarName || '').replace(/"/g, '&quot;');
             const safeBrand = (l.posBrand || '').replace(/"/g, '&quot;');
@@ -490,7 +490,7 @@ function renderLogs() {
             const varHtml = safeVar ? `<div style='font-size:0.75rem;color:#ee4d2d;margin-top:2px;font-weight:600'>${safeVar}</div>` : '';
             const popContent = `<div style='text-align:center;word-break:break-word;line-height:1.3;font-size:0.82rem;max-width:280px'>${brandHtml}<div style='font-weight:600;color:#1e293b'>${safeName}</div>${varHtml}</div>`;
             const popAttr = `tabindex="0" data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover" data-bs-custom-class="logs-popover" title="<i class='fa-solid fa-boxes-stacked me-1'></i> Mapped POS Product" data-bs-content="${popContent}"`;
-            return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none;" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}"></i></a>`;
+            return `<a href="javascript:void(0)" role="button" class="text-decoration-none" style="color:inherit; outline:none; ${isStrike ? 'text-decoration: line-through !important;' : ''}" ${popAttr}>${text} <i class="fa-solid fa-circle-info ms-1" style="font-size:0.75rem; color:${iconColor}; text-decoration: none !important; display: inline-block;"></i></a>`;
         };
 
         let eventBadge = '';
@@ -573,7 +573,7 @@ function renderLogs() {
             } else {
                 if (isUnlinked) {
                     const displayOld = (l.oldStock === 'Unmapped' || !l.oldStock) ? '[No SKU]' : l.oldStock;
-                    const noSkuHtml = getPopoverHtml(displayOld, 'var(--text-secondary)');
+                    const noSkuHtml = getPopoverHtml(displayOld, 'var(--text-secondary)', true);
                     details = `<span class="small"><i class="fa-solid fa-link-slash me-1 text-danger"></i><span class="text-secondary">Unlinked from POS SKU:</span> <del class="font-monospace text-muted ms-1" style="background:rgba(220,53,69,0.06);padding:2px 7px;border-radius:4px;border:1px solid rgba(220,53,69,0.15)">${noSkuHtml}</del></span>`;
                 } else if (isNewLink) {
                     if (l.newStock === 'Allowed as Shared Listing') {

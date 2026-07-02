@@ -23,6 +23,18 @@ try {
         exit;
     }
 
+    $trigger = $input['trigger'] ?? 'manual_link';
+    $logSource = 'Manual Mapping';
+    if ($trigger === 'auto_match') {
+        $logSource = 'Auto-Match';
+    } elseif ($trigger === 're_run_auto_match') {
+        $logSource = 'Re-run Auto-Match';
+    } elseif ($trigger === 'manual_link') {
+        $logSource = 'Manual Link';
+    } elseif ($trigger === 'unlink') {
+        $logSource = 'Manual Unlink';
+    }
+
     $conn->beginTransaction();
 
     $stmt = $conn->prepare("
@@ -46,7 +58,7 @@ try {
         $posSku = $m['posSku'] ?? null;
 
         // Fetch current lazada stock and pos stock to calculate the ratio so we preserve the old stock
-        $fetchMap = $conn->prepare("SELECT lazada_stock, pos_product_id, lazada_item_id, lazada_sku_id, lazada_product_name, lazada_seller_sku FROM lazada_product_mappings WHERE id = ?");
+        $fetchMap = $conn->prepare("SELECT lazada_stock, pos_product_id, lazada_item_id, lazada_sku_id, lazada_product_name, lazada_seller_sku, matched_pos_sku FROM lazada_product_mappings WHERE id = ?");
         $fetchMap->execute([$id]);
         $oldMap = $fetchMap->fetch(PDO::FETCH_ASSOC);
         $lazStock = (int)($oldMap['lazada_stock'] ?? 0);
@@ -107,8 +119,30 @@ try {
             }
         }
         
-        $logSync = $conn->prepare("INSERT INTO lazada_sync_logs (platform_name, event_type, lazada_item_id, lazada_sku_id, product_name, sku, old_value, new_value, status, source, created_by, created_at) VALUES (?, 'mapping', ?, ?, ?, ?, 'Unmapped', 'Mapped', 'success', 'Manual Mapping', ?, NOW())");
-        $logSync->execute([$platform, $oldMap['lazada_item_id'], $oldMap['lazada_sku_id'], $oldMap['lazada_product_name'], $oldMap['lazada_seller_sku'], $_SESSION['user_id'] ?? null]);
+        $oldValLog = $oldMap['matched_pos_sku'] ?: 'Unmapped';
+        $newValLog = $posSku ?: 'Unmapped';
+        
+        $currentMapSource = $logSource;
+        if ($trigger === 'bulk_save') {
+            if ($status === 'unmapped') {
+                $currentMapSource = 'Manual Unlink (Bulk)';
+            } elseif ($status === 'manual') {
+                $currentMapSource = 'Manual Link (Bulk)';
+            }
+        }
+
+        $logSync = $conn->prepare("INSERT INTO lazada_sync_logs (platform_name, event_type, lazada_item_id, lazada_sku_id, product_name, sku, old_value, new_value, status, source, created_by, created_at) VALUES (?, 'mapping', ?, ?, ?, ?, ?, ?, 'success', ?, ?, NOW())");
+        $logSync->execute([
+            $platform, 
+            $oldMap['lazada_item_id'], 
+            $oldMap['lazada_sku_id'], 
+            $oldMap['lazada_product_name'], 
+            $oldMap['lazada_seller_sku'], 
+            $oldValLog,
+            $newValLog,
+            $currentMapSource,
+            $_SESSION['user_id'] ?? null
+        ]);
         
         $count++;
     }
