@@ -714,13 +714,7 @@ function renderTable(){
                     <td>
                         <div class="fw-600 text-dark" style="font-size: 0.9rem;">${escHtml(g.itemId)}</div>
                     </td>
-                    <td>${(() => {
-                        const key = (getMatchKey(v) || '').toLowerCase().trim();
-                        const isDuplicate = key && lazadaSkuCounts[key] > 1;
-                        return isDuplicate
-                            ? `<span class="lz-sku-code">${escHtml(v.variationSku || v.parentSku)}</span><span class="badge bg-danger-light text-danger ms-1" style="font-size:0.65rem; border:1px solid rgba(220,53,69,0.3);"><i class="fa-solid fa-clone"></i> Shared SKU</span>`
-                            : `<span class="lz-sku-code">${escHtml(v.variationSku || v.parentSku)}</span>`;
-                    })()}</td>
+                    <td><span class="text-secondary" style="font-size: 0.85rem; opacity: 0.7;">—</span></td>
                     <td class="text-center">${linkIcon}</td>
                     <td>${posCell}</td>
                     <td>${statusBadge}</td>
@@ -778,17 +772,22 @@ function renderTable(){
                     : `<button class="btn btn-sm btn-outline-lazada" onclick="openManualMap(${v.id})"><i class="fa-solid fa-link me-1"></i>Map</button>`;
                 
                 const vNameHtml = v.varName
-                    ? `<span class="lz-var-name-text">${escHtml(v.varName)}</span>`
-                    : `<span class="lz-var-name-text text-secondary fst-italic">Main Item</span>`;
+                    ? `${escHtml(v.varName)}`
+                    : `<span class="text-secondary fst-italic">Main Item</span>`;
 
                 const isLast = index === vars.length - 1;
                 const borderStyle = isLast ? 'border-bottom: 2px solid #cbd5e1;' : 'border-bottom: 1px solid #f1f5f9;';
 
-                html += `<tr style="${borderStyle}">
-                    <td class="lz-tree-indent ps-4">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="fa-solid fa-level-up-alt fa-rotate-90 text-muted opacity-50"></i>
-                            ${vNameHtml}
+                html += `<tr style="${borderStyle} background: #f8fafc;">
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3" style="padding-left: 1.5rem;">
+                            <i class="fa-solid fa-turn-up fa-rotate-90 text-muted" style="opacity: 0.4; font-size: 1rem;"></i>
+                            <div style="width: 36px; height: 36px; border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                                ${g.imageUrl ? `<img src="${escHtml(g.imageUrl)}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` : `<i class="fa-solid fa-image text-muted opacity-25" style="font-size: 14px;"></i>`}
+                            </div>
+                            <div class="fw-bold" style="color: #334155; font-size: 0.9rem;">
+                                ${vNameHtml}
+                            </div>
                         </div>
                     </td>
                     <td></td>

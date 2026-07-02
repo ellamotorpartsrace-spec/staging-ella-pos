@@ -1243,7 +1243,6 @@ function renderMapped(){
                     </td>
                     <td>
                         <div class="d-flex flex-column">
-                            ${parentSkuHtml}
                             <span class="small text-secondary" style="font-size:0.72rem;margin-top:2px">ID: ${escHtml(g.itemId)}</span>
                         </div>
                     </td>
@@ -1310,8 +1309,8 @@ function renderMapped(){
 
 
                 const vNameHtml = v.varName
-                    ? `<span class="lz-var-name-text">${escHtml(v.varName)}</span>`
-                    : `<span class="lz-var-name-text text-secondary fst-italic">Main Item</span>`;
+                    ? `${escHtml(v.varName)}`
+                    : `<span class="text-secondary fst-italic">Main Item</span>`;
 
                 const actualPct = v.total > 0 ? Math.floor((toBaseQty(v.online, v) / v.total) * 100) : 0;
                 const actualSharedPct = v.total > 0 ? Math.floor((totalAllocated / v.total) * 100) : 0;
@@ -1321,10 +1320,14 @@ function renderMapped(){
                     : '';
                 const bundleBreakdown = bundleFormulaHtml(v);
 
-                html += `<tr>
-                    <td class="lz-tree-indent">
-                        <div class="d-flex align-items-center">
-                            <div>
+                html += `<tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3" style="padding-left: 1.5rem;">
+                            <i class="fa-solid fa-turn-up fa-rotate-90 text-muted" style="opacity: 0.4; font-size: 1rem;"></i>
+                            <div style="width: 36px; height: 36px; border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                                ${g.imageUrl ? `<img src="${escHtml(g.imageUrl)}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` : `<i class="fa-solid fa-image text-muted opacity-25" style="font-size: 14px;"></i>`}
+                            </div>
+                            <div class="fw-bold" style="color: #334155; font-size: 0.9rem;">
                                 ${vNameHtml}
                             </div>
                         </div>
