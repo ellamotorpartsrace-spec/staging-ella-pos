@@ -745,7 +745,7 @@ function renderTable(){
             </tr>`;
 
             // Variation Rows
-            vars.forEach(v=>{
+            vars.forEach((v, index)=>{
                 const pos=findMappedPosItem(v);
                 let statusBadge='';
                 switch(v.mapStatus){
